@@ -1,0 +1,364 @@
+# SPEC: English Trainer — Adaptive Daily Lessons
+
+## Overview
+
+A personal single-user web app for improving spoken and written English (target: conversational fluency). The app runs a **daily lesson loop**: each lesson combines a speaking session and written exercises, tracks every mistake, schedules reinforcement exercises via spaced repetition, and at the end of each session saves state and generates a plan for the next lesson.
+
+Lessons are **curriculum-grounded**: the grammar syllabus and vocabulary pool are seeded from real open CEFR datasets (CEFR-J Grammar Profile, Oxford 3000/5000, OPAL spoken phrases). Claude generates only the *content* of exercises and conversations; *what* to teach next is selected deterministically from the seeded syllabus based on progress. This prevents the LLM from inventing an ad-hoc curriculum.
+
+Single user (owner), no public registration. Runs **locally on the owner's Windows desktop** (see [Deployment](#deployment)) in a **hybrid setup**: a local LLM handles real-time voice conversation, while Claude (Agent SDK, Max subscription) handles all teaching-quality tasks.
+
+## Tech Stack
+
+- **Next.js 15 (App Router)**, TypeScript
+- **Postgres (Neon)** + **Prisma 7** (`@prisma/adapter-pg`, `prisma.config.ts` for CLI, pooled `DATABASE_URL` at runtime)
+- **LLM access** via a provider abstraction in `lib/llm.ts` with **per-role routing** (see [LLM Access Layer](#llm-access-layer)). **Claude** (Agent SDK, model `sonnet`, subscription auth) handles teaching-quality roles: lesson generation, conversation analysis, writing feedback, translation checking, session summaries. A **local LLM** (LM Studio, Qwen3-30B-A3B) handles the real-time conversation partner role. Direct-API Claude fallback remains. All calls server-side only (API routes / server actions)
+- **Voice stack** (see [Voice Stack](#voice-stack)): local **Kokoro-82M** TTS (streaming) with browser `speechSynthesis` fallback; **Web Speech API** STT (Chrome) behind a swappable `lib/stt.ts` interface. Runs on the desktop GPU (RX 9070 XT 16GB)
+- **No auth** — single local user on `localhost` (optional home-LAN). If the app is ever exposed beyond the LAN, add a single access-password middleware then; not in MVP.
+- **Tailwind CSS** + a gamified design system (see [Design System & Visual Approach](#design-system--visual-approach); full tokens in [`docs/DESIGN.md`](docs/DESIGN.md))
+
+## LLM Access Layer
+
+All LLM calls go through a single provider abstraction in `lib/llm.ts`. Every provider exposes:
+
+```ts
+complete({ system, messages, maxTokens }): Promise<string>
+stream({ system, messages, maxTokens }): AsyncIterable<string>   // token deltas
+```
+
+`stream()` is **required only for `LocalProvider`** (the streaming `conversation` role). The Claude providers serve only buffered roles — their `stream()` may be left unimplemented (throw).
+
+Prompt code never picks a provider directly — it names a **role**, and `lib/llm.ts` resolves the role to a provider via the routing config. No provider-specific code lives in routes.
+
+### Providers
+
+- **`AgentSDKProvider` (default for teaching roles)** — calls Claude via the **Claude Agent SDK** (`@anthropic-ai/claude-agent-sdk`, `query()`), authenticated with the owner's Claude subscription through `CLAUDE_CODE_OAUTH_TOKEN` (generated once with `claude setup-token`). Single-turn text completion: `model: "sonnet"`, no tools (`allowedTools: []`), no file access, no project settings (`settingSources: []`), permission mode fully restricted (a `canUseTool` callback denies every tool), `maxTurns: 1`. Consumes the Agent SDK credit, not pay-per-token. The `messages[]` array is flattened into the SDK's single `prompt` (role-prefixed for multi-turn; the app is stateless and sends full history each call) and `system` is passed as `systemPrompt`.
+- **`DirectAPIProvider` (fallback)** — direct `api.anthropic.com` via `@anthropic-ai/sdk` with `ANTHROPIC_API_KEY`, model `claude-sonnet-4-6`. `messages[]` maps 1:1 to the Messages API.
+- **`LocalProvider` (conversation)** — **NEW.** OpenAI-compatible chat-completions against a **local LM Studio** server: `LOCAL_LLM_URL` (default `http://localhost:1234/v1`), model from `LOCAL_LLM_MODEL` (target: **Qwen3-30B-A3B**). Must support **streaming** (`stream()` yields token deltas for the real-time voice loop). `{system, messages}` map to the OpenAI `messages` array. **Qwen3 thinking must be disabled** for the conversation role (`enable_thinking: false` / `/no_think`) — `<think>` blocks blow the latency budget and pollute the spoken reply.
+
+### Role routing
+
+Roles map to providers in `config/llm-roles.ts`, each **individually overridable** via env (`LLM_ROLE_<ROLE>=local|agent|api`):
+
+| Role | Default provider | Mode |
+|---|---|---|
+| `conversation` | `LocalProvider` | streaming |
+| `lesson_generation` | `AgentSDKProvider` | buffered |
+| `conversation_analysis` | `AgentSDKProvider` | buffered |
+| `writing_feedback` | `AgentSDKProvider` | buffered |
+| `translation_check` | `AgentSDKProvider` | buffered |
+
+All providers return plain text, so JSON-structured completions are handled identically: parse with fence-stripping fallback, validate with zod, retry once on failure with a "return ONLY valid JSON" reminder appended.
+
+## Deployment
+
+**Local-first.** The app runs on the owner's **Windows desktop** (Ryzen 5700X3D, RX 9070 XT 16GB) — Next.js via `npm run dev` or `next start` — accessed at `http://localhost:3000`. Optionally bind to the LAN (`next start -H 0.0.0.0`) to use it from a phone on the same home Wi-Fi. The desktop also hosts the local LLM (LM Studio) and the Kokoro TTS service; **Neon Postgres stays in the cloud** (no change). The Agent SDK runs in-process against the Claude subscription. No Docker/VPS/serverless.
+
+Environment requirements:
+- `CLAUDE_CODE_OAUTH_TOKEN` — **set** (subscription auth for the Agent SDK; generated with `claude setup-token`).
+- `ANTHROPIC_API_KEY` — **must NOT be set.** If present it overrides subscription auth and bills pay-per-token. Only set it (with `LLM_ROLE_*=api`) when deliberately using the direct-API fallback.
+- `DATABASE_URL` — pooled Neon connection string.
+- `LOCAL_LLM_URL` (default `http://localhost:1234/v1`), `LOCAL_LLM_MODEL` — LM Studio server + model id.
+- `KOKORO_URL` (default `http://localhost:8880`) — local Kokoro TTS service.
+- `LLM_ROLE_<ROLE>` — optional per-role provider override (`local|agent|api`).
+
+Step-by-step local setup is in [`docs/LOCAL_SETUP.md`](docs/LOCAL_SETUP.md).
+
+### Billing & auth notes
+- The Agent SDK credit (Max 5x: $100/month, included since 2026-06-15 — see https://support.claude.com/en/articles/15036540) covers Claude Agent SDK and `claude -p` usage. It is **separate** from interactive subscription limits.
+- The credit **resets monthly** and **does not roll over**.
+- If the OAuth token is revoked, regenerate it with `claude setup-token` and update the env var.
+- Keep `ANTHROPIC_API_KEY` unset so usage draws on the credit, not pay-per-token.
+
+## Core Concept: The Lesson Loop
+
+```
+[Generate Lesson] → [Warm-up Conversation] → [Written Exercises] → [Speaking Scenario] → [Complete & Summarize] → [Plan Next Lesson]
+```
+
+1. **Generate**: On "Start today's lesson", the server builds a lesson plan by calling Claude with: user profile, active errors (due for review), summary of the last 3 sessions, and the previously saved "next lesson plan" draft.
+2. **Run**: User goes through lesson sections in order. Objective exercises are checked locally (answers pre-generated) and translation/open-writing by Claude. Conversation turns are generated in real time by the **local LLM** (partner only, no corrections); after each conversation section, Claude analyses the full transcript and produces the corrections/findings. Mistakes are logged with a category.
+3. **Complete**: Claude generates a session summary (what went well, recurring mistakes, new vocabulary) and a draft plan for the next lesson. Both saved to DB.
+
+## Data Model (Prisma)
+
+```prisma
+model Profile {
+  id            String   @id @default(cuid())
+  level         String   // e.g. "B1+", updated over time
+  goals         String   // free text: "conversational fluency, work meetings"
+  interests     String   // topics for conversations: "IT, QA, gaming, medicine"
+  nativeLang    String   @default("ru")
+  updatedAt     DateTime @updatedAt
+}
+
+model Lesson {
+  id          String    @id @default(cuid())
+  date        DateTime  @default(now())
+  status      LessonStatus @default(PLANNED) // PLANNED | IN_PROGRESS | COMPLETED
+  currentSection Int    @default(0) // section pointer for resume (0=Review … 4=Wrap-up)
+  plan        Json      // structured lesson plan (sections, topics, exercise specs)
+  summary     String?   // Claude-generated post-session summary
+  nextPlan    String?   // Claude-generated draft plan for the NEXT lesson
+  exercises   Exercise[]
+  turns       ConversationTurn[]
+  errors      ErrorRecord[]
+}
+
+model Exercise {
+  id          String   @id @default(cuid())
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id])
+  type        ExerciseType // see "Exercise Types" section for the full enum + content shapes
+  content     Json     // generated exercise: type-specific shape incl. correct answer(s) + explanations (pre-generated at lesson creation so objective types check locally)
+  userAnswer  String?
+  isCorrect   Boolean?
+  feedback    String?  // Claude's explanation
+  errorRecordId String? // if this exercise was generated to reinforce a specific error
+  createdAt   DateTime @default(now())
+}
+
+model ErrorRecord {
+  id           String   @id @default(cuid())
+  lessonId     String
+  lesson       Lesson   @relation(fields: [lessonId], references: [id])
+  grammarTopicId String? // FK to GrammarTopic for exact mastery matching; NULL for vocab / non-grammar errors
+  grammarTopic GrammarTopic? @relation(fields: [grammarTopicId], references: [id])
+  category     String   // human-readable label, e.g. "Present Perfect vs Past Simple", "vocab: phrasal verbs"
+  description  String   // what exactly went wrong, with the user's original sentence
+  source       ErrorSource // CONVERSATION | EXERCISE | WRITING
+  status       ErrorStatus @default(NEW) // NEW | REVIEWING | MASTERED
+  correctStreak Int     @default(0)  // consecutive correct reinforcement answers
+  nextReviewAt DateTime // spaced repetition scheduling
+  createdAt    DateTime @default(now())
+}
+
+model ConversationTurn {
+  id          String   @id @default(cuid())
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id])
+  role        String   // "user" | "tutor"
+  text        String
+  corrections Json?    // NULL during the live conversation; filled POST-HOC by /api/conversation/analyze
+                       // for user turns: [{original, corrected, explanation, category, severity}]
+  createdAt   DateTime @default(now())
+}
+
+// ---- Curriculum (seeded from open datasets, see "Curriculum & Seed Data") ----
+
+model GrammarTopic {
+  id          String   @id @default(cuid())
+  name        String   // e.g. "Present Perfect Continuous", "used to / would for past habits"
+  cefrLevel   String   // A1..C2, from CEFR-J Grammar Profile
+  category    String?  // e.g. "tenses", "modals", "conditionals"
+  status      TopicStatus @default(NOT_STARTED) // NOT_STARTED | INTRODUCED | PRACTICING | MASTERED
+  timesUsed   Int      @default(0)
+  lastUsedAt  DateTime?
+  sortOrder   Int      // syllabus ordering within a level
+  errors      ErrorRecord[] // back-relation for mastery matching
+}
+
+model VocabItem {
+  id          String   @id @default(cuid())
+  headword    String
+  pos         String?  // part of speech
+  cefrLevel   String   // from Oxford 3000/5000 or CEFR-J Vocabulary Profile
+  topic       String?  // thematic category from CEFR-J (e.g. "Work", "Free time")
+  isPhrase    Boolean  @default(false) // true for OPAL spoken phrases / Oxford Phrase List
+  status      VocabStatus @default(NEW) // NEW | SEEN | LEARNING | KNOWN
+  correctStreak Int    @default(0)
+  lastSeenAt  DateTime?
+
+  @@unique([headword, pos])
+}
+```
+
+### Spaced repetition rules
+
+- New error → `status: NEW`, `nextReviewAt = now + 1 day`
+- Correct reinforcement answer → `correctStreak++`, schedule next review at intervals: 1d → 3d → 7d → 14d
+- `correctStreak >= 3` → `status: MASTERED` (still eligible for occasional review)
+- Wrong answer on reinforcement → `correctStreak = 0`, `nextReviewAt = now + 1 day`, `status: REVIEWING`
+
+## Curriculum & Seed Data
+
+The syllabus is seeded once via `prisma db seed` from open datasets committed to `/data/` in the repo:
+
+1. **Grammar syllabus** — CEFR-J Grammar Profile (grammatical items annotated with CEFR levels; free for use with attribution): https://github.com/openlanguageprofiles/olp-en-cefrj → `GrammarTopic` table. Assign `sortOrder` within each level following the dataset's ordering.
+2. **Vocabulary** — pick one primary source:
+   - Oxford 3000 grouped by CEFR level as ready JSON: https://github.com/Kolia951/The_Oxford_3000_CEFR (A1–B2)
+   - CEFR-J Vocabulary Profile CSV (headword, pos, CEFR level, thematic categories): https://github.com/openlanguageprofiles/olp-en-cefrj/blob/master/cefrj-vocabulary-profile-1.5.csv — preferred, because thematic categories enable topic-based lesson vocab selection
+3. **Spoken phrases** — OPAL spoken phrases / Oxford Phrase List (see https://github.com/jnoodle/English-Vocabulary-Word-List) → `VocabItem` rows with `isPhrase: true`. High value for the conversational goal.
+
+Seed script requirements: idempotent (upsert by `headword+pos` / topic name), filter vocabulary to levels at or one level above the user's current level, attribute datasets in README (CEFR-J requires citation).
+
+### How the curriculum drives lesson generation
+
+Lesson generation is a **two-step process**:
+
+1. **Deterministic selection (code, not LLM)**: `lib/curriculum.ts` picks for today's lesson, **in this order**:
+   - **Conversation theme** — chosen first, deterministically, from `Profile.interests` × CEFR-J thematic categories (round-robin/least-recently-used). This theme is an *input* to the next two steps and to Claude — it is **not** chosen by the LLM.
+   - 1 grammar focus: the next `GrammarTopic` with `status != MASTERED` at the user's level (prioritize `PRACTICING` topics with errors over `NOT_STARTED`).
+   - 6–10 `VocabItem`s: mix of `NEW` items from the **selected theme's** thematic category + `LEARNING` items due for reinforcement.
+   - Due `ErrorRecord`s for the review block.
+2. **Content generation (Claude)**: the selected **theme + grammar topic + vocab list + errors** are passed into the lesson-generation prompt. Claude writes the exercises, conversation framing, and scenario *around* these inputs — it does **not** choose the theme or the grammar focus.
+
+Topic/vocab statuses advance based on performance: a grammar topic moves `NOT_STARTED → INTRODUCED` the first time it is selected into a lesson, `INTRODUCED → PRACTICING` after the first lesson practicing it, and `PRACTICING → MASTERED` after 3 lessons featuring it with ≥80% correct answers and no new ErrorRecords matched to it (via `ErrorRecord.grammarTopicId`). VocabItem: `correctStreak >= 3` **across exercises only** → `KNOWN` (conversation usage does not affect vocab status in MVP).
+
+## Lesson Structure
+
+A generated lesson plan contains these sections (order fixed):
+
+1. **Review block** (5 min): 3–5 reinforcement exercises targeting `ErrorRecord`s where `nextReviewAt <= today`. Exercise type chosen to match the error (grammar error → fill-blank or error-correction; vocab → translation or multiple choice).
+2. **Warm-up conversation** (5–10 min): free chat on the lesson's selected theme (see Curriculum). Tutor speaks (streaming TTS), user answers by voice (STT). Tutor turns come from the **local LLM** (`conversation` role) — natural partner replies only, **no corrections mid-flow**. When the section ends, the transcript is analysed by Claude and a **Conversation Review** is shown (see below).
+3. **Written exercises** (10 min): 5–8 new exercises, a **mix of types** (see [Exercise Types](#exercise-types)). They practice the lesson's **deterministically selected** grammar focus + target vocab (Curriculum step 1) — Claude writes only the exercise *content*, not the focus. Objective types are checked locally; only translation/open-writing hit the LLM.
+4. **Speaking scenario** (5–10 min): role-play with a goal ("You're in a job interview for a QA position — convince the interviewer", "Call a hotel and change your booking"). Tutor (local LLM) stays in character, **no corrections mid-scenario**. On section end, the same Claude transcript analysis + Conversation Review runs.
+5. **Wrap-up**: user clicks "Finish lesson" → summary + next lesson plan generated and saved.
+
+**Conversation Review (both warm-up and scenario).** The real-time loop and the teaching feedback are split:
+- **Real-time loop (local LLM, `conversation` role):** each user turn → one streaming tutor reply (2–4 sentences, spoken register). The local LLM is a conversation partner **only**: it asks follow-up questions and steers toward the lesson's grammar topic + target vocab (injected into its system prompt), but performs **no corrections, grammar explanations, or teaching** — even if the user asks (it says the review comes at the end and keeps the conversation going). Turns persist as `ConversationTurn` rows with `corrections` left NULL.
+- **Post-conversation analysis (Claude, `conversation_analysis` role):** on section end the full transcript (turns with ids) **plus the lesson's grammar-topic list (with ids)** is sent in **one** call → strict-JSON findings array `{turnId, grammarTopicId?, original, corrected, explanation, category, severity}`, where `severity ∈ minor | moderate | major`. Findings are written back to `ConversationTurn.corrections` (all severities, for the review UI). **Only `major` findings** are converted to `ErrorRecord`s, deduplicated by `(grammarTopicId ?? category)` within the session, so spaced-repetition isn't flooded by minor slips. The UI shows a **Conversation Review** screen: transcript with inline highlights (colour-coded by severity) + a summary of the top issues.
+
+## Exercise Types
+
+The written part of a lesson mixes several exercise types so practice is varied. **All objective types are graded by local code** against answers pre-generated into `Exercise.content` (no LLM at answer time); only `TRANSLATION` and `OPEN_WRITING` are LLM-graded. Each exercise's `content` carries a type-specific shape plus an `explain` string shown after grading.
+
+`ExerciseType` enum:
+
+```prisma
+enum ExerciseType {
+  MULTIPLE_CHOICE   // MCQ (grammar/vocab, reading/listening MCQ)
+  CLOZE_DROPDOWN    // multi-gap cloze with per-gap dropdowns
+  FILL_BLANK        // open cloze / word-formation — typed, accept-set
+  WORD_BANK         // build a sentence from word tiles (+ distractors)
+  MATCH             // match pairs (vocab / collocation / EN↔L1)
+  DIALOGUE_GAP      // fill the missing turn in a chat (OPAL phrases)
+  DICTATION         // "type what you hear" (TTS plays, accept-set)
+  ERROR_CORRECTION  // spot the wrong token and type the fix
+  TRANSLATION       // L1↔L2 free text — LLM-graded
+  OPEN_WRITING      // extended paragraph — LLM-graded
+  // post-MVP: REORDER, CATEGORIZE, KEY_WORD_TRANSFORM, READ_ALOUD, LISTENING_MCQ
+}
+```
+
+**MVP set (10 above; 8 fully local + `TRANSLATION`/`OPEN_WRITING` LLM-graded)** spans grammar, vocab, reading, listening, and production, escalating recognition → scaffolded production → free production.
+
+### Local grader — normalization contract
+Every typed / accept-set field is compared after: trim → collapse internal whitespace → lowercase → strip leading/trailing punctuation → normalize curly quotes/apostrophes to straight. **Contraction and spelling variants are handled by listing them in the `accept` array, not by fuzzy matching.**
+
+### `content` shapes (objective types)
+
+```jsonc
+// MULTIPLE_CHOICE — grade: selectedIndex === answer (use answer:[..] + set-equality for multi)
+{"type":"mcq","prompt":"She ___ to work every day.","options":["go","goes","going","gone"],"answer":1,
+ "rationales":["base form","✓ 3rd-person -s","after 'is' only","past participle"],"explain":"..."}
+
+// CLOZE_DROPDOWN — grade: each gap pickedIndex === gap.answer
+{"type":"cloze_mc","text":"I've lived here ___ 2019, ___ five years.",
+ "gaps":[{"options":["since","for"],"answer":0},{"options":["since","for"],"answer":1}],"explain":"..."}
+
+// FILL_BLANK (open cloze / word-formation) — grade: normalized input ∈ gap.accept
+{"type":"open_cloze","text":"It was a ___ (BEAUTY) day.","gaps":[{"root":"BEAUTY","accept":["beautiful"]}],"explain":"..."}
+
+// WORD_BANK — grade: assembled tokens (normalized) === answer (or any accept_alt); distractors ignored
+{"type":"word_bank","tokens":["work","I","to","go","goes"],"answer":["I","go","to","work"],"accept_alt":[],"explain":"..."}
+
+// MATCH — grade: for each i, learner pairs left[i] with right[answer[i]]
+{"type":"match","left":["frankly","broke"],"right":["with no money","to be honest"],"answer":[1,0],"explain":"..."}
+
+// DIALOGUE_GAP — MC or typed missing turn; grade like mcq (index) or accept-set
+{"type":"dialogue_gap","turns":["A: Sorry I'm late.","B: ___"],"options":["No worries.","You are welcome."],"answer":0,"explain":"..."}
+
+// DICTATION — TTS plays `tts`; grade: normalized transcript ∈ accept
+{"type":"dictation","tts":"I'd like a coffee, please.","accept":["i'd like a coffee please","i would like a coffee please"],"explain":"..."}
+
+// ERROR_CORRECTION — grade: tapped index === answer AND typed fix ∈ accept
+{"type":"error_correct","tokens":["She","don't","like","tea"],"answer":1,"accept":["doesn't"],"explain":"..."}
+```
+
+`TRANSLATION` and `OPEN_WRITING` carry the source/prompt (+ optional target-grammar hint) and are graded by the `translation_check` / `writing_feedback` roles.
+
+### Post-MVP types
+`REORDER` (drag to reorder — needs DnD + keyboard a11y), `CATEGORIZE` (drag chips into buckets), `KEY_WORD_TRANSFORM` (free-text paraphrase — LLM-graded), `READ_ALOUD` (STT + fuzzy match, partial grading), `LISTENING_MCQ` / minimal pairs (TTS), and a spaced-repetition flashcard layer over the vocab pool.
+
+## API Routes
+
+- `POST /api/lesson/start` — first runs **health checks** on LM Studio (`LOCAL_LLM_URL`) and Kokoro (`KOKORO_URL`); if either is down, **the lesson is not started** and the UI shows how to bring the service up (see Operational Notes). On success, generates today's lesson (or resumes IN_PROGRESS one at `Lesson.currentSection`). Idempotent per day.
+- `POST /api/exercise/check` — `{exerciseId, answer}`. For every **objective** type (see [Exercise Types](#exercise-types)), checking is **local code** — the per-type grader compares the answer against the data pre-generated into `Exercise.content` (using the normalization contract) with no LLM call; the explanation is read from the pre-generated `explain` / rationales. Only `TRANSLATION` and `OPEN_WRITING` are checked by Claude via `lib/llm.ts` (`translation_check` / `writing_feedback` roles). This keeps objective checking instant despite the Agent SDK's per-call runtime spin-up latency. Either path returns `{isCorrect, feedback}`, logs ErrorRecord if wrong, and updates spaced-repetition state if it was a reinforcement exercise.
+- `POST /api/conversation/turn` — `{lessonId, userText, mode: "warmup" | "scenario"}`. The server calls the `conversation` role (LocalProvider) and, as tokens arrive, **splits the reply into sentences and synthesises each via Kokoro, streaming audio chunks to the client** (client just plays them); the reply **text** is streamed in parallel for the transcript. This sentence-chunked pipeline is what meets the ≤1.5 s budget. Persists the user turn and the (completed) tutor turn as `ConversationTurn` rows with `corrections: null`. No corrections/teaching. Full section history is sent each call (stateless).
+- `POST /api/conversation/analyze` — `{lessonId, mode}`, called once when a conversation section ends. Sends the full transcript **+ the lesson's grammar-topic list** in one call to the `conversation_analysis` role (Claude) → strict-JSON findings. Writes all findings to the matching `ConversationTurn.corrections`; creates `ErrorRecord`s **only from `major` findings**, deduped by `(grammarTopicId ?? category)` within the session. Returns the review payload (severity-coloured highlights + top-issue summary).
+- `POST /api/lesson/complete` — generates summary + nextPlan, marks COMPLETED. (Conversation corrections are already committed by `/api/conversation/analyze`; this route no longer materialises them.)
+- `GET /api/progress` — stats for dashboard.
+
+## Prompting Requirements
+
+All prompts (Claude **and** local-LLM) live in `/lib/prompts/` as typed template functions — no inline prompt strings in routes.
+
+- **Exercise generation** (Claude): system prompt must demand **strict JSON only** (no markdown fences, no preamble) and, for every exercise, emit the **type-specific content shape** from [Exercise Types](#exercise-types) — including the correct answer(s) and explanations — so all objective types can be checked by local code without an LLM call. Parse with fence-stripping fallback; validate with a per-type zod schema; on parse failure retry once. Only `TRANSLATION` and `OPEN_WRITING` are checked by Claude at answer time.
+- **Conversation partner** (local LLM, `conversation` role): system prompt includes profile, current CEFR level, the lesson's grammar topic and target vocab (to steer toward), and instructs the model to reply as a **partner only** — 2–4 sentences, spoken register, ask follow-up questions, gently elicit the target structures/vocab. It must perform **no corrections, no grammar explanations, no teaching**, even if the user asks (deflect: "we'll review at the end" and continue the conversation).
+- **Conversation analysis** (Claude, `conversation_analysis` role): input = full section transcript (turns with ids) + the lesson's grammar-topic list (with ids) + profile + CEFR level. Output = **strict-JSON** findings array `{turnId, grammarTopicId?, original, corrected, explanation, category, severity}` where `severity ∈ minor|moderate|major` and `grammarTopicId` is chosen from the supplied list or `null` (empty array if clean). Fence-stripping fallback, zod validation, retry once.
+- **Lesson generation** (Claude): input = profile + **deterministically selected grammar topic and vocab list (see Curriculum section)** + due ErrorRecords + last 3 summaries + previous `nextPlan`. Output = structured JSON lesson plan. The prompt must instruct Claude to build all sections around the given topic/vocab, not introduce other grammar focuses.
+
+## Pages / UI
+
+- `/` — dashboard: streak, today's lesson button, error stats by category (chart), recently mastered items, **syllabus progress per CEFR level** (e.g. "B2 grammar: 14/52 topics mastered", vocab known/total)
+- `/lesson/[id]` — the lesson player: stepper through sections; voice controls (push-to-talk button, waveform indicator, streaming auto-TTS of tutor replies with replay button); exercise cards with instant feedback; **Conversation Review** screen after each conversation section (transcript with inline correction highlights + top-issues summary); status indicators for local-LLM / TTS availability
+- `/errors` — error log: filterable by category/status, each error shows history of reinforcement attempts
+- `/history` — past lessons with summaries
+
+UI language: English for lesson content, interface chrome can be English. Mobile-friendly (lessons may happen from phone).
+
+## Design System & Visual Approach
+
+Visual clarity is a first-class goal. Full tokens, component patterns, and the a11y checklist live in [`docs/DESIGN.md`](docs/DESIGN.md); this is the summary.
+
+- **Direction:** **gamified but adult** — motivating, not childish. Rounded cards, visible **streak / XP**, and *juicy* correct-answer feedback (light celebration, progress rings) without clutter. Calm base, energetic accents.
+- **Palette (semantic tokens, light + dark):** primary **indigo `#4F46E5`**; **green `#16A34A` = correct / progress / mastered**; **amber = review-due**; **red = error / destructive**. Never signal state by colour alone — always colour **+ icon + text**.
+- **Typography:** **Nunito** (headings, XP, rounded/friendly) + **Inter** (body, maximum readability); base 16px, 1.5 line-height, tabular figures for stats/timers.
+- **Motion:** 150–300ms, transform/opacity only, `prefers-reduced-motion` respected; celebration animations are brief and skippable.
+- **Exercise-card feedback:** instant on submit — correct/incorrect state, an expandable explanation, and a clear "next" action; one primary CTA per card.
+- **Progress visualisation:** mastery **rings / waffle** (% of level), **streak calendar**, **line/area** error-trend, **gauge/bullet** "to next level".
+- **Design skills** (run on UI-bearing milestones): `frontend-design` for aesthetic direction and font locking, `ui-ux-pro-max` for tokens/patterns and the pre-delivery checklist, `emil-design-eng` for interaction & animation polish.
+
+## Voice Stack
+
+The client voice layer is split behind swappable interfaces so services can be replaced without touching UI logic.
+
+### STT (`lib/stt.ts`)
+- **Default:** Web Speech API (`webkitSpeechRecognition`, Chrome), `lang: "en-US"`, interim results shown live, **final transcript editable before sending** (STT errors must not be logged as user errors).
+- The STT layer is a **swappable interface** (`lib/stt.ts`) with a single implementation for MVP.
+- **Planned upgrade (out of MVP scope):** a local **faster-whisper** (small/medium) FastAPI service on the GPU for better accent handling, dropped in behind the same interface.
+
+### TTS
+- **Primary:** local **Kokoro-82M** TTS as a small FastAPI service (`KOKORO_URL`, default `http://localhost:8880`), with **streaming audio playback** so speech starts before full generation completes.
+- **Fallback:** browser `speechSynthesis` (`en-US`/`en-GB`, rate slightly below 1.0) if the Kokoro service is unreachable. A **health check on lesson start** decides; fallback is **silent** but surfaced with a small UI indicator.
+- Every tutor message keeps a **replay** button regardless of engine.
+
+### Latency budget
+Target **≤ 1.5 s** from end of user speech to start of tutor audio: STT finalize ~0.5 s → local LLM first token ~0.3 s → streaming TTS begins. Streaming at both the LLM and TTS stages is what keeps this budget.
+
+## Operational Notes
+
+- **Local services gate lesson start.** LM Studio (model loaded, server enabled) and the Kokoro TTS service must both be up. `POST /api/lesson/start` health-checks both; **if either is down the lesson does not start** — the UI shows which service is missing and how to start it (see `docs/LOCAL_SETUP.md`). No cloud fallback for the real-time partner by default (a role override to `agent`/`api` exists but is off).
+- **Mid-lesson TTS failure:** if Kokoro drops *after* a healthy start, playback falls back to browser `speechSynthesis` **silently**, with a small UI indicator (the lesson is not aborted).
+- **Qwen3 thinking:** the `conversation` role must disable Qwen3 reasoning (`enable_thinking: false` / `/no_think`).
+- **Prompts:** local-LLM system prompts live in `/lib/prompts/` alongside the Claude prompts.
+- **Schema note:** written-exercise flow and curriculum logic are unchanged in spirit; the Prisma schema gained `Lesson.currentSection`, `ErrorRecord.grammarTopicId`, a `GrammarTopic.errors[]` back-relation, an expanded `ExerciseType` enum, and `ConversationTurn.corrections` is now filled **post-hoc** by `/api/conversation/analyze`.
+
+## Non-goals (MVP)
+
+- No pronunciation scoring (STT quality is too noisy for it) — v2 idea
+- No multi-user support
+- No native mobile app
+- No audio recording storage
+
+## Milestones
+
+1. **M1 — Skeleton**: Next.js + Prisma schema + `lib/llm.ts` provider abstraction (AgentSDK / DirectAPI / Local providers + `config/llm-roles.ts` routing), design-system foundation (tokens/fonts/theme per `docs/DESIGN.md`), dashboard shell
+2. **M2 — Curriculum seed**: download datasets to `/data/`, write idempotent seed script, verify GrammarTopic/VocabItem counts and level distribution, dashboard syllabus progress widget
+3. **M3 — Written exercises**: deterministic curriculum selection (incl. theme), lesson generation, the MVP exercise-type set + per-type local graders + gamified exercise cards, checking, ErrorRecord logging
+4. **M4 — Spaced repetition**: review block, streak/interval logic, topic/vocab status advancement, errors page
+5. **M5 — Conversation**: LocalProvider + role routing; real-time warm-up loop (streaming STT + Kokoro TTS, no mid-flow corrections); `/api/conversation/turn` + `/api/conversation/analyze`; post-hoc Claude analysis + Conversation Review screen
+6. **M6 — Scenarios + wrap-up**: role-play mode (same real-time loop + analysis), session summary, next-lesson planning, history page
+
+Each milestone ends with a manual verification checkpoint before proceeding. **UI-bearing milestones (M1 shell, M3 exercises, M5 conversation/review) run their surfaces through the design skills** — `frontend-design` (aesthetic direction), `ui-ux-pro-max` (tokens/patterns/pre-delivery checklist), `emil-design-eng` (interaction & animation polish) — per `docs/DESIGN.md`.
