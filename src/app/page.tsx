@@ -1,5 +1,10 @@
 import { SideNav } from "@/components/nav";
+import { SyllabusProgress } from "@/components/syllabus-progress";
+import { getSyllabusProgress } from "@/lib/curriculum/progress";
 import { Flame } from "lucide-react";
+
+// Reads the DB at request time — never prerender at build (DB may be absent).
+export const dynamic = "force-dynamic";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -10,7 +15,8 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const progress = await getSyllabusProgress();
   return (
     <div className="md:flex">
       <SideNav />
@@ -32,7 +38,7 @@ export default function DashboardPage() {
             </p>
           </Card>
           <Card title="Syllabus progress">
-            <p className="text-muted-foreground">No lessons yet — start your first one.</p>
+            <SyllabusProgress data={progress} />
           </Card>
           <Card title="Recently mastered">
             <p className="text-muted-foreground">Nothing mastered yet.</p>
