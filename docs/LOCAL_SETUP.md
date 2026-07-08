@@ -7,9 +7,9 @@ hybrid setup:
   conversation analysis, writing/translation feedback, summaries).
 - **Local LLM** (LM Studio, Qwen3-14B) — the real-time voice conversation partner.
 - **Kokoro-82M** (FastAPI) — local streaming TTS.
-- **Neon Postgres** — cloud DB (unchanged).
+- **PostgreSQL** — local database, running as a service on the desktop.
 
-This guide covers the local pieces: Node.js, the Claude token, LM Studio, and Kokoro TTS.
+This guide covers the local pieces: Node.js, PostgreSQL, the Claude token, LM Studio, and Kokoro TTS.
 
 ---
 
@@ -23,6 +23,48 @@ Verify:
 node --version   # v20.x or newer
 npm --version
 ```
+
+---
+
+## 0b. PostgreSQL (local database)
+
+The app stores everything in a **local PostgreSQL** server (no cloud DB). Install it once as a
+Windows service:
+
+```powershell
+winget install PostgreSQL.PostgreSQL
+# or download the installer from https://www.postgresql.org/download/windows/
+```
+
+The installer registers a service (starts on boot) and a superuser `postgres`. During install set a
+password you'll remember (the examples below assume `postgres`).
+
+Create the app database (use the `psql` shell or pgAdmin that ships with the installer):
+
+```powershell
+# psql is under e.g. C:\Program Files\PostgreSQL\17\bin — add it to PATH or call it directly
+createdb -U postgres english_trainer
+```
+
+Set the connection string in `.env.local` (see the env table below):
+
+```
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/english_trainer
+```
+
+Then create the tables from the Prisma schema:
+
+```powershell
+npx prisma migrate dev --name init
+```
+
+Smoke test:
+
+```powershell
+psql -U postgres -d english_trainer -c "SELECT 1;"
+```
+
+A `?column? = 1` row means the database is reachable.
 
 ---
 
@@ -120,7 +162,7 @@ Put these in `.env.local` at the project root:
 |---|---|---|
 | `CLAUDE_CODE_OAUTH_TOKEN` | `sk-ant-oat...` | From `claude setup-token`. Subscription auth. |
 | `ANTHROPIC_API_KEY` | *(unset)* | **Leave unset.** Only set (with `LLM_ROLE_*=api`) for the direct-API fallback. |
-| `DATABASE_URL` | *(Neon pooled URL)* | Cloud Postgres. |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/english_trainer` | Local PostgreSQL (see §0b). |
 | `LOCAL_LLM_URL` | `http://localhost:1234/v1` | LM Studio server. |
 | `LOCAL_LLM_MODEL` | `qwen3-14b` | Model id as shown in LM Studio. |
 | `KOKORO_URL` | `http://localhost:8880` | Kokoro TTS service. |

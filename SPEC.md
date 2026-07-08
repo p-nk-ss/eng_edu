@@ -11,7 +11,7 @@ Single user (owner), no public registration. Runs **locally on the owner's Windo
 ## Tech Stack
 
 - **Next.js 15 (App Router)**, TypeScript
-- **Postgres (Neon)** + **Prisma 7** (`@prisma/adapter-pg`, `prisma.config.ts` for CLI, pooled `DATABASE_URL` at runtime)
+- **Postgres (local)** + **Prisma 7** (`@prisma/adapter-pg`, `prisma.config.ts` for CLI, `DATABASE_URL` at runtime) — a PostgreSQL server on the owner's desktop; no cloud DB
 - **LLM access** via a provider abstraction in `lib/llm.ts` with **per-role routing** (see [LLM Access Layer](#llm-access-layer)). **Claude** (Agent SDK, model `sonnet`, subscription auth) handles teaching-quality roles: lesson generation, conversation analysis, writing feedback, translation checking, session summaries. A **local LLM** (LM Studio, Qwen3-14B) handles the real-time conversation partner role. Direct-API Claude fallback remains. All calls server-side only (API routes / server actions)
 - **Voice stack** (see [Voice Stack](#voice-stack)): local **Kokoro-82M** TTS (streaming) with browser `speechSynthesis` fallback; **Web Speech API** STT (Chrome) behind a swappable `lib/stt.ts` interface. Runs on the desktop GPU (RX 9070 XT 16GB)
 - **No auth** — single local user on `localhost` (optional home-LAN). If the app is ever exposed beyond the LAN, add a single access-password middleware then; not in MVP.
@@ -52,13 +52,12 @@ All providers return plain text, so JSON-structured completions are handled iden
 
 ## Deployment
 
-**Local-first.** The app runs on the owner's **Windows desktop** (Ryzen 5700X3D, RX 9070 XT 16GB) — Next.js via `npm run dev` or `next start` — accessed at `http://localhost:3000`. Optionally bind to the LAN (`next start -H 0.0.0.0`) to use it from a phone on the same home Wi-Fi. The desktop also hosts the local LLM (LM Studio) and the Kokoro TTS service; **Neon Postgres stays in the cloud** (no change). The Agent SDK runs in-process against the Claude subscription. No Docker/VPS/serverless.
+**Local-first.** The app runs on the owner's **Windows desktop** (Ryzen 5700X3D, RX 9070 XT 16GB) — Next.js via `npm run dev` or `next start` — accessed at `http://localhost:3000`. Optionally bind to the LAN (`next start -H 0.0.0.0`) to use it from a phone on the same home Wi-Fi. The desktop hosts **everything locally**: a **PostgreSQL** server, the local LLM (LM Studio), and the Kokoro TTS service. Nothing runs in the cloud except the Claude Agent SDK, which runs in-process against the Claude subscription. No Docker/VPS/serverless.
 
 Environment requirements:
 - `CLAUDE_CODE_OAUTH_TOKEN` — **set** (subscription auth for the Agent SDK; generated with `claude setup-token`).
 - `ANTHROPIC_API_KEY` — **must NOT be set.** If present it overrides subscription auth and bills pay-per-token. Only set it (with `LLM_ROLE_*=api`) when deliberately using the direct-API fallback.
-- `DATABASE_URL` — **pooled** Neon connection string (host contains `-pooler`); used at runtime.
-- `DIRECT_URL` — **direct** Neon connection string (no `-pooler`); used by `prisma migrate`.
+- `DATABASE_URL` — local PostgreSQL connection string (e.g. `postgresql://postgres:postgres@localhost:5432/english_trainer`); used both at runtime (pg adapter) and by `prisma migrate`.
 - `LOCAL_LLM_URL` (default `http://localhost:1234/v1`), `LOCAL_LLM_MODEL` — LM Studio server + model id.
 - `KOKORO_URL` (default `http://localhost:8880`) — local Kokoro TTS service.
 - `LLM_ROLE_<ROLE>` — optional per-role provider override (`local|agent|api`).

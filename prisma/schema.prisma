@@ -4,9 +4,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // Prisma 7: connection URLs live in prisma.config.ts, not here.
-  // Runtime uses the pooled DATABASE_URL via the pg adapter (see src/lib/db.ts);
-  // `prisma migrate` uses the direct DIRECT_URL from prisma.config.ts.
+  // Prisma 7: the connection URL lives in prisma.config.ts, not here.
+  // Local PostgreSQL — DATABASE_URL serves both runtime (pg adapter, src/lib/db.ts)
+  // and migrations (prisma.config.ts). No pooler locally, so no separate DIRECT_URL.
 }
 
 enum LessonStatus {

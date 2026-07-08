@@ -71,9 +71,9 @@ syllabus. Full behaviour is defined in `SPEC.md`; this doc records the decisions
 ## 5. Architecture (unchanged from `SPEC.md`, summarised)
 
 - **Next.js 15 App Router + TypeScript**, Tailwind. Server-only LLM calls.
-- **Postgres (Neon) + Prisma 7** (`@prisma/adapter-pg`, `prisma.config.ts`, pooled `DATABASE_URL`).
-- **Runs locally** on the owner's Windows desktop (Ryzen 5700X3D, RX 9070 XT 16GB); Neon stays cloud.
-  No Docker/VPS/serverless.
+- **Postgres (local) + Prisma 7** (`@prisma/adapter-pg`, `prisma.config.ts`, `DATABASE_URL`).
+- **Runs locally** on the owner's Windows desktop (Ryzen 5700X3D, RX 9070 XT 16GB); PostgreSQL runs
+  locally too — nothing in the cloud. No Docker/VPS/serverless.
 - **LLM access** via `lib/llm.ts` with **per-role routing** (`config/llm-roles.ts`, env-overridable),
   each provider exposing `complete()` and `stream()`. `AgentSDKProvider` (Claude `sonnet`, subscription)
   handles teaching roles; `DirectAPIProvider` (`claude-sonnet-4-6`, `ANTHROPIC_API_KEY`) is the fallback;
@@ -106,5 +106,5 @@ UI-bearing milestones run through the design skills (`docs/DESIGN.md`). No auth.
 
 No pronunciation scoring, no multi-user, no native app, no audio storage. **Added:** no auth.
 **Deployment is local-first** on the owner's Windows desktop (local LLM + Kokoro TTS on the GPU;
-Neon in the cloud; no Docker/VPS/serverless) — see `SPEC.md` §"Deployment" and `docs/LOCAL_SETUP.md`.
+local PostgreSQL; no Docker/VPS/serverless) — see `SPEC.md` §"Deployment" and `docs/LOCAL_SETUP.md`.
 Local faster-whisper STT is a planned post-MVP upgrade behind `lib/stt.ts`.
