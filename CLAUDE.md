@@ -58,6 +58,11 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
   subtypes; tool lockdown is via `canUseTool` deny + `maxTurns:1` (not `allowedTools:[]`).
 - **Curriculum data has NO thematic categories** (CEFR-J vocab v1.5) → `VocabItem.topic=null`.
   Open question for M3: where conversation themes come from. See `data/README.md`.
+- **Env loading**: `.env.local` holds `DATABASE_URL` (create it in **UTF-8** — PowerShell defaults to
+  UTF-16, which dotenv can't parse). `prisma.config.ts` loads `.env` then `.env.local`. Scripts run
+  **directly** via `tsx` (not `prisma db seed`) must load `.env.local` **before** importing
+  `src/lib/db.ts`, or PrismaClient is built with an empty URL (`role "..." does not exist`). Prefer
+  `prisma db seed` / `prisma migrate`, which inject env themselves.
 
 ## Milestone status (source of truth: git log)
 
