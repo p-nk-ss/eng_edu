@@ -34,10 +34,10 @@ async function main() {
     skipDuplicates: true,
   });
 
-  const [gc, vc] = await Promise.all([
-    prisma.grammarTopic.count(),
-    prisma.vocabItem.count(),
-  ]);
+  // Sequential (not Promise.all): the pg adapter uses a single connection and
+  // warns on concurrent queries.
+  const gc = await prisma.grammarTopic.count();
+  const vc = await prisma.vocabItem.count();
   console.log(`Done. Database now holds ${gc} grammar topics and ${vc} vocab items.`);
 }
 
