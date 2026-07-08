@@ -5,11 +5,24 @@ hybrid setup:
 
 - **Claude** (Agent SDK, Max subscription) — teaching-quality tasks (lesson generation,
   conversation analysis, writing/translation feedback, summaries).
-- **Local LLM** (LM Studio, Qwen3-30B-A3B) — the real-time voice conversation partner.
+- **Local LLM** (LM Studio, Qwen3-14B) — the real-time voice conversation partner.
 - **Kokoro-82M** (FastAPI) — local streaming TTS.
 - **Neon Postgres** — cloud DB (unchanged).
 
-This guide covers the three local pieces: the Claude token, LM Studio, and Kokoro TTS.
+This guide covers the local pieces: Node.js, the Claude token, LM Studio, and Kokoro TTS.
+
+---
+
+## 0a. Node.js (prerequisite)
+
+The app is Next.js 15 / npm, so **Node.js is required** before anything else. Install the current
+**LTS** (≥ 20) for Windows from <https://nodejs.org> (or via `winget install OpenJS.NodeJS.LTS`).
+Verify:
+
+```powershell
+node --version   # v20.x or newer
+npm --version
+```
 
 ---
 
@@ -33,11 +46,18 @@ The conversation partner runs on **LM Studio**'s OpenAI-compatible server.
 
 ### Install & load the model
 1. Install **LM Studio** for Windows from <https://lmstudio.ai>.
-2. In the **Discover/Search** tab, download **Qwen3-30B-A3B** (a quantized GGUF, e.g. `Q4_K_M`).
-   The A3B (3B active, MoE) variant runs fast on this GPU while giving 30B-class quality.
-3. Load the model. On the **RX 9070 XT**, LM Studio uses a **Vulkan** runtime by default on
-   Windows — offload as many layers to GPU as fit in 16GB VRAM (the whole model should fit at
-   Q4). See the ROCm/Vulkan note under Troubleshooting.
+2. In the **Discover/Search** tab, download **Qwen3-14B** as a quantized GGUF — recommended
+   **`Q6_K` (~12 GB)** (near-FP16 quality). It fits the RX 9070 XT's **16 GB** whole, leaving
+   ~3–3.5 GB for the KV-cache of the growing conversation.
+   > A 30B model (`Qwen3-30B-A3B`) does **not** fit 16 GB at Q4 (~18 GB); 14B/Q6 is the practical
+   > choice here. `Q4_K_M` (~9 GB) or an 8B model are lighter/faster alternatives if you want more
+   > VRAM headroom.
+3. Load the model with **all layers offloaded to GPU** (14B/Q6 fits whole) and set **Context
+   Length to 8192** (up to 16384). Don't push context to 32k+: the 14B KV-cache is ~160 KB/token,
+   so a large context spills out of 16 GB into CPU offload and blows the latency budget
+   (see `SPEC.md` §Voice Stack). Optionally set **KV cache quantization → Q8_0** for more context
+   at the same VRAM. On the **RX 9070 XT**, LM Studio uses a **Vulkan** runtime by default on
+   Windows (see the ROCm/Vulkan note under Troubleshooting); enable **Flash Attention** if offered.
 
 ### Enable the server
 1. Open the **Developer / Local Server** tab.
@@ -45,7 +65,7 @@ The conversation partner runs on **LM Studio**'s OpenAI-compatible server.
 3. Confirm **streaming** is supported (it is, via `"stream": true`).
 
 `LOCAL_LLM_URL` → `http://localhost:1234/v1`, `LOCAL_LLM_MODEL` → the model id shown in LM Studio
-(e.g. `qwen3-30b-a3b`).
+(e.g. `qwen3-14b`).
 
 ---
 
@@ -79,6 +99,19 @@ generation finishes; if the service is unreachable at lesson start, the app fall
 
 ---
 
+## 2a. Speech-to-text — browser Web Speech (⚠ not local, needs internet)
+
+STT uses Chrome's `webkitSpeechRecognition`, which **streams microphone audio to Google's servers**
+— it is **not** local and **requires an internet connection**. This is the one part of the "local"
+stack that leaves the machine. It is also **not** covered by the lesson-start health check (which
+only probes LM Studio and Kokoro), so an offline machine will pass the health check but STT will
+fail at capture time. A local **faster-whisper** service is the planned post-MVP replacement
+(behind the same `lib/stt.ts` interface).
+
+Use **Chrome** on the desktop for STT support.
+
+---
+
 ## 3. Environment variables
 
 Put these in `.env.local` at the project root:
@@ -89,7 +122,7 @@ Put these in `.env.local` at the project root:
 | `ANTHROPIC_API_KEY` | *(unset)* | **Leave unset.** Only set (with `LLM_ROLE_*=api`) for the direct-API fallback. |
 | `DATABASE_URL` | *(Neon pooled URL)* | Cloud Postgres. |
 | `LOCAL_LLM_URL` | `http://localhost:1234/v1` | LM Studio server. |
-| `LOCAL_LLM_MODEL` | `qwen3-30b-a3b` | Model id as shown in LM Studio. |
+| `LOCAL_LLM_MODEL` | `qwen3-14b` | Model id as shown in LM Studio. |
 | `KOKORO_URL` | `http://localhost:8880` | Kokoro TTS service. |
 | `LLM_ROLE_<ROLE>` | `local` \| `agent` \| `api` | Optional per-role override (e.g. `LLM_ROLE_CONVERSATION=agent`). |
 
@@ -116,7 +149,7 @@ lesson plan means the subscription path works.
 ```powershell
 curl http://localhost:1234/v1/chat/completions `
   -H "Content-Type: application/json" `
-  -d '{ "model": "qwen3-30b-a3b", "stream": true, "messages": [{"role":"user","content":"Say hi in one short sentence."}] }'
+  -d '{ "model": "qwen3-14b", "stream": true, "messages": [{"role":"user","content":"Say hi in one short sentence."}] }'
 ```
 Expect a stream of `data:` chunks ending in `[DONE]`.
 

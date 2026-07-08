@@ -77,7 +77,7 @@ syllabus. Full behaviour is defined in `SPEC.md`; this doc records the decisions
 - **LLM access** via `lib/llm.ts` with **per-role routing** (`config/llm-roles.ts`, env-overridable),
   each provider exposing `complete()` and `stream()`. `AgentSDKProvider` (Claude `sonnet`, subscription)
   handles teaching roles; `DirectAPIProvider` (`claude-sonnet-4-6`, `ANTHROPIC_API_KEY`) is the fallback;
-  **`LocalProvider`** (LM Studio, Qwen3-30B-A3B, `LOCAL_LLM_URL`) handles the streaming `conversation`
+  **`LocalProvider`** (LM Studio, Qwen3-14B, `LOCAL_LLM_URL`) handles the streaming `conversation`
   role. See `SPEC.md` §"LLM Access Layer". Objective exercises are checked by **local code** against
   pre-generated answers — no LLM call.
 - **Conversation** is split: real-time local-LLM loop (`/api/conversation/turn`, streaming, no

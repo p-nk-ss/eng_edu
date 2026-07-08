@@ -12,7 +12,7 @@ Single user (owner), no public registration. Runs **locally on the owner's Windo
 
 - **Next.js 15 (App Router)**, TypeScript
 - **Postgres (Neon)** + **Prisma 7** (`@prisma/adapter-pg`, `prisma.config.ts` for CLI, pooled `DATABASE_URL` at runtime)
-- **LLM access** via a provider abstraction in `lib/llm.ts` with **per-role routing** (see [LLM Access Layer](#llm-access-layer)). **Claude** (Agent SDK, model `sonnet`, subscription auth) handles teaching-quality roles: lesson generation, conversation analysis, writing feedback, translation checking, session summaries. A **local LLM** (LM Studio, Qwen3-30B-A3B) handles the real-time conversation partner role. Direct-API Claude fallback remains. All calls server-side only (API routes / server actions)
+- **LLM access** via a provider abstraction in `lib/llm.ts` with **per-role routing** (see [LLM Access Layer](#llm-access-layer)). **Claude** (Agent SDK, model `sonnet`, subscription auth) handles teaching-quality roles: lesson generation, conversation analysis, writing feedback, translation checking, session summaries. A **local LLM** (LM Studio, Qwen3-14B) handles the real-time conversation partner role. Direct-API Claude fallback remains. All calls server-side only (API routes / server actions)
 - **Voice stack** (see [Voice Stack](#voice-stack)): local **Kokoro-82M** TTS (streaming) with browser `speechSynthesis` fallback; **Web Speech API** STT (Chrome) behind a swappable `lib/stt.ts` interface. Runs on the desktop GPU (RX 9070 XT 16GB)
 - **No auth** — single local user on `localhost` (optional home-LAN). If the app is ever exposed beyond the LAN, add a single access-password middleware then; not in MVP.
 - **Tailwind CSS** + a gamified design system (see [Design System & Visual Approach](#design-system--visual-approach); full tokens in [`docs/DESIGN.md`](docs/DESIGN.md))
@@ -34,11 +34,11 @@ Prompt code never picks a provider directly — it names a **role**, and `lib/ll
 
 - **`AgentSDKProvider` (default for teaching roles)** — calls Claude via the **Claude Agent SDK** (`@anthropic-ai/claude-agent-sdk`, `query()`), authenticated with the owner's Claude subscription through `CLAUDE_CODE_OAUTH_TOKEN` (generated once with `claude setup-token`). Single-turn text completion: `model: "sonnet"`, no tools (`allowedTools: []`), no file access, no project settings (`settingSources: []`), permission mode fully restricted (a `canUseTool` callback denies every tool), `maxTurns: 1`. Consumes the Agent SDK credit, not pay-per-token. The `messages[]` array is flattened into the SDK's single `prompt` (role-prefixed for multi-turn; the app is stateless and sends full history each call) and `system` is passed as `systemPrompt`.
 - **`DirectAPIProvider` (fallback)** — direct `api.anthropic.com` via `@anthropic-ai/sdk` with `ANTHROPIC_API_KEY`, model `claude-sonnet-4-6`. `messages[]` maps 1:1 to the Messages API.
-- **`LocalProvider` (conversation)** — **NEW.** OpenAI-compatible chat-completions against a **local LM Studio** server: `LOCAL_LLM_URL` (default `http://localhost:1234/v1`), model from `LOCAL_LLM_MODEL` (target: **Qwen3-30B-A3B**). Must support **streaming** (`stream()` yields token deltas for the real-time voice loop). `{system, messages}` map to the OpenAI `messages` array. **Qwen3 thinking must be disabled** for the conversation role (`enable_thinking: false` / `/no_think`) — `<think>` blocks blow the latency budget and pollute the spoken reply.
+- **`LocalProvider` (conversation)** — **NEW.** OpenAI-compatible chat-completions against a **local LM Studio** server: `LOCAL_LLM_URL` (default `http://localhost:1234/v1`), model from `LOCAL_LLM_MODEL` (target: **Qwen3-14B**). Must support **streaming** (`stream()` yields token deltas for the real-time voice loop). `{system, messages}` map to the OpenAI `messages` array. **Qwen3 thinking must be disabled** for the conversation role (`enable_thinking: false` / `/no_think`) — `<think>` blocks blow the latency budget and pollute the spoken reply.
 
 ### Role routing
 
-Roles map to providers in `config/llm-roles.ts`, each **individually overridable** via env (`LLM_ROLE_<ROLE>=local|agent|api`):
+Roles map to providers in `config/llm-roles.ts`, each **individually overridable** via env (`LLM_ROLE_<ROLE>=local|agent|api`) — **except `conversation`**, which is streaming-only and therefore served **only by `LocalProvider`**. The Claude providers do not implement `stream()`, so overriding `LLM_ROLE_CONVERSATION` to `agent`/`api` is unsupported (it would throw at runtime); there is **no cloud fallback for the real-time partner**.
 
 | Role | Default provider | Mode |
 |---|---|---|
@@ -57,7 +57,8 @@ All providers return plain text, so JSON-structured completions are handled iden
 Environment requirements:
 - `CLAUDE_CODE_OAUTH_TOKEN` — **set** (subscription auth for the Agent SDK; generated with `claude setup-token`).
 - `ANTHROPIC_API_KEY` — **must NOT be set.** If present it overrides subscription auth and bills pay-per-token. Only set it (with `LLM_ROLE_*=api`) when deliberately using the direct-API fallback.
-- `DATABASE_URL` — pooled Neon connection string.
+- `DATABASE_URL` — **pooled** Neon connection string (host contains `-pooler`); used at runtime.
+- `DIRECT_URL` — **direct** Neon connection string (no `-pooler`); used by `prisma migrate`.
 - `LOCAL_LLM_URL` (default `http://localhost:1234/v1`), `LOCAL_LLM_MODEL` — LM Studio server + model id.
 - `KOKORO_URL` (default `http://localhost:8880`) — local Kokoro TTS service.
 - `LLM_ROLE_<ROLE>` — optional per-role provider override (`local|agent|api`).
@@ -96,7 +97,7 @@ model Lesson {
   id          String    @id @default(cuid())
   date        DateTime  @default(now())
   status      LessonStatus @default(PLANNED) // PLANNED | IN_PROGRESS | COMPLETED
-  currentSection Int    @default(0) // section pointer for resume (0=Review … 4=Wrap-up)
+  currentSection Int    @default(0) // section pointer for resume (0=Review … 4=Wrap-up). Always starts at 0; an empty section (e.g. day-1 Review with no due errors) is auto-skipped by the player, so the pointer semantics stay uniform.
   plan        Json      // structured lesson plan (sections, topics, exercise specs)
   summary     String?   // Claude-generated post-session summary
   nextPlan    String?   // Claude-generated draft plan for the NEXT lesson
@@ -203,7 +204,9 @@ Lesson generation is a **two-step process**:
    - Due `ErrorRecord`s for the review block.
 2. **Content generation (Claude)**: the selected **theme + grammar topic + vocab list + errors** are passed into the lesson-generation prompt. Claude writes the exercises, conversation framing, and scenario *around* these inputs — it does **not** choose the theme or the grammar focus.
 
-Topic/vocab statuses advance based on performance: a grammar topic moves `NOT_STARTED → INTRODUCED` the first time it is selected into a lesson, `INTRODUCED → PRACTICING` after the first lesson practicing it, and `PRACTICING → MASTERED` after 3 lessons featuring it with ≥80% correct answers and no new ErrorRecords matched to it (via `ErrorRecord.grammarTopicId`). VocabItem: `correctStreak >= 3` **across exercises only** → `KNOWN` (conversation usage does not affect vocab status in MVP).
+Topic/vocab statuses advance based on performance. **Attribution is lesson-grained** — there is no `Exercise → GrammarTopic` FK; instead, because each lesson has exactly **one** deterministically-selected grammar focus, "accuracy on the topic" is the accuracy of that lesson's **written block**:
+- A grammar topic moves `NOT_STARTED → INTRODUCED` the first time it is selected into a lesson, `INTRODUCED → PRACTICING` after the first lesson practicing it, and `PRACTICING → MASTERED` after 3 lessons where it was the focus, each with **≥80% correct answers on that lesson's written block** and **no new `ErrorRecord`s matched to it** (via `ErrorRecord.grammarTopicId`, which a wrong-exercise error inherits from the lesson's selected focus).
+- VocabItem: `correctStreak >= 3` → `KNOWN`, updated **from exercise answers only**. `POST /api/exercise/check` reads the **target vocab id(s) recorded in `Exercise.content`** (see [Exercise Types](#exercise-types)) and adjusts the matching `VocabItem` rows. Conversation usage does not affect vocab status in MVP.
 
 ## Lesson Structure
 
@@ -222,6 +225,8 @@ A generated lesson plan contains these sections (order fixed):
 ## Exercise Types
 
 The written part of a lesson mixes several exercise types so practice is varied. **All objective types are graded by local code** against answers pre-generated into `Exercise.content` (no LLM at answer time); only `TRANSLATION` and `OPEN_WRITING` are LLM-graded. Each exercise's `content` carries a type-specific shape plus an `explain` string shown after grading.
+
+**Vocab attribution.** Since there is no `Exercise → VocabItem` FK, each objective exercise's `content` also carries a **`vocab`** field — the id(s) of the target `VocabItem`s it practices (e.g. `"vocab": ["clx…", "cly…"]`, omitted/empty for pure-grammar exercises). `POST /api/exercise/check` reads this to advance `VocabItem.correctStreak` (see [Spaced repetition](#spaced-repetition-rules)). The grammar focus is not stored per-exercise — it is the lesson's single selected focus.
 
 `ExerciseType` enum:
 
@@ -284,7 +289,7 @@ Every typed / accept-set field is compared after: trim → collapse internal whi
 ## API Routes
 
 - `POST /api/lesson/start` — first runs **health checks** on LM Studio (`LOCAL_LLM_URL`) and Kokoro (`KOKORO_URL`); if either is down, **the lesson is not started** and the UI shows how to bring the service up (see Operational Notes). On success, generates today's lesson (or resumes IN_PROGRESS one at `Lesson.currentSection`). Idempotent per day.
-- `POST /api/exercise/check` — `{exerciseId, answer}`. For every **objective** type (see [Exercise Types](#exercise-types)), checking is **local code** — the per-type grader compares the answer against the data pre-generated into `Exercise.content` (using the normalization contract) with no LLM call; the explanation is read from the pre-generated `explain` / rationales. Only `TRANSLATION` and `OPEN_WRITING` are checked by Claude via `lib/llm.ts` (`translation_check` / `writing_feedback` roles). This keeps objective checking instant despite the Agent SDK's per-call runtime spin-up latency. Either path returns `{isCorrect, feedback}`, logs ErrorRecord if wrong, and updates spaced-repetition state if it was a reinforcement exercise.
+- `POST /api/exercise/check` — `{exerciseId, answer}`. For every **objective** type (see [Exercise Types](#exercise-types)), checking is **local code** — the per-type grader compares the answer against the data pre-generated into `Exercise.content` (using the normalization contract) with no LLM call; the explanation is read from the pre-generated `explain` / rationales. Only `TRANSLATION` and `OPEN_WRITING` are checked by Claude via `lib/llm.ts` (`translation_check` / `writing_feedback` roles). This keeps objective checking instant despite the Agent SDK's per-call runtime spin-up latency. Either path returns `{isCorrect, feedback}`. On a wrong answer it logs an `ErrorRecord`, inheriting `grammarTopicId` from the **lesson's selected grammar focus** (loaded via `Exercise.lessonId`). It advances `VocabItem.correctStreak` for the ids in `Exercise.content.vocab`, and updates spaced-repetition state if it was a reinforcement exercise (`Exercise.errorRecordId` set).
 - `POST /api/conversation/turn` — `{lessonId, userText, mode: "warmup" | "scenario"}`. The server calls the `conversation` role (LocalProvider) and, as tokens arrive, **splits the reply into sentences and synthesises each via Kokoro, streaming audio chunks to the client** (client just plays them); the reply **text** is streamed in parallel for the transcript. This sentence-chunked pipeline is what meets the ≤1.5 s budget. Persists the user turn and the (completed) tutor turn as `ConversationTurn` rows with `corrections: null`. No corrections/teaching. Full section history is sent each call (stateless).
 - `POST /api/conversation/analyze` — `{lessonId, mode}`, called once when a conversation section ends. Sends the full transcript **+ the lesson's grammar-topic list** in one call to the `conversation_analysis` role (Claude) → strict-JSON findings. Writes all findings to the matching `ConversationTurn.corrections`; creates `ErrorRecord`s **only from `major` findings**, deduped by `(grammarTopicId ?? category)` within the session. Returns the review payload (severity-coloured highlights + top-issue summary).
 - `POST /api/lesson/complete` — generates summary + nextPlan, marks COMPLETED. (Conversation corrections are already committed by `/api/conversation/analyze`; this route no longer materialises them.)
@@ -335,11 +340,16 @@ The client voice layer is split behind swappable interfaces so services can be r
 - Every tutor message keeps a **replay** button regardless of engine.
 
 ### Latency budget
-Target **≤ 1.5 s** from end of user speech to start of tutor audio: STT finalize ~0.5 s → local LLM first token ~0.3 s → streaming TTS begins. Streaming at both the LLM and TTS stages is what keeps this budget.
+**Target (to be benchmarked, not guaranteed) ≤ 1.5 s** from end of user speech to start of tutor audio: STT finalize ~0.5 s → local LLM → first **sentence** ready → streaming TTS begins. Streaming at both the LLM and TTS stages is what keeps this budget.
+
+**Caveats (validate empirically before committing to the number):**
+- TTS is **sentence-chunked**, so tutor audio starts on the first *complete sentence*, **not** the first token — budget the sentence-generation time, not first-token time.
+- The conversation is **stateless** (full transcript re-sent each turn), so LM Studio re-processes a **growing prompt** every turn; first-sentence latency rises as the section lengthens.
+- On the RX 9070 XT, inference runs on **Vulkan** (not ROCm) and Kokoro may run on **CPU** — both add latency. If the model can't fully fit 16 GB VRAM (see `docs/LOCAL_SETUP.md`), partial CPU offload slows first-token further.
 
 ## Operational Notes
 
-- **Local services gate lesson start.** LM Studio (model loaded, server enabled) and the Kokoro TTS service must both be up. `POST /api/lesson/start` health-checks both; **if either is down the lesson does not start** — the UI shows which service is missing and how to start it (see `docs/LOCAL_SETUP.md`). No cloud fallback for the real-time partner by default (a role override to `agent`/`api` exists but is off).
+- **Local services gate lesson start.** LM Studio (model loaded, server enabled) and the Kokoro TTS service must both be up. `POST /api/lesson/start` health-checks both; **if either is down the lesson does not start** — the UI shows which service is missing and how to start it (see `docs/LOCAL_SETUP.md`). The real-time partner (`conversation` role) is **local-only** — there is no cloud fallback (the Claude providers can't stream). The health check does **not** cover browser STT (Web Speech), which is a separate online dependency (see `docs/LOCAL_SETUP.md` §2a).
 - **Mid-lesson TTS failure:** if Kokoro drops *after* a healthy start, playback falls back to browser `speechSynthesis` **silently**, with a small UI indicator (the lesson is not aborted).
 - **Qwen3 thinking:** the `conversation` role must disable Qwen3 reasoning (`enable_thinking: false` / `/no_think`).
 - **Prompts:** local-LLM system prompts live in `/lib/prompts/` alongside the Claude prompts.
