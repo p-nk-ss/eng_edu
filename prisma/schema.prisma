@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: connection URLs live in prisma.config.ts, not here.
+  // Runtime uses the pooled DATABASE_URL via the pg adapter (see src/lib/db.ts);
+  // `prisma migrate` uses the direct DIRECT_URL from prisma.config.ts.
+}
+
+enum LessonStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ExerciseType {
+  MULTIPLE_CHOICE
+  CLOZE_DROPDOWN
+  FILL_BLANK
+  WORD_BANK
+  MATCH
+  DIALOGUE_GAP
+  DICTATION
+  ERROR_CORRECTION
+  TRANSLATION
+  OPEN_WRITING
+}
+
+enum ErrorSource {
+  CONVERSATION
+  EXERCISE
+  WRITING
+}
+
+enum ErrorStatus {
+  NEW
+  REVIEWING
+  MASTERED
+}
+
+enum TopicStatus {
+  NOT_STARTED
+  INTRODUCED
+  PRACTICING
+  MASTERED
+}
+
+enum VocabStatus {
+  NEW
+  SEEN
+  LEARNING
+  KNOWN
+}
+
+model Profile {
+  id         String   @id @default(cuid())
+  level      String
+  goals      String
+  interests  String
+  nativeLang String   @default("ru")
+  updatedAt  DateTime @updatedAt
+}
+
+model Lesson {
+  id             String       @id @default(cuid())
+  date           DateTime     @default(now())
+  status         LessonStatus @default(PLANNED)
+  currentSection Int          @default(0)
+  plan           Json
+  summary        String?
+  nextPlan       String?
+  exercises      Exercise[]
+  turns          ConversationTurn[]
+  errors         ErrorRecord[]
+}
+
+model Exercise {
+  id            String       @id @default(cuid())
+  lessonId      String
+  lesson        Lesson       @relation(fields: [lessonId], references: [id])
+  type          ExerciseType
+  content       Json
+  userAnswer    String?
+  isCorrect     Boolean?
+  feedback      String?
+  errorRecordId String?
+  createdAt     DateTime     @default(now())
+}
+
+model ErrorRecord {
+  id             String        @id @default(cuid())
+  lessonId       String
+  lesson         Lesson        @relation(fields: [lessonId], references: [id])
+  grammarTopicId String?
+  grammarTopic   GrammarTopic? @relation(fields: [grammarTopicId], references: [id])
+  category       String
+  description    String
+  source         ErrorSource
+  status         ErrorStatus   @default(NEW)
+  correctStreak  Int           @default(0)
+  nextReviewAt   DateTime
+  createdAt      DateTime      @default(now())
+}
+
+model ConversationTurn {
+  id          String   @id @default(cuid())
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id])
+  role        String
+  text        String
+  corrections Json?
+  createdAt   DateTime @default(now())
+}
+
+model GrammarTopic {
+  id         String        @id @default(cuid())
+  name       String
+  cefrLevel  String
+  category   String?
+  status     TopicStatus   @default(NOT_STARTED)
+  timesUsed  Int           @default(0)
+  lastUsedAt DateTime?
+  sortOrder  Int
+  errors     ErrorRecord[]
+}
+
+model VocabItem {
+  id            String      @id @default(cuid())
+  headword      String
+  pos           String?
+  cefrLevel     String
+  topic         String?
+  isPhrase      Boolean     @default(false)
+  status        VocabStatus @default(NEW)
+  correctStreak Int         @default(0)
+  lastSeenAt    DateTime?
+
+  @@unique([headword, pos])
+}
