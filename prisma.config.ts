@@ -11,4 +11,7 @@ const databaseUrl = process.env.DATABASE_URL;
 export default defineConfig({
   schema: path.join("prisma", "schema.prisma"),
   ...(databaseUrl ? { datasource: { url: databaseUrl } } : {}),
+  // `prisma db seed` runs the idempotent curriculum seed (see prisma/seed.ts).
+  migrations: { seed: "tsx prisma/seed.ts" },
 });
+

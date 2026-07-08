@@ -116,7 +116,7 @@ model ConversationTurn {
 
 model GrammarTopic {
   id         String        @id @default(cuid())
-  name       String
+  name       String        @unique
   cefrLevel  String
   category   String?
   status     TopicStatus   @default(NOT_STARTED)

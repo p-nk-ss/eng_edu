@@ -14,7 +14,7 @@ function isProviderName(v: string | undefined): v is ProviderName {
 
 export function resolveProviderName(
   role: Role,
-  env: NodeJS.ProcessEnv = process.env,
+  env: Record<string, string | undefined> = process.env,
 ): ProviderName {
   const override = env[`LLM_ROLE_${role.toUpperCase()}`];
   return isProviderName(override) ? override : DEFAULT_ROUTES[role];
