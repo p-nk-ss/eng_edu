@@ -22,6 +22,11 @@ next-env.d.ts
 *.db
 *.db-journal
 
+# Portable local PostgreSQL (binaries + data cluster live in the project, never committed)
+.pgsql/
+.pgdata/
+.pg-binaries.zip
+
 # Logs
 *.log
 npm-debug.log*

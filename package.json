@@ -5,13 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "predev": "npm run db:start",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "db:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db.ps1 setup",
+    "db:start": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db.ps1 start",
+    "db:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db.ps1 stop",
+    "db:status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db.ps1 status",
+    "db:psql": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db.ps1 psql"
   },
   "dependencies": {
     "next": "15.5.20",

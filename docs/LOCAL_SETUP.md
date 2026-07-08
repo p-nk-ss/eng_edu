@@ -7,7 +7,7 @@ hybrid setup:
   conversation analysis, writing/translation feedback, summaries).
 - **Local LLM** (LM Studio, Qwen3-14B) — the real-time voice conversation partner.
 - **Kokoro-82M** (FastAPI) — local streaming TTS.
-- **PostgreSQL** — local database, running as a service on the desktop.
+- **PostgreSQL** — local database, run **portable inside the project** (no system service).
 
 This guide covers the local pieces: Node.js, PostgreSQL, the Claude token, LM Studio, and Kokoro TTS.
 
@@ -26,45 +26,49 @@ npm --version
 
 ---
 
-## 0b. PostgreSQL (local database)
+## 0b. PostgreSQL (portable, inside the project)
 
-The app stores everything in a **local PostgreSQL** server (no cloud DB). Install it once as a
-Windows service:
+The app stores everything in a **local PostgreSQL** — run **portable, inside the project**: no
+system install, no Windows service, nothing written to `C:\`. The server binaries and the data
+cluster live in the project folder (git-ignored) on your `D:` drive:
+
+```
+.pgsql/    # PostgreSQL binaries (~1 GB unpacked; downloaded once)
+.pgdata/   # the data cluster — your tables physically live here
+```
+
+One-time setup (after `npm install`) — downloads the official PostgreSQL 17 binaries (~330 MB),
+initializes the cluster, and creates the `english_trainer` database:
 
 ```powershell
-winget install PostgreSQL.PostgreSQL
-# or download the installer from https://www.postgresql.org/download/windows/
+npm run db:setup
 ```
 
-The installer registers a service (starts on boot) and a superuser `postgres`. During install set a
-password you'll remember (the examples below assume `postgres`).
-
-Create the app database (use the `psql` shell or pgAdmin that ships with the installer):
+Then put the connection string in `.env.local` (see the env table below) and create the tables:
 
 ```powershell
-# psql is under e.g. C:\Program Files\PostgreSQL\17\bin — add it to PATH or call it directly
-createdb -U postgres english_trainer
-```
-
-Set the connection string in `.env.local` (see the env table below):
-
-```
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/english_trainer
-```
-
-Then create the tables from the Prisma schema:
-
-```powershell
+# .env.local:
+#   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/english_trainer
 npx prisma migrate dev --name init
 ```
 
-Smoke test:
+Day-to-day: the DB starts automatically before `npm run dev` (via `predev`). You can also control it
+manually:
 
 ```powershell
-psql -U postgres -d english_trainer -c "SELECT 1;"
+npm run db:start    # start (idempotent)
+npm run db:stop     # stop
+npm run db:status   # running / stopped
+npm run db:psql     # open a psql shell on english_trainer
 ```
 
-A `?column? = 1` row means the database is reachable.
+Notes:
+- Local trust auth (no real password needed on `localhost`); the `postgres:postgres` in the URL is
+  accepted as-is.
+- Uses port **5432** by default; set `PGPORT` to override if it clashes with another Postgres.
+- Backups are done with `pg_dump` (not by copying the project folder). To reset the DB entirely,
+  stop it and delete `.pgdata/`, then `npm run db:setup` again.
+- The mechanics live in `scripts/db.ps1`.
 
 ---
 
