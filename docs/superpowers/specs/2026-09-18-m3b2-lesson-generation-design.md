@@ -99,12 +99,14 @@ M3b-2 is always L1 → English.
   would reject;
 - all typed `accept` entries are non-empty after normalization (SPEC normalization contract: trim →
   collapse whitespace → lowercase → strip edge punctuation → straighten quotes) — the normalizer is
-  implemented here as `normalizeAnswer()` and later reused by the graders;
-- `vocab` ids ⊆ `ctx.vocab` ids; for each listed id, its headword occurs somewhere in the exercise's
-  English text (all string fields except `explain`/`rationales`), case-insensitively and
-  inflection-tolerantly: a word of the text must start with the headword's stem, where stem = the
-  headword minus a trailing `e`/`y` when it has 4 or more letters, else the whole headword; for a
-  multi-word headword every word must match in order. (`make` ↔ `making`, `study` ↔ `studied`.)
+  implemented here as `normalizeAnswer()` and later reused by the graders.
+
+`pruneVocab(content, ctx)` — vocab attribution is a heuristic, not a gate: ids that are unknown or
+whose headword is not found in the exercise's English text (stem-prefix match; a word of the text must
+start with the headword's stem, where stem = the headword minus a trailing `e`/`y` when it has 4 or
+more letters, else the whole headword; for a multi-word headword every word must match in order;
+irregular forms such as `go`/`went` are NOT recognised) are removed from `vocab` with a note; the
+exercise itself is never dropped for this. The orchestrator prunes before checking.
 
 ### 3. Exercise mix — `src/lib/lesson/exerciseMix.ts`
 

@@ -72,7 +72,7 @@ function isSubMultiset(part: string[], whole: string[]): string | null {
 }
 
 /** Cross-field rules zod cannot express. Returns human-readable problems; [] means the exercise is fine. */
-export function checkExercise(c: ExerciseContent, ctx: CheckContext): string[] {
+export function checkExercise(c: ExerciseContent, _ctx: CheckContext): string[] {
   const problems: string[] = [];
   const inRange = (answer: number, options: unknown[], label: string) => {
     if (answer >= options.length) problems.push(`${label}: answer index ${answer} is outside ${options.length} options`);
@@ -132,12 +132,34 @@ export function checkExercise(c: ExerciseContent, ctx: CheckContext): string[] {
       break;
   }
 
-  const byId = new Map(ctx.vocab.map((v) => [v.id, v.headword]));
-  const text = englishText(c);
-  for (const id of c.vocab) {
-    const headword = byId.get(id);
-    if (headword === undefined) problems.push(`vocab: id "${id}" is not one of this lesson's target words`);
-    else if (!headwordOccurs(headword, text)) problems.push(`vocab: target word "${headword}" does not appear in the exercise`);
-  }
   return problems;
+}
+
+/**
+ * Vocab attribution is a heuristic, not a gate: ids that are unknown or whose headword
+ * is not found in the exercise's English text (stem-prefix match; irregular forms such
+ * as go/went are NOT recognised) are removed from `vocab` with a note. The exercise itself
+ * is never dropped for this. Returns a new content object (never mutates the input).
+ */
+export function pruneVocab<T extends ExerciseContent>(content: T, ctx: CheckContext): { content: T; removed: string[] } {
+  const byId = new Map(ctx.vocab.map((v) => [v.id, v.headword]));
+  const text = englishText(content);
+  const kept: string[] = [];
+  const removed: string[] = [];
+
+  for (const id of content.vocab) {
+    const headword = byId.get(id);
+    if (headword === undefined) {
+      removed.push(`vocab: id "${id}" is not one of this lesson's target words`);
+    } else if (!headwordOccurs(headword, text)) {
+      removed.push(`vocab: target word "${headword}" does not appear in the exercise - removed from vocab`);
+    } else {
+      kept.push(id);
+    }
+  }
+
+  if (removed.length === 0) {
+    return { content, removed: [] };
+  }
+  return { content: { ...content, vocab: kept } as T, removed };
 }

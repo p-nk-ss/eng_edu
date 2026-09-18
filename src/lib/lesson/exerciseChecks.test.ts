@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { EXERCISE_TYPES, type ExerciseContent } from "./exerciseSchemas";
 import { FIXTURE_VOCAB, VALID_EXERCISES } from "./fixtures";
-import { checkExercise, headwordOccurs, normalizeAnswer, normalizeLoose } from "./exerciseChecks";
+import { checkExercise, headwordOccurs, normalizeAnswer, normalizeLoose, pruneVocab } from "./exerciseChecks";
 
 const ctx = { vocab: FIXTURE_VOCAB };
 const broken = (base: ExerciseContent, patch: Record<string, unknown>) => ({ ...base, ...patch }) as ExerciseContent;
@@ -76,8 +76,44 @@ describe("checkExercise", () => {
     expect(checkExercise(broken(VALID_EXERCISES.FILL_BLANK, { gaps: [{ accept: ["..."] }] }), ctx).join()).toMatch(/empty/);
   });
 
-  it("validates vocab ids and that the headword really appears", () => {
-    expect(checkExercise(broken(VALID_EXERCISES.MULTIPLE_CHOICE, { vocab: ["ghost"] }), ctx).join()).toMatch(/ghost/);
-    expect(checkExercise(broken(VALID_EXERCISES.MULTIPLE_CHOICE, { vocab: ["v2"] }), ctx).join()).toMatch(/colleague/);
+  it("does not reject exercises for vocab attribution issues", () => {
+    expect(checkExercise(broken(VALID_EXERCISES.MULTIPLE_CHOICE, { vocab: ["ghost"] }), ctx)).toEqual([]);
+    expect(checkExercise(broken(VALID_EXERCISES.MULTIPLE_CHOICE, { vocab: ["v2"] }), ctx)).toEqual([]);
+  });
+});
+
+describe("pruneVocab", () => {
+  it.each(EXERCISE_TYPES)("returns unchanged with empty removed for valid %s fixture", (t) => {
+    const result = pruneVocab(VALID_EXERCISES[t], ctx);
+    expect(result.removed).toEqual([]);
+    expect(result.content).toBe(VALID_EXERCISES[t]);
+  });
+
+  it("removes unknown vocab id with a note", () => {
+    const result = pruneVocab(broken(VALID_EXERCISES.MULTIPLE_CHOICE, { vocab: ["ghost"] }), ctx);
+    expect(result.content.vocab).toEqual([]);
+    expect(result.removed.join()).toMatch(/ghost/);
+  });
+
+  it("removes vocab ids whose headword does not appear", () => {
+    const result = pruneVocab(broken(VALID_EXERCISES.MULTIPLE_CHOICE, { vocab: ["v1", "v2"] }), ctx);
+    expect(result.content.vocab).toEqual(["v1"]);
+    expect(result.removed.join()).toMatch(/colleague/);
+  });
+
+  it("does not mutate the input", () => {
+    const original = broken(VALID_EXERCISES.MULTIPLE_CHOICE, { vocab: ["ghost", "v1"] });
+    const originalVocab = [...original.vocab];
+    pruneVocab(original, ctx);
+    expect(original.vocab).toEqual(originalVocab);
+  });
+
+  it("handles irregular inflections: exercise survives when headword is not recognised", () => {
+    const ctx2 = { vocab: [{ id: "g", headword: "go" }] };
+    const translation = broken(VALID_EXERCISES.TRANSLATION, { vocab: ["g"] });
+    const result = pruneVocab(translation, ctx2);
+    expect(result.content.vocab).toEqual([]);
+    expect(result.removed.join()).toMatch(/go/);
+    expect(checkExercise(result.content, ctx2)).toEqual([]);
   });
 });
