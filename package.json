@@ -18,7 +18,8 @@
     "db:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db.ps1 stop",
     "db:status": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db.ps1 status",
     "db:psql": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db.ps1 psql",
-    "vocab:classify": "tsx scripts/classify-vocab.ts"
+    "vocab:classify": "tsx scripts/classify-vocab.ts",
+    "curriculum:preview": "tsx scripts/curriculum-preview.ts"
   },
   "dependencies": {
     "next": "15.5.20",

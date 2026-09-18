@@ -15,6 +15,8 @@ system: `docs/DESIGN.md`. Local setup: `docs/LOCAL_SETUP.md`. Milestone plan: `d
   `@anthropic-ai/claude-agent-sdk`, subscription/`CLAUDE_CODE_OAUTH_TOKEN`) for teaching roles;
   `DirectAPIProvider` (`@anthropic-ai/sdk`) as fallback.
 - Tests: **Vitest** + Testing Library. **zod 4** (required — Agent SDK peer).
+- **TypeSafe Jev** (`src/lib/typesafe/`, plain fetch, `TYPESAFE_API_KEY`): structured judgments
+  (Choice/Score/Noul). M3a: offline vocab topic classification only.
 
 ## Commands
 
@@ -30,6 +32,9 @@ npm run dev              # predev auto-starts the DB; serves http://localhost:30
 npx prisma migrate dev --name <name>   # migrations (DB must be up)
 npx prisma db seed                     # idempotent curriculum seed (prisma/seed.ts)
 npx prisma generate                    # after schema changes (works without a DB)
+
+npm run vocab:classify    # offline vocab topic classification via TypeSafe Jev
+npm run curriculum:preview # print the deterministic selection for the next 5 lessons
 ```
 
 ## Database — portable, inside the project (no system install, no Docker)
@@ -57,7 +62,8 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
 - **`AgentSDKProvider`**: `query()` reads the final `result` (NOT `text`) and throws on error
   subtypes; tool lockdown is via `canUseTool` deny + `maxTurns:1` (not `allowedTools:[]`).
 - **Curriculum data has NO thematic categories** (CEFR-J vocab v1.5) → `VocabItem.topic=null`.
-  Open question for M3: where conversation themes come from. See `data/README.md`.
+  Resolved in M3a: curated theme list + Jev classification. See
+  `docs/superpowers/specs/2026-09-18-m3a-curriculum-selection-design.md` and `data/README.md`.
 - **Env loading**: `.env.local` holds `DATABASE_URL` (create it in **UTF-8** — PowerShell defaults to
   UTF-16, which dotenv can't parse). `prisma.config.ts` loads `.env` then `.env.local`. Scripts run
   **directly** via `tsx` (not `prisma db seed`) must load `.env.local` **before** importing
@@ -69,8 +75,12 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
 - **M1 Skeleton** ✅ — scaffold, schema, LLM layer, design tokens, dashboard.
 - **M2 Curriculum seed** ✅ (code) — datasets + idempotent seed (266 grammar topics, 9780 vocab) +
   syllabus progress widget. Seed run is pending a live local DB.
-- **M3 Written exercises** — next (deterministic selection, lesson generation, MVP exercise types +
-  local graders + gamified cards).
+- **M3 Written exercises** — split into M3a–M3d (see
+  `docs/superpowers/specs/2026-09-18-m3a-curriculum-selection-design.md`):
+  - **M3a** (theme source, vocab topic classification, `Profile`, deterministic selection)
+    code-complete except the full `npm run vocab:classify` run, which awaits the owner's review
+    of the pilot.
+  - M3b lesson generation · M3c graders/`judge` role · M3d exercise player — not started.
 - M4 Spaced repetition · M5 Conversation · M6 Scenarios + wrap-up.
 
 ## Dev guidelines

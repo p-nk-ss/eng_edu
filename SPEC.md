@@ -61,6 +61,7 @@ Environment requirements:
 - `LOCAL_LLM_URL` (default `http://localhost:1234/v1`), `LOCAL_LLM_MODEL` — LM Studio server + model id.
 - `KOKORO_URL` (default `http://localhost:8880`) — local Kokoro TTS service.
 - `LLM_ROLE_<ROLE>` — optional per-role provider override (`local|agent|api`).
+- `TYPESAFE_API_KEY` — TypeSafe (Jev) key; used by `npm run vocab:classify` (and the `judge` role from M3c).
 
 Step-by-step local setup is in [`docs/LOCAL_SETUP.md`](docs/LOCAL_SETUP.md).
 
@@ -89,12 +90,14 @@ model Profile {
   goals         String   // free text: "conversational fluency, work meetings"
   interests     String   // topics for conversations: "IT, QA, gaming, medicine"
   nativeLang    String   @default("ru")
+  preferredThemes String[] @default([])
   updatedAt     DateTime @updatedAt
 }
 
 model Lesson {
   id          String    @id @default(cuid())
   date        DateTime  @default(now())
+  theme       String?   // curated theme key (src/lib/curriculum/themes.ts), for LRU rotation
   status      LessonStatus @default(PLANNED) // PLANNED | IN_PROGRESS | COMPLETED
   currentSection Int    @default(0) // section pointer for resume (0=Review … 4=Wrap-up). Always starts at 0; an empty section (e.g. day-1 Review with no due errors) is auto-skipped by the player, so the pointer semantics stay uniform.
   plan        Json      // structured lesson plan (sections, topics, exercise specs)
@@ -197,7 +200,7 @@ Seed script requirements: idempotent (upsert by `headword+pos` / topic name), fi
 Lesson generation is a **two-step process**:
 
 1. **Deterministic selection (code, not LLM)**: `lib/curriculum.ts` picks for today's lesson, **in this order**:
-   - **Conversation theme** — chosen first, deterministically, from `Profile.interests` × CEFR-J thematic categories (round-robin/least-recently-used). This theme is an *input* to the next two steps and to Claude — it is **not** chosen by the LLM.
+   - **Conversation theme** — chosen first, deterministically, from the **curated theme list** in `src/lib/curriculum/themes.ts` by weighted least-recently-used rotation (`Lesson.theme` history; themes listed in `Profile.preferredThemes` return about twice as often). CEFR-J v1.5 has no thematic categories, so every `VocabItem.topic` is assigned once, offline, by TypeSafe Jev (`npm run vocab:classify` → `data/vocab-topics.csv` → seed). This theme is an *input* to the next two steps and to Claude — it is **not** chosen by the LLM. Design: `docs/superpowers/specs/2026-09-18-m3a-curriculum-selection-design.md`.
    - 1 grammar focus: the next `GrammarTopic` with `status != MASTERED` at the user's level (prioritize `PRACTICING` topics with errors over `NOT_STARTED`).
    - 6–10 `VocabItem`s: mix of `NEW` items from the **selected theme's** thematic category + `LEARNING` items due for reinforcement.
    - Due `ErrorRecord`s for the review block.

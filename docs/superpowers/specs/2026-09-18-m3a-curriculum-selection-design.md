@@ -77,9 +77,12 @@ Run directly with `tsx`; loads `.env.local` **before** any import that touches e
 It reads the vocab from the curriculum CSV loaders (`src/lib/curriculum/load.ts`), **not** the DB,
 so it works without a running database.
 
-- One `Choice` question per word; criteria = every theme description + `general`. State per
-  request: `{ words: [{ headword, pos, cefr }, …] }`, ~50 words (questions) per request,
-  each question referencing its `words[i]`.
+- One `Choice` question per word; criteria = every theme description + `general`. **One word per
+  request** (state `{ words: [w] }`, question `w0`), `CONCURRENCY = 8` requests in flight. The
+  pilot originally batched ~50 words into a shared `state`, but neighbouring words contaminated
+  each other's answers (`general` share 71.6% → 41.7% after switching to one word per request; 4 of
+  5 confident errors fixed); tokens per word are dominated by the ~22 criteria, so per-word cost is
+  unchanged.
 - Output row: `headword,pos,topic,confidence`. If `confidence < THRESHOLD` → `topic=general`
   (the raw top choice is kept in a fifth column `rawTopic` for review).
 - **Resumable:** rows already present in the CSV are skipped; output is appended per batch.
