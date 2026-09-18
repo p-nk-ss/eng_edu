@@ -60,6 +60,7 @@ model Profile {
   goals      String
   interests  String
   nativeLang String   @default("ru")
+  preferredThemes String[] @default([]) // theme keys from src/lib/curriculum/themes.ts; visited ~2x as often
   updatedAt  DateTime @updatedAt
 }
 
@@ -68,6 +69,7 @@ model Lesson {
   date           DateTime     @default(now())
   status         LessonStatus @default(PLANNED)
   currentSection Int          @default(0)
+  theme          String?      // theme key of this lesson; drives least-recently-used theme rotation
   plan           Json
   summary        String?
   nextPlan       String?
