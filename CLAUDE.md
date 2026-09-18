@@ -73,13 +73,14 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
 ## Milestone status (source of truth: git log)
 
 - **M1 Skeleton** ✅ — scaffold, schema, LLM layer, design tokens, dashboard.
-- **M2 Curriculum seed** ✅ (code) — datasets + idempotent seed (266 grammar topics, 9780 vocab) +
-  syllabus progress widget. Seed run is pending a live local DB.
+- **M2 Curriculum seed** ✅ — datasets + idempotent seed (266 grammar topics, 9780 vocab, run live
+  against the local DB) + syllabus progress widget.
 - **M3 Written exercises** — split into M3a–M3d (see
   `docs/superpowers/specs/2026-09-18-m3a-curriculum-selection-design.md`):
-  - **M3a** (theme source, vocab topic classification, `Profile`, deterministic selection)
-    code-complete except the full `npm run vocab:classify` run, which awaits the owner's review
-    of the pilot.
+  - **M3a** ✅ — curated theme list (`src/lib/curriculum/themes.ts`); all 9780 vocab items
+    classified into themes via TypeSafe Jev (`data/vocab-topics.csv`) and applied by the seed;
+    `Profile` seeded from `data/profile.json`; deterministic selection (`selectLessonInputs`);
+    `npm run curriculum:preview`.
   - M3b lesson generation · M3c graders/`judge` role · M3d exercise player — not started.
 - M4 Spaced repetition · M5 Conversation · M6 Scenarios + wrap-up.
 

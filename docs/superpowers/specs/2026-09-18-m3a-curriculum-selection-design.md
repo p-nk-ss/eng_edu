@@ -65,8 +65,9 @@ Minimal `fetch`-based client for `POST https://api.typesafe.ai/v1/systemone` (no
 - `systemOne({ state, questions, model? })` → typed answers; question builders `choice()`,
   `noul()`, `score()` with answer types inferred from the question map.
 - Auth: `TYPESAFE_API_KEY` (already in `.env.local`); throws a clear error when unset.
-- Retries 429 / 529 with exponential backoff (max 4); other non-2xx → `TypeSafeError` with status
-  and body.
+- Retries 429/500/502/503/504/529 and thrown network errors (incl. a per-request `timeoutMs`,
+  default 30000, via `AbortSignal`) with exponential backoff (max 4); other non-2xx, or a network
+  failure past the retry budget, → `TypeSafeError` with status (`0` for network) and body.
 - `fetch` is injectable for tests. Model defaults to `jev-latest`.
 
 Used only by the classification script in M3a; becomes the base of the `judge` role in M3b/M3c.

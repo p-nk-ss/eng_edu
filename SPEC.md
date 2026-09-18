@@ -166,7 +166,7 @@ model VocabItem {
   headword    String
   pos         String?  // part of speech
   cefrLevel   String   // from Oxford 3000/5000 or CEFR-J Vocabulary Profile
-  topic       String?  // thematic category from CEFR-J (e.g. "Work", "Free time")
+  topic       String?  // theme key from src/lib/curriculum/themes.ts, or "general"; assigned offline by TypeSafe Jev (M3a)
   isPhrase    Boolean  @default(false) // true for OPAL spoken phrases / Oxford Phrase List
   status      VocabStatus @default(NEW) // NEW | SEEN | LEARNING | KNOWN
   correctStreak Int    @default(0)
@@ -190,7 +190,7 @@ The syllabus is seeded once via `prisma db seed` from open datasets committed to
 1. **Grammar syllabus** — CEFR-J Grammar Profile (grammatical items annotated with CEFR levels; free for use with attribution): https://github.com/openlanguageprofiles/olp-en-cefrj → `GrammarTopic` table. Assign `sortOrder` within each level following the dataset's ordering.
 2. **Vocabulary** — pick one primary source:
    - Oxford 3000 grouped by CEFR level as ready JSON: https://github.com/Kolia951/The_Oxford_3000_CEFR (A1–B2)
-   - CEFR-J Vocabulary Profile CSV (headword, pos, CEFR level, thematic categories): https://github.com/openlanguageprofiles/olp-en-cefrj/blob/master/cefrj-vocabulary-profile-1.5.csv — preferred, because thematic categories enable topic-based lesson vocab selection
+   - CEFR-J Vocabulary Profile CSV (headword, pos, CEFR level): https://github.com/openlanguageprofiles/olp-en-cefrj/blob/master/cefrj-vocabulary-profile-1.5.csv — preferred, as the primary headword/pos/CEFR source; v1.5 has **no** thematic categories, so themes are assigned separately (see "How the curriculum drives lesson generation" below)
 3. **Spoken phrases** — OPAL spoken phrases / Oxford Phrase List (see https://github.com/jnoodle/English-Vocabulary-Word-List) → `VocabItem` rows with `isPhrase: true`. High value for the conversational goal.
 
 Seed script requirements: idempotent (upsert by `headword+pos` / topic name), filter vocabulary to levels at or one level above the user's current level, attribute datasets in README (CEFR-J requires citation).
@@ -202,7 +202,7 @@ Lesson generation is a **two-step process**:
 1. **Deterministic selection (code, not LLM)**: `lib/curriculum.ts` picks for today's lesson, **in this order**:
    - **Conversation theme** — chosen first, deterministically, from the **curated theme list** in `src/lib/curriculum/themes.ts` by weighted least-recently-used rotation (`Lesson.theme` history; themes listed in `Profile.preferredThemes` return about twice as often). CEFR-J v1.5 has no thematic categories, so every `VocabItem.topic` is assigned once, offline, by TypeSafe Jev (`npm run vocab:classify` → `data/vocab-topics.csv` → seed). This theme is an *input* to the next two steps and to Claude — it is **not** chosen by the LLM. Design: `docs/superpowers/specs/2026-09-18-m3a-curriculum-selection-design.md`.
    - 1 grammar focus: the next `GrammarTopic` with `status != MASTERED` at the user's level (prioritize `PRACTICING` topics with errors over `NOT_STARTED`).
-   - 6–10 `VocabItem`s: mix of `NEW` items from the **selected theme's** thematic category + `LEARNING` items due for reinforcement.
+   - 6–10 `VocabItem`s: mix of `LEARNING` items due for reinforcement + `NEW` items whose `topic` equals the selected theme's key, with fallbacks (next band in theme → `general` at level → any `NEW` item at level).
    - Due `ErrorRecord`s for the review block.
 2. **Content generation (Claude)**: the selected **theme + grammar topic + vocab list + errors** are passed into the lesson-generation prompt. Claude writes the exercises, conversation framing, and scenario *around* these inputs — it does **not** choose the theme or the grammar focus.
 
