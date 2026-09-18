@@ -466,7 +466,7 @@ export function normalizeLoose(s: string): string {
     .trim();
 }
 
-const stem = (w: string): string => (w.length > 4 && /[ey]$/.test(w) ? w.slice(0, -1) : w);
+const stem = (w: string): string => (w.length >= 4 && /[ey]$/.test(w) ? w.slice(0, -1) : w); // make -> mak(ing), study -> stud(ied)
 const wordsOf = (text: string): string[] => text.toLowerCase().match(/[a-z][a-z'-]*/g) ?? [];
 
 /** Does `headword` (possibly "a/b" alternatives or several words) occur in `text`, inflection-tolerantly? */
@@ -589,7 +589,7 @@ export function checkExercise(c: ExerciseContent, ctx: CheckContext): string[] {
 
 - [ ] **Step 4: Run to verify it passes**
 
-Run: `npx vitest run src/lib/lesson/exerciseChecks.test.ts` — Expected: PASS (24 tests). Note for the `dialogue_gap` "no ___" case: the fixture patch removes the marker, so the rule must fire regardless of the answer index.
+Run: `npx vitest run src/lib/lesson/exerciseChecks.test.ts` — Expected: PASS (22 tests). Note for the `dialogue_gap` "no ___" case: the fixture patch removes the marker, so the rule must fire regardless of the answer index.
 
 - [ ] **Step 5: Commit**
 
@@ -1322,7 +1322,8 @@ describe("generateLesson", () => {
     const ask = vi.fn().mockResolvedValueOnce(envelope([{ junk: 1 }])).mockRejectedValueOnce(new Error("LLM JSON validation failed"));
     const err = await generateLesson(inputs, deps(ask)).catch((e) => e);
     expect(err).toBeInstanceOf(LessonGenerationError);
-    expect(err.drops.map((d: { attempt: number }) => d.attempt)).toEqual([1, 2]);
+    // attempt 1: the junk exercise + "only 0 survived"; attempt 2: the failed regeneration
+    expect(err.drops.map((d: { attempt: number }) => d.attempt)).toEqual([1, 1, 2]);
     expect(err.message).toMatch(/LLM JSON validation failed/);
   });
 

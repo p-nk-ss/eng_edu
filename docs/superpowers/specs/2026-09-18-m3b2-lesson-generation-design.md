@@ -103,7 +103,7 @@ M3b-2 is always L1 → English.
 - `vocab` ids ⊆ `ctx.vocab` ids; for each listed id, its headword occurs somewhere in the exercise's
   English text (all string fields except `explain`/`rationales`), case-insensitively and
   inflection-tolerantly: a word of the text must start with the headword's stem, where stem = the
-  headword minus a trailing `e`/`y` when it is longer than 4 letters, else the whole headword; for a
+  headword minus a trailing `e`/`y` when it has 4 or more letters, else the whole headword; for a
   multi-word headword every word must match in order. (`make` ↔ `making`, `study` ↔ `studied`.)
 
 ### 3. Exercise mix — `src/lib/lesson/exerciseMix.ts`
