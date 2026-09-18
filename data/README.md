@@ -43,5 +43,10 @@ Downloaded from the Open Language Profiles repo:
   topics, so `title`, `description`, `example`, `teachable` and `importance` are generated once,
   offline, by Claude into `grammar-topics.json`. Regenerate with `npm run grammar:enrich`
   (resumable — skips already-enriched names; `--pilot` for a 30-topic sample into
-  `grammar-topics.pilot.json`); hand edits to the JSON are fine — the seed validates names by
-  exact match and re-applies.
+  `grammar-topics.pilot.json`).
+  Editing VALUES in `grammar-topics.json` by hand and re-running `npx prisma db seed` works —
+  the seed re-applies every field by exact name match, including flipping `teachable`. A `title`
+  cannot be cleared to blank: the schema requires 3–80 characters. REMOVING a record from the JSON
+  does **not** revert the DB row (the seed only applies rows present in the file) — to un-enrich a
+  topic back to its raw name, run this against the local DB instead:
+  `UPDATE "GrammarTopic" SET "title"=NULL, "description"=NULL, "example"=NULL, "teachable"=true, "importance"=2 WHERE "name"='…';`

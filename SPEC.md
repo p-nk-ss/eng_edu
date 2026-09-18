@@ -313,7 +313,7 @@ All prompts (Claude **and** local-LLM) live in `/lib/prompts/` as typed template
 
 ## Pages / UI
 
-- `/` — dashboard: streak, today's lesson button, error stats by category (chart), recently mastered items, **syllabus progress per CEFR level** (e.g. "B2 grammar: 14/52 topics mastered", vocab known/total)
+- `/` — dashboard: streak, today's lesson button, error stats by category (chart), recently mastered items, **syllabus progress per CEFR level** (e.g. "B2 grammar: 14/52 topics mastered", vocab known/total; grammar totals count only `teachable` topics)
 - `/lesson/[id]` — the lesson player: stepper through sections; voice controls (push-to-talk button, waveform indicator, streaming auto-TTS of tutor replies with replay button); exercise cards with instant feedback; **Conversation Review** screen after each conversation section (transcript with inline correction highlights + top-issues summary); status indicators for local-LLM / TTS availability
 - `/errors` — error log: filterable by category/status, each error shows history of reinforcement attempts
 - `/history` — past lessons with summaries

@@ -68,6 +68,10 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
 - **Grammar topics are CEFR-J corpus labels, not teaching topics** — enriched once into
   `data/grammar-topics.json` via Claude (M3b-1); selection skips `teachable=false` and orders by
   `importance`. See `docs/superpowers/specs/2026-09-18-m3b1-grammar-enrichment-design.md`.
+- **Prompt convention**: every prompt lives in `src/lib/prompts/<name>.ts` and exports (a) the zod
+  response schema with its limit constants and (b) a function returning `CompleteArgs`; the prompt
+  text is built from those same constants so it cannot drift from the schema. Call sites are
+  `completeJson(role, xPrompt(input), xSchema)`.
 - **Env loading**: `.env.local` holds `DATABASE_URL` (create it in **UTF-8** — PowerShell defaults to
   UTF-16, which dotenv can't parse). `prisma.config.ts` loads `.env` then `.env.local`. Scripts run
   **directly** via `tsx` (not `prisma db seed`) must load `.env.local` **before** importing
