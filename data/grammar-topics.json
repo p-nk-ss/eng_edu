@@ -1,0 +1,2396 @@
+[
+  {
+    "name": "-thing ADJ",
+    "title": "Compound Pronoun + Adjective (something interesting)",
+    "description": "Indefinite pronouns ending in -thing (something, nothing, anything, everything) are followed directly by an adjective instead of the adjective coming before, as with normal nouns.",
+    "example": "Let's do something fun this weekend.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ACCUSATIVE RELATIVE PRONOUN: that",
+    "title": "Object Relative Pronoun (that)",
+    "description": "Use 'that' to introduce a relative clause when the noun it refers to is the object of the following verb or preposition; it is often dropped in informal speech.",
+    "example": "The car that I bought last month broke down.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "ACCUSATIVE RELATIVE PRONOUN: which",
+    "title": "Relative pronoun 'which' (object)",
+    "description": "'Which' can introduce a relative clause where it functions as the object of the clause's verb, referring to a thing mentioned earlier.",
+    "example": "This is the book which I borrowed from you.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ACCUSATIVE RELATIVE PRONOUN: who",
+    "title": "Relative pronoun 'who' (object)",
+    "description": "'Who' can introduce a relative clause where it stands for the object of the clause's verb, common in informal speech in place of 'whom'.",
+    "example": "She's the friend who I met in Spain.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "ACCUSATIVE RELATIVE PRONOUN: whom",
+    "title": "Relative pronoun 'whom' (object)",
+    "description": "'Whom' introduces a relative clause as the object of the verb or preposition inside it; it is formal and used mainly in writing.",
+    "example": "He's the man whom I saw yesterday.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "ADJ/ADV enough (except for 'not enough')",
+    "title": "Adjective/Adverb + enough",
+    "description": "'Enough' follows an adjective or adverb to mean 'to the necessary degree', often followed by 'to + verb' to show the result or purpose.",
+    "example": "She's old enough to drive now.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ADVERBIAL CLAUSE: as",
+    "title": "As-clauses (reason and time)",
+    "description": "Use 'as' to introduce a clause giving a reason ('because') or describing an action happening at the same time ('while').",
+    "example": "As I was tired, I went to bed early.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "ADVERBIAL CLAUSE: as soon as",
+    "title": "As soon as (time clauses)",
+    "description": "'As soon as' introduces a clause meaning immediately after something happens, using present tense even when referring to the future.",
+    "example": "Call me as soon as you arrive.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ADVERBIAL CLAUSE: by the time",
+    "title": "by the time (+ clause)",
+    "description": "Introduces a time clause meaning 'no later than when X happens', typically paired with a perfect tense to show one event finished before another.",
+    "example": "By the time we arrived, the film had started.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ADVERBIAL CLAUSE: if",
+    "title": "If-clauses (conditionals)",
+    "description": "Join an 'if' clause to a main clause to talk about real possibilities or imagined situations and their results.",
+    "example": "If it rains, we'll stay at home.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "ADVERBIAL CLAUSE: so that",
+    "title": "So that (purpose clauses)",
+    "description": "'So that' introduces a clause of purpose, usually with 'can/could/will/would', explaining the reason behind an action.",
+    "example": "I saved money so that I could travel this year.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ADVERBIAL CLAUSE: when",
+    "title": "Time Clauses with 'When'",
+    "description": "A clause beginning with 'when' shows the time something happens and can come before or after the main clause.",
+    "example": "When I get home, I cook dinner.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ADVERBS OF ATTITUDES: apparently/clearly/fortunately/frankly/unfortunately",
+    "title": "Attitude Adverbs (fortunately, clearly, frankly...)",
+    "description": "Sentence adverbs like apparently, clearly, fortunately, frankly and unfortunately, usually placed at the start, show the speaker's opinion or attitude toward the whole sentence.",
+    "example": "Unfortunately, I can't come to the party.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ADVERBS OF FREQUENCY: always/usually/often/frequently/occasionally/sometimes/rarely",
+    "title": "Adverbs of Frequency (always, usually, sometimes...)",
+    "description": "These adverbs say how often something happens and are usually placed before the main verb but after the verb 'be'.",
+    "example": "I usually wake up at seven.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "ADVERBS OF NEGATION: never",
+    "title": "Adverb 'never'",
+    "description": "'Never' means 'at no time' and is placed before the main verb, or after 'be', to make a strong negative statement.",
+    "example": "I never eat breakfast.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ADVERBS OF QUASI-NEGATION: hardly/little/scarcely/seldom",
+    "title": "Quasi-negative Adverbs: hardly, scarcely, seldom, little",
+    "description": "These adverbs give a sentence a near-negative meaning without using 'not', showing that something is almost never true or true to a very small degree.",
+    "example": "I hardly ever go out on weeknights.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ADVERBS: INTENSIFIERS: extremely/greatly/really/so/terribly/too/unbelievably/very",
+    "title": "Intensifiers (very, really, too, so)",
+    "description": "These adverbs go before an adjective or another adverb to make its meaning stronger or, with 'too', to show excess.",
+    "example": "This coffee is really hot.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "AS IF/THOUGH+SECOND CONDITIONAL",
+    "title": "As if / As though + Past Simple",
+    "description": "Uses 'as if' or 'as though' with a past-tense verb to describe an unreal or unlikely comparison, even when the situation is present.",
+    "example": "He talks as if he knew everything.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ASK/TELL+NP+to+INFINITIVE",
+    "title": "Ask/Tell + Someone + To-Infinitive",
+    "description": "Use 'ask' or 'tell' followed by a person and a to-infinitive to report a request or instruction given to that person.",
+    "example": "I asked him to close the door.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "AUX+PERFECT",
+    "title": "Modal + have + past participle (modal perfect)",
+    "description": "A modal verb followed by 'have' and a past participle, used to make guesses, criticisms, or talk about unfulfilled possibilities in the past.",
+    "example": "He must have forgotten about our meeting.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "AUX+PROGRESSIVE",
+    "title": "Modal + be + -ing (modal progressive)",
+    "description": "A modal verb followed by 'be' and an -ing form, used to guess or comment on an action that may be happening right now or later.",
+    "example": "She might be sleeping right now.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Am I ...?",
+    "title": "To Be: Am I ...? (yes/no question)",
+    "description": "Invert 'am' and 'I' to form a yes/no question about yourself in the present.",
+    "example": "Am I late?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Am I not ...?",
+    "title": "To Be: Am I not ...? (formal negative question)",
+    "description": "A negative question asking for confirmation about yourself; formed by adding 'not' after 'am I'.",
+    "example": "Am I not right?",
+    "teachable": false,
+    "importance": 3,
+    "note": "Rare, formal wording; conversational learners should use the natural equivalent 'Aren't I...?' instead."
+  },
+  {
+    "name": "Are these/those ...?",
+    "title": "Questions with 'Are these/those...?'",
+    "description": "Put 'are' before 'these' or 'those' to ask a yes/no question about plural objects or people.",
+    "example": "Are these your books?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Are they ...?",
+    "title": "Yes/No Questions: 'Are they...?'",
+    "description": "Put 'are' before 'they' at the start of a sentence to ask a yes/no question with the verb 'to be'.",
+    "example": "Are they your classmates?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Are we ...?",
+    "title": "To Be: Are we ...? (yes/no question)",
+    "description": "Invert 'are' and 'we' to ask a yes/no question about a group that includes the speaker.",
+    "example": "Are we late?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Are you ...?",
+    "title": "To Be: Are you ...? (yes/no question)",
+    "description": "Invert 'are' and 'you' to ask a yes/no question about the listener in the present.",
+    "example": "Are you ready?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Aren't these/those ...?",
+    "title": "Negative Questions: 'Aren't these/those...?'",
+    "description": "Use the contracted negative 'aren't' before 'these/those' to ask a negative question about plural things, often to confirm.",
+    "example": "Aren't those your gloves?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "Aren't they ...?",
+    "title": "Negative Questions: 'Aren't they...?'",
+    "description": "Use the contracted negative 'aren't' before 'they' to ask a negative yes/no question, often to check or confirm something.",
+    "example": "Aren't they coming to the party?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "Aren't we ...?",
+    "title": "To Be: Aren't we ...? (negative question)",
+    "description": "The contracted negative question form used to check or confirm something about a group that includes the speaker.",
+    "example": "Aren't we friends?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "Aren't you ...?",
+    "title": "To Be: Aren't you ...? (negative question)",
+    "description": "The contracted negative question form used to check an assumption or express mild surprise about the listener.",
+    "example": "Aren't you hungry?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "BE about to DO",
+    "title": "Be about to (near future)",
+    "description": "Formed with 'be' + about to + base verb; used to say that something is going to happen very soon.",
+    "example": "Hurry up, the movie is about to start.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "BE to DO",
+    "title": "Be + To-Infinitive (formal plans)",
+    "description": "Uses 'be' followed by a to-infinitive to describe official arrangements, plans or instructions, mostly in formal or written English.",
+    "example": "The president is to visit Paris next week.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "COMPARATIVE OF SUPERIORITY: -er",
+    "title": "Comparative Adjectives (-er)",
+    "description": "Add '-er' to short adjectives to compare two things or people, often followed by 'than'.",
+    "example": "This bag is bigger than that one.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "COMPARATIVE OF SUPERIORITY: more+ADJ/ADV",
+    "title": "Comparative with more (more + adjective/adverb)",
+    "description": "Longer adjectives and adverbs form the comparative with 'more' instead of adding '-er', used to compare two things.",
+    "example": "This lesson is more interesting than the last one.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "COMPARATIVE and COMPARATIVE (the same adjective)",
+    "title": "Repeated Comparatives (bigger and bigger)",
+    "description": "Repeating the same comparative adjective or adverb joined by 'and' shows a quality that keeps increasing or decreasing over time.",
+    "example": "The traffic is getting worse and worse.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "COMPARATIVE/SUPERLATIVE OF INFERIORITY",
+    "title": "Comparative and Superlative of Inferiority: less/least",
+    "description": "Formed with 'less + adjective/adverb + than' or 'the least + adjective/adverb', this shows that something has a smaller degree of a quality than another.",
+    "example": "This option is less expensive than the other one.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "COMPARISON OF EQUALITY: as ... as",
+    "title": "Comparison of Equality: as ... as",
+    "description": "Formed with 'as + adjective/adverb + as', this pattern says two things are equal in some quality; 'not as ... as' shows they are unequal.",
+    "example": "This restaurant is as good as the one downtown.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "COMPARISON OF EQUALITY: not as/so ... as",
+    "title": "Comparison of Equality: not as/so ... as",
+    "description": "'Not as/so + adjective/adverb + as' compares two things that are unequal, saying the first has a lower degree of the quality than the second.",
+    "example": "This flat isn't as big as our old one.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "COMPOUND RELATIVE PRONOUN:",
+    "title": "What as a Relative Pronoun (the thing that)",
+    "description": "'What' can mean 'the thing(s) that', introducing a clause that works as the subject or object of the sentence.",
+    "example": "I don't know what you mean.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "CONDITIONAL: SECOND",
+    "title": "Second Conditional (If + past, would + verb)",
+    "description": "Used for unreal or unlikely present/future situations: 'if' + past simple in the condition clause, 'would' + base verb in the result clause.",
+    "example": "If I had more time, I would learn Spanish.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "CONDITIONAL: THIRD",
+    "title": "Third Conditional (If + past perfect, would have + past participle)",
+    "description": "Used to imagine a different past and its unreal result: 'if' + past perfect in the condition clause, 'would have' + past participle in the result clause.",
+    "example": "If I had studied harder, I would have passed the exam.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "COORDINATING CONJUNCTIONS",
+    "title": "Coordinating Conjunctions (and, but, or, so)",
+    "description": "Words like 'and', 'but', 'or' and 'so' join two words, phrases or independent clauses of equal grammatical status.",
+    "example": "I like tea, but I don't like coffee.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "DEFINITE ARTICLES",
+    "title": "Definite Article (the)",
+    "description": "'The' is used before a noun that is specific or already known to the listener, whether singular, plural, or uncountable.",
+    "example": "The book on the table is mine.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "DETERMINER: another",
+    "title": "Determiner: another",
+    "description": "'Another' means 'one more' or 'a different one'; it goes before a singular countable noun or stands alone as a pronoun.",
+    "example": "Can I have another cup of tea, please?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "DETERMINER: no",
+    "title": "Determiner 'no' (no money, no time)",
+    "description": "'No' goes before a noun to mean 'not any', letting you make a sentence negative without using 'not' or 'don't'.",
+    "example": "I have no time today.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "DETERMINERS: some/any",
+    "title": "Some / Any",
+    "description": "'Some' is used in affirmative sentences and offers, while 'any' is used in negative sentences and questions, with countable or uncountable nouns.",
+    "example": "I don't have any milk, but I have some juice.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Do+IMPERATIVE",
+    "title": "Emphatic Imperative (Do + verb)",
+    "description": "Adds 'do' before an imperative verb to add emphasis, insistence or politeness in spoken requests and invitations.",
+    "example": "Do sit down and make yourself comfortable.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "ELLIPTICAL ACCUSATIVE RELATIVE PRONOUN",
+    "title": "Omitting the Relative Pronoun (Contact Clauses)",
+    "description": "When the relative pronoun is the object of its own clause, it can be dropped, as in 'the book I read' instead of 'the book that I read'.",
+    "example": "Where's the pen I gave you?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "EXCLAMATION: How ADJ/ADV ...!",
+    "title": "Exclamations with How + Adjective/Adverb",
+    "description": "Start an exclamation with 'How' followed directly by an adjective or adverb to express a strong reaction like surprise or admiration.",
+    "example": "How amazing this view is!",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "EXCLAMATION: What ...!",
+    "title": "Exclamations with 'What...!'",
+    "description": "Use 'What' plus a noun phrase (sometimes followed by subject and verb) at the start of a sentence to express surprise or strong feeling, ending in an exclamation mark.",
+    "example": "What a beautiful day!",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Can I ...?",
+    "title": "Functional Question: Can I...? (asking permission)",
+    "description": "'Can I' plus the base verb is a common spoken formula for asking permission or making a simple request.",
+    "example": "Can I open the window, please?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Can you ...?",
+    "title": "Requests with 'Can you...?'",
+    "description": "'Can you...?' is a common, friendly way to ask someone to do something for you.",
+    "example": "Can you help me with this bag?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Can't you ...?",
+    "title": "Requests with 'Can't you...?'",
+    "description": "A negative question form used to make a request sound more persuasive or to show mild frustration about something not being done.",
+    "example": "Can't you help me carry these bags?",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Could I ...?",
+    "title": "Functional Question: Could I...? (polite permission)",
+    "description": "'Could I' plus the base verb is a more polite way to ask permission or make a request than 'Can I'.",
+    "example": "Could I have some water, please?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Could you ...?",
+    "title": "Polite Requests with 'Could you...?'",
+    "description": "'Could you' plus the base verb is a common, polite way to ask someone to do something for you.",
+    "example": "Could you pass me the salt, please?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Couldn't you ...?",
+    "title": "Requests with 'Couldn't you...?'",
+    "description": "A negative question with 'could' used to make a softer but slightly pressing request or suggestion.",
+    "example": "Couldn't you just call him instead of emailing?",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: May I ...?",
+    "title": "Asking Permission with 'May I...?'",
+    "description": "'May I' plus the base verb is a polite, somewhat formal way to ask for permission to do something.",
+    "example": "May I open the window, please?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Shall I ...?",
+    "title": "Shall I ...? (offering to do something)",
+    "description": "Uses 'Shall I' plus the base verb to offer to do something for the listener, inviting them to agree or decline. Common in everyday offers of help.",
+    "example": "Shall I carry that bag for you?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Shall we ...?",
+    "title": "Shall we ...? (making a suggestion)",
+    "description": "Uses 'Shall we' plus the base verb to suggest an activity for both speaker and listener to do together. Common in casual invitations and plans.",
+    "example": "Shall we go for a walk later?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Should I ...?",
+    "title": "Should I ...? (asking for advice)",
+    "description": "Uses 'Should I' plus the base verb to ask the listener for their opinion or advice about an action. Very common when unsure what to do.",
+    "example": "Should I call him now or wait?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Why don't we ...?",
+    "title": "Why don't we ...? (suggesting a joint activity)",
+    "description": "Uses 'Why don't we' plus the base verb to propose an activity for speaker and listener together, softer than a direct suggestion.",
+    "example": "Why don't we order pizza tonight?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Why don't you ...?",
+    "title": "Why don't you ...? (giving suggestions/advice)",
+    "description": "Uses 'Why don't you' plus the base verb to suggest an action to the listener in a friendly, informal way, similar to giving advice.",
+    "example": "Why don't you take a break for a while?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Will you ...?",
+    "title": "Requests with 'Will you...?'",
+    "description": "'Will you...?' is used to make a request or to ask about someone's willingness to do something.",
+    "example": "Will you close the door, please?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Won't you ...?",
+    "title": "Invitations with 'Won't you...?'",
+    "description": "A negative question with 'will' used to make a friendly invitation or offer, expecting the listener to agree.",
+    "example": "Won't you join us for dinner tonight?",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Would you ...?",
+    "title": "Would you ...? (polite requests/invitations)",
+    "description": "Uses 'Would you' plus the base verb to politely ask someone to do something or invite them to do something. Common in offers, requests and invitations.",
+    "example": "Would you like some more tea?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "FUNCTIONAL QUESTION: Wouldn't you ...?",
+    "title": "Persuasive Questions with 'Wouldn't you...?'",
+    "description": "A negative question with 'would' used to persuade someone or to check that they agree with an idea.",
+    "example": "Wouldn't you like a cup of coffee?",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "GENITIVE RELATIVE PRONOUN",
+    "title": "Relative Pronoun 'whose'",
+    "description": "'Whose' introduces a relative clause showing possession, replacing a possessive adjective, and is followed directly by a noun.",
+    "example": "That's the neighbor whose dog barks all night.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "GET+NP+PRESENT PARTICIPLE",
+    "title": "get + object + -ing",
+    "description": "'Get' followed by a noun or pronoun and an -ing verb means to cause someone or something to start doing an action.",
+    "example": "He got the whole class laughing.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "GET+PAST PARTICIPLE",
+    "title": "Get-Passive (get + past participle)",
+    "description": "Uses 'get' instead of 'be' before a past participle, common in informal spoken English for things that happen, often suddenly or unexpectedly.",
+    "example": "He got hurt playing football yesterday.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "HAVE/GET+NP+PAST PARTICIPLE",
+    "title": "Causative (have/get something done)",
+    "description": "Use 'have' or 'get' plus a noun plus a past participle to say someone else performs an action for the subject, rather than doing it themselves.",
+    "example": "I need to get my phone screen repaired.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "HAVE/LET/MAKE+NP+INFINITIVE",
+    "title": "Causative Verbs (have/let/make someone do)",
+    "description": "Have, let and make are followed by a person and a base-form verb to show that someone causes, allows or forces another person to do something.",
+    "example": "My boss made me stay late.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "I am",
+    "title": "To Be: I am (present simple)",
+    "description": "Use 'am' with the subject 'I' to state identity, feelings, or states in the present. It is the only present-tense form of 'to be' used with 'I'.",
+    "example": "I am a teacher.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "I am not",
+    "title": "To Be: I am not (negative)",
+    "description": "Add 'not' after 'am' to make a negative statement about yourself; in speech it is almost always shortened to 'I'm not'.",
+    "example": "I'm not tired.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "IF ONLY+SECOND CONDITIONAL",
+    "title": "If only + past simple (present wish)",
+    "description": "'If only' plus a past-tense verb expresses a strong wish that a present situation were different, more emphatic than 'I wish'.",
+    "example": "If only I had more free time!",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "IF ONLY+THIRD CONDITIONAL",
+    "title": "If only + past perfect (past regret)",
+    "description": "'If only' plus the past perfect expresses strong regret about something that did or did not happen in the past.",
+    "example": "If only I had studied harder back then.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "IF+SHOULD (e.g. if it should rain tomorrow)",
+    "title": "If + should (unlikely future condition)",
+    "description": "Adding 'should' after 'if' in a future conditional makes the condition sound less certain, often used in formal suggestions or instructions.",
+    "example": "If you should see her, say hello for me.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "IMPERATIVE: AFFIRMATIVE (lexical verbs)",
+    "title": "Imperative (Commands)",
+    "description": "Use the base form of the verb to give commands or instructions, and add 'don't' before the verb for negative commands.",
+    "example": "Come in, but don't sit there.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "INDEFINITE ARTICLES",
+    "title": "Indefinite Articles (a/an)",
+    "description": "'A' and 'an' go before a singular countable noun to mean one non-specific thing; 'an' is used before a vowel sound.",
+    "example": "I have a dog and an apple.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "INDEFINITE PRONOUN/PROP-WORDS: ones (except for 'one')",
+    "title": "Substitute pronoun: ones",
+    "description": "'Ones' replaces a plural countable noun already mentioned, often after 'the', 'these/those', 'which' or an adjective.",
+    "example": "I don't like these shoes, I prefer the black ones.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "INDEFINITE PRONOUN: none",
+    "title": "Indefinite Pronoun: none",
+    "description": "'None' means 'not any' or 'not one' and stands in for a noun already mentioned, used with a singular or plural verb depending on meaning.",
+    "example": "I asked for help, but none of my friends answered.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "INDEFINITE PRONOUNS",
+    "title": "Indefinite Pronouns (somebody, anything, nobody...)",
+    "description": "Formed by combining some-/any-/no-/every- with -thing, -one, or -body; used to talk about unspecified people or things.",
+    "example": "Somebody left their bag here.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "INDIRECT QUESTION: ASK/REMIND/SHOW/TEACH/TELL",
+    "title": "Indirect Questions after Ask/Remind/Show/Teach/Tell",
+    "description": "Report a question as the object of verbs like ask, remind, show, teach, or tell, introduced by if, whether, or a question word, using statement word order.",
+    "example": "She asked me if I was ready.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "INDIRECT QUESTION: DECIDE/EXPLAIN/KNOW/LEARN/SEE/UNDERSTAND/WONDER",
+    "title": "Indirect Questions (I wonder where...)",
+    "description": "After verbs like decide, explain, know, learn, see, understand and wonder, a question is embedded with normal word order, introduced by if, whether or a question word.",
+    "example": "I wonder where he lives.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "INDIRECT SPEECH: SAY/EXPLAIN/REPORT",
+    "title": "Reported Speech (say, explain, report)",
+    "description": "Report what someone said using verbs like say, explain or report followed by a that-clause, often shifting the tense back from the original words.",
+    "example": "She said that she was tired.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "INDIRECT SPEECH: TELL",
+    "title": "Reported Speech with Tell",
+    "description": "Use 'tell + person + (that) + clause' to report what someone said, usually shifting the verb tense back one step from the original words.",
+    "example": "She told me that she was tired.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "INTENSIFIED COMPARATIVES: a lot/by far/even/far/much/still",
+    "title": "Intensified Comparatives (much, far, even, a lot)",
+    "description": "Words like much, far, even, still, a lot and by far go before a comparative adjective or adverb to strengthen the degree of difference between two things.",
+    "example": "This restaurant is much better than the last one.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "INTENSIFIED SUPERLATIVES: by far/far/far and away/much",
+    "title": "Intensified Superlatives: by far, much, far and away",
+    "description": "Words like 'by far', 'much', and 'far and away' strengthen a superlative, emphasizing that something is clearly the greatest or best.",
+    "example": "She is by far the best singer in the group.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "INVERSION: CONDITIONAL WITH SHOULD (e.g. Should it rain tomorrow.....)",
+    "title": "Inversion: Should + subject (formal conditional)",
+    "description": "Dropping 'if' and inverting subject and 'should' creates a formal conditional meaning 'if it should happen', typical of written or formal English.",
+    "example": "Should you need help, just call me.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "INVERSION: Hardly/Little/Never/No sooner/Scarcely/Seldom ....",
+    "title": "Negative adverbial inversion (Never have I...)",
+    "description": "Placing a negative adverb like 'never', 'hardly' or 'no sooner' at the start of a sentence for emphasis triggers inversion of subject and auxiliary verb.",
+    "example": "Never have I seen such a mess.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "INVERSION: neither/nor+BE/HAVE/DO/AUX+PERSONAL PRON",
+    "title": "Neither/Nor + Auxiliary + Subject (agreeing with negatives)",
+    "description": "After a negative statement, 'neither' or 'nor' plus an auxiliary verb plus the subject shows the same negative is true for someone else.",
+    "example": "I don't like coffee. Neither do I.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "INVERSION: so+BE/HAVE/DO/AUX+PERSONAL PRON",
+    "title": "So + Auxiliary + Subject (agreeing with positives)",
+    "description": "After a positive statement, 'so' plus an auxiliary verb plus the subject shows the same is true for someone else, with the subject and verb inverted.",
+    "example": "I love this song. So do I.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "Is he/she ...?",
+    "title": "To Be: Is he/she ...? (yes/no question)",
+    "description": "Invert 'is' and the subject to ask a yes/no question about a third person in the present.",
+    "example": "Is she at work?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Is it ...?",
+    "title": "Yes/No Questions with 'be' (Is it...?)",
+    "description": "Formed by putting the verb 'be' before the subject; used to ask a yes/no question about something's identity, state, or the weather.",
+    "example": "Is it your book?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Is this/that ...?",
+    "title": "Questions with 'Is this/that...?'",
+    "description": "Put 'is' before 'this' or 'that' to ask a yes/no question about a single object or person.",
+    "example": "Is this your umbrella?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "Isn't he/she ...?",
+    "title": "To Be: Isn't he/she ...? (negative question)",
+    "description": "The contracted negative question form used to confirm an assumption about a third person.",
+    "example": "Isn't he your brother?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "Isn't it ...?",
+    "title": "Negative Questions with 'be' (Isn't it...?)",
+    "description": "Formed with the contraction 'isn't' before the subject; used to ask a negative yes/no question, often to check or comment on something.",
+    "example": "Isn't it cold today?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "Isn't this/that ...?",
+    "title": "Negative Questions: 'Isn't this/that...?'",
+    "description": "Use the contracted negative 'isn't' before 'this/that' to ask a negative question, often to confirm what you already think is true.",
+    "example": "Isn't that your teacher?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "It is",
+    "title": "Present Simple: 'It is'",
+    "description": "Use 'is' with the pronoun 'it' to describe or identify a thing, or to talk about time, weather, or a situation.",
+    "example": "It is cold today.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "It is not",
+    "title": "Basic negation: It is not (impersonal it)",
+    "description": "The pronoun 'it' plus 'is not' makes a negative statement about a fact, situation, or time, typically at the start of a clause.",
+    "example": "It is not far from here.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Trivial basic negation known well below B2; the sentence-position restriction is a corpus-extraction artifact, not a real grammar point."
+  },
+  {
+    "name": "MODAL/AUX: (have) got to",
+    "title": "Have Got To (obligation)",
+    "description": "'Have got to + base verb' is an informal spoken way of saying 'have to', often contracted to 've got to' or 's got to'.",
+    "example": "I've got to finish this report today.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: be able to",
+    "title": "Be able to (ability)",
+    "description": "Expresses ability or possibility across different tenses, used where 'can' is not grammatically possible, such as future or perfect forms.",
+    "example": "I hope I'll be able to help you tomorrow.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: be going to",
+    "title": "Be Going To (future plans)",
+    "description": "Use 'am/is/are + going to + base verb' to talk about future plans, intentions, or predictions based on present evidence.",
+    "example": "We're going to visit my parents this weekend.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: can",
+    "title": "Can (Ability and Permission)",
+    "description": "The modal 'can' plus a base verb expresses ability, permission or possibility; negate with 'can't' and invert 'can' before the subject to ask questions.",
+    "example": "Can you help me, please?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: could",
+    "title": "Could (past ability, polite requests, possibility)",
+    "description": "Used as the past form of 'can' for general ability, and also to make polite requests or express possibility.",
+    "example": "Could you pass me the salt, please?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: dare (to)",
+    "title": "Dare (to) as a modal verb",
+    "description": "'Dare' can behave like a modal (no -s, no 'to') or like an ordinary verb (with 'to'), meaning to have the courage to do something; most common in negatives and questions.",
+    "example": "I daren't tell him what really happened.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: have got to",
+    "title": "Have Got To: negatives and questions",
+    "description": "Negative and question forms of the informal obligation modal 'have got to', made with 'not' or by inverting 'have'.",
+    "example": "Have you got to leave so soon?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: have to",
+    "title": "Have To (obligation)",
+    "description": "Use 'have to + base verb' to express obligation or necessity that comes from outside the speaker, such as rules or circumstances.",
+    "example": "I have to work early tomorrow.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: may",
+    "title": "May (permission and possibility)",
+    "description": "Used to ask for or give formal permission, and to express that something is possible.",
+    "example": "You may leave the table when you finish.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: may as well",
+    "title": "'May as well' for lack of a better option",
+    "description": "'May as well' + base verb suggests doing something because there is no better alternative or nothing will be lost by doing it; used in statements, negatives and questions.",
+    "example": "We may as well order dinner while we wait.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: may well",
+    "title": "may well (strong probability)",
+    "description": "'May well' plus a base verb expresses that something is quite likely to be true or happen, stronger than plain 'may'.",
+    "example": "She may well be right about the traffic.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: might",
+    "title": "Might (possibility)",
+    "description": "Expresses a weaker, more tentative possibility than 'may', often used to speculate about present or future events.",
+    "example": "It might snow this weekend.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: might as well",
+    "title": "'Might as well' for lack of a better option",
+    "description": "'Might as well' + base verb is a common spoken variant of 'may as well', suggesting an action is worth doing since there is nothing better to do or to lose.",
+    "example": "You might as well tell me the truth now.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: must",
+    "title": "Must (obligation and strong deduction)",
+    "description": "Expresses strong obligation or necessity, and also strong logical certainty that something is true.",
+    "example": "You must show your passport at customs.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: need (to)",
+    "title": "Need (to) — necessity",
+    "description": "Use 'need to + base verb' to say something is necessary; in British English 'need' can also work like a modal, e.g. 'needn't'.",
+    "example": "Do you need to call him tonight?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: ought to",
+    "title": "Ought to (advice and obligation)",
+    "description": "A slightly formal alternative to 'should', used to give advice or express a mild obligation.",
+    "example": "You ought to apologize to her.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: shall",
+    "title": "Shall (suggestions and offers)",
+    "description": "Use 'shall I/we + base verb' mainly in questions to make suggestions or offers; plain statements with 'shall' are formal and rare today.",
+    "example": "Shall we get some coffee?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: should",
+    "title": "Should (advice and recommendation)",
+    "description": "Use 'should + base verb' to give advice, make recommendations, or say what is the right or expected thing to do.",
+    "example": "You should see a doctor about that cough.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: used to",
+    "title": "Used to (past habits)",
+    "description": "Describes past habits, states or repeated actions that no longer happen or are no longer true.",
+    "example": "I used to play tennis every weekend.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: will",
+    "title": "Will (future predictions and decisions)",
+    "description": "Use 'will + base verb' for predictions, promises, offers, and decisions made at the moment of speaking.",
+    "example": "I think it will rain later.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "MODAL/AUX: would",
+    "title": "Would (polite requests and preferences)",
+    "description": "Use 'would + base verb' for polite requests and offers ('would you like'), past habits, and the result of hypothetical conditionals.",
+    "example": "Would you like some tea?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "NOMINATIVE RELATIVE PRONOUN:",
+    "title": "Relative Clauses with 'That'",
+    "description": "'That' introduces a clause describing a person or thing and acts as the subject of that clause, as in 'the book that is on the table'.",
+    "example": "This is the bus that goes downtown.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "NOMINATIVE RELATIVE PRONOUN: which",
+    "title": "Relative pronoun 'which' (subject)",
+    "description": "'Which' introduces a relative clause and acts as the subject of that clause, referring back to a thing or animal mentioned earlier.",
+    "example": "I bought a car which runs on electricity.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "NOMINATIVE RELATIVE PRONOUN: who",
+    "title": "Relative Clauses with 'Who'",
+    "description": "'Who' introduces a clause describing a person and acts as the subject of that clause, as in 'the man who lives next door'.",
+    "example": "I have a friend who speaks French.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PARTICIPIAL CONSTRUCTION: PAST PARTICIPLE",
+    "title": "Past Participle Clauses (Written by...)",
+    "description": "A past participle placed at the start of a clause replaces 'which was/is' to describe the subject more concisely, often in a slightly formal style.",
+    "example": "Built in 1990, the house has a beautiful garden.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PARTICIPIAL CONSTRUCTION: PRESENT PARTICIPLE",
+    "title": "Present Participle Clauses (Feeling tired, ...)",
+    "description": "Begin a sentence with an -ing clause that gives background action or a reason before the main clause, with both parts sharing the same subject.",
+    "example": "Feeling exhausted, I went straight to bed.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: AUX",
+    "title": "Modal Passive (can/must/should be done)",
+    "description": "Formed with a modal verb + be + past participle, used to talk about ability, obligation, permission or possibility from the passive viewpoint.",
+    "example": "The tickets can be bought online.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: AUX+PERFECT",
+    "title": "Modal Perfect Passive (must/should have been done)",
+    "description": "Formed with a modal verb + have been + past participle; used to speculate, judge or comment on a past action affecting the subject.",
+    "example": "The email should have been sent yesterday.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: DIRECT OBJECTS OF GIVE/PASS/SEND/SHOW/TEACH/TELL AS SUBJECTS",
+    "title": "Passive with Thing as Subject (A gift was given to me)",
+    "description": "The thing being transferred becomes the subject of the passive sentence, with the receiver added after 'to' or 'for', as an alternative to the person-first pattern.",
+    "example": "A gift was given to every guest.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: FUTURE",
+    "title": "Future Passive with will (will be done)",
+    "description": "Formed with will + be + past participle; used to say that something will happen to the subject in the future, without naming who will do it.",
+    "example": "The results will be announced tomorrow.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: FUTURE PERFECT",
+    "title": "Future Perfect Passive (will have been done)",
+    "description": "Formed with 'will have been' plus a past participle, this says an action will be completed, from a passive viewpoint, before a stated future time.",
+    "example": "The report will have been finished by Friday.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: FUTURE PROGRESSIVE",
+    "title": "Future Progressive Passive (will be being done)",
+    "description": "Formed with 'will be being' plus a past participle, this describes an action that will be ongoing and receiving the action at a specific future moment.",
+    "example": "This time tomorrow, the room will be being cleaned.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Extremely rare, clumsy structure even natives avoid; not worth a speaking lesson."
+  },
+  {
+    "name": "PASSIVE: INDIRECT OBJECTS OF GIVE/PASS/SEND/SHOW/TEACH/TELL AS SUBJECTS",
+    "title": "Passive with Person as Subject (I was given...)",
+    "description": "The person who receives something becomes the subject of a passive sentence, common with verbs like give, send, show, teach and tell.",
+    "example": "I was given a warm welcome at the office.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: PAST",
+    "title": "Past Simple Passive (was/were + past participle)",
+    "description": "Formed with was/were + past participle, used when the focus is on the action or the receiver of the action rather than who did it.",
+    "example": "The window was broken during the storm.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: PAST PERFECT",
+    "title": "Past Perfect Passive (had been done)",
+    "description": "Formed with had + been + past participle; shows that something happened to the subject before another past action or point in time.",
+    "example": "The tickets had already been sold when we arrived.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: PAST PROGRESSIVE",
+    "title": "Past Progressive Passive (was being done)",
+    "description": "Formed with was/were + being + past participle; describes an action in progress at a past moment, focusing on the thing affected rather than the doer.",
+    "example": "The car was being repaired when I called.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: PRESENT",
+    "title": "Present Simple Passive (is/are + past participle)",
+    "description": "Form the present passive with am/is/are plus a past participle to focus on the action or the receiver rather than who does it.",
+    "example": "This coffee is made in Brazil.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: PRESENT PERFECT",
+    "title": "Present Perfect Passive (has been done)",
+    "description": "Formed with has/have + been + past participle; used to talk about a completed action affecting the subject, without naming who did it, with relevance to now.",
+    "example": "The report has already been finished.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: PRESENT PROGRESSIVE",
+    "title": "Present Progressive Passive (is being done)",
+    "description": "Formed with am/is/are + being + past participle; used to describe an action happening right now, focusing on the thing affected rather than who is doing it.",
+    "example": "The kitchen is being renovated this week.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "PHRASAL VERBS (V+NP+PARTICLE)",
+    "title": "Phrasal Verbs (verb + object + particle)",
+    "description": "A verb combines with a particle like 'up', 'off' or 'out' to make a new meaning; the object noun can often go before or after the particle.",
+    "example": "Can you turn the music down, please?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PHRASAL VERBS (V+PARTICLE)",
+    "title": "Phrasal Verbs (verb + particle)",
+    "description": "A verb combined with a particle such as up, down, on, or off creates a new meaning, as in 'sit down' or 'turn on'.",
+    "example": "Please sit down and turn on the light.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PHRASAL VERBS (V+PARTICLE+PREP+NP)",
+    "title": "Three-Part Phrasal Verbs (verb + particle + preposition)",
+    "description": "A verb is combined with a particle and then a preposition plus an object, as in 'get on with' or 'run out of'.",
+    "example": "We ran out of milk this morning.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "POSSESSIVE PRONOUNS (except for 'his' and 'its')",
+    "title": "Possessive Pronouns (mine, yours, hers, ours, theirs)",
+    "description": "Possessive pronouns stand alone for a possessive determiner + noun to show ownership without repeating the noun, e.g. 'That's my bag' becomes 'That's mine.'",
+    "example": "This coat isn't mine, I think it's yours.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "POSTMODIFYING PAST PARTICIPLE",
+    "title": "Reduced Relative Clauses with Past Participle",
+    "description": "A noun can be followed directly by a past participle phrase instead of a full passive relative clause, as in 'the cake made by Tom' for 'that was made by Tom'.",
+    "example": "The letter written by Tom arrived today.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Too advanced for A1 (usually B1/B2); corpus tag is frequently confused with passive and perfect forms."
+  },
+  {
+    "name": "POSTMODIFYING PRESENT",
+    "title": "Reduced Relative Clauses with -ing",
+    "description": "A noun can be followed directly by an '-ing' phrase instead of a full relative clause, as in 'the man sitting there' for 'who is sitting there'.",
+    "example": "I saw a boy playing football.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Too advanced for A1 (usually B1); the corpus tag is frequently confused with progressive questions and participle clauses."
+  },
+  {
+    "name": "PREMODIFYING PAST PARTICIPLE",
+    "title": "Past Participle as Adjective (a broken cup)",
+    "description": "A past participle can go directly before a noun to describe it, functioning like an adjective, as in 'a broken cup' or 'boiled eggs'.",
+    "example": "She has a broken phone.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PREMODIFYING PRESENT PARTICIPLE",
+    "title": "-ing Adjectives Before Nouns",
+    "description": "A present participle (-ing form) can stand directly before a noun to describe it, acting like an adjective.",
+    "example": "Careful, that's boiling water!",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PREP+RELATIVE PRONOUN",
+    "title": "Preposition + Relative Pronoun (to whom/in which)",
+    "description": "In formal English, a preposition can go directly before the relative pronoun, as in 'to whom' or 'in which', instead of at the end of the clause.",
+    "example": "She's the colleague with whom I share an office.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "PREP+V-ING",
+    "title": "Preposition + -ING (interested in doing)",
+    "description": "After a preposition, use the -ing form of the verb rather than the to-infinitive, e.g. 'good at', 'before', 'without'.",
+    "example": "She's good at speaking English.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PREPOSITION STRANDING",
+    "title": "Ending Questions with a Preposition",
+    "description": "In everyday English, a preposition linked to a question word often stays at the end of the sentence instead of moving to the front.",
+    "example": "What are you looking for?",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "PREPOSITIONS",
+    "title": "Basic Prepositions (in, on, at, with, from...)",
+    "description": "Prepositions show relationships of place, time, direction, or manner between a noun or pronoun and the rest of the sentence.",
+    "example": "I live in London and work near the station.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "PRONOUN: others (excluding 'the",
+    "title": "Pronoun: others (some... others...)",
+    "description": "'Others' without 'the' means 'other people or things' in general, often used to contrast with 'some'.",
+    "example": "Some people love coffee; others prefer tea.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PRONOUNS: the other/others",
+    "title": "the other / the others (pronoun use)",
+    "description": "Use 'the other' (singular) or 'the others' (plural) alone, without a following noun, to mean the remaining item(s) in a specific set already mentioned.",
+    "example": "One shoe is here; where's the other?",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "Please+INFINITIVE",
+    "title": "Please + imperative verb",
+    "description": "'Please' is added before or after the base form of a verb in an imperative sentence to make a request sound polite.",
+    "example": "Please close the door.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Politeness marker on the basic imperative (A1 level); not a distinct grammar structure to teach separately at A2."
+  },
+  {
+    "name": "Please+don't/never+INFINITIVE",
+    "title": "Polite Negative Imperative (Please don't...)",
+    "description": "Add 'please' before a negative imperative (don't/never + base verb) to soften a request, warning, or instruction.",
+    "example": "Please don't be late for the meeting.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "RECIPROCAL PRONOUN: each other",
+    "title": "Reciprocal Pronoun: each other",
+    "description": "'Each other' is used after a verb or preposition to show that two or more people do the same thing to one another.",
+    "example": "We've known each other since school.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "RECIPROCAL PRONOUN: one another",
+    "title": "Reciprocal Pronoun: one another",
+    "description": "'One another' shows that two or more people do the same thing to each other; it functions like 'each other', often in slightly more formal contexts.",
+    "example": "The team members support one another during difficult projects.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "REFLEXIVE PRONOUNS",
+    "title": "Reflexive Pronouns (myself, yourself, etc.)",
+    "description": "Reflexive pronouns ending in -self/-selves show that the subject and object of a verb are the same person, or add emphasis to the subject.",
+    "example": "I taught myself how to cook.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "RELATIVE ADVERB: NONRESTRICTIVE",
+    "title": "Non-Restrictive Relative Clauses with Where/When",
+    "description": "After a noun phrase, add ', where' or ', when' to give extra, non-essential detail about a place or time already mentioned.",
+    "example": "We visited Rome, where we ate amazing pizza.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "RELATIVE ADVERB: WITH",
+    "title": "Relative Clause with 'when'",
+    "description": "The relative adverb 'when' follows a time noun (like 'day' or 'year') to add information about it, working much like a conjunction introducing a time clause.",
+    "example": "I remember the day when we first met.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "RELATIVE ADVERB: WITHOUT ANTECEDENT",
+    "title": "Free Relative Clauses with Where/When/Why",
+    "description": "Use 'where', 'when', or 'why' after 'be' or a preposition to introduce a clause that itself acts as the missing place, time, or reason, without a noun before it.",
+    "example": "This is where I grew up.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "RELATIVE PRONOUN: NONRESTRICTIVE",
+    "title": "Non-Restrictive Relative Clauses (, who/which,)",
+    "description": "Add extra, non-essential information about a noun using a relative clause set off by commas; the sentence still makes sense if the clause is removed.",
+    "example": "My sister, who lives in London, is visiting us.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "SENTENCE PATTERN: SUBJECT+BECOME/FEEL/GO/LOOK/SEEM/SOUND+COMPLEMENT (ADJ)",
+    "title": "Linking Verbs + Adjective (look, feel, seem...)",
+    "description": "Verbs like become, feel, go, look, seem and sound connect the subject to a describing adjective instead of taking a direct object.",
+    "example": "You look tired today.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "SENTENCE PATTERN: SUBJECT+GIVE/PASS/SEND/SHOW/TEACH/TELL+DIRECT OBJECT+to+INDIRECT OBJECT",
+    "title": "Verb + Direct Object + to + Person (give/send/show...)",
+    "description": "Use verbs like give, pass, send, show, teach, or tell in the pattern verb + thing + 'to' + person, as an alternative word order to the double-object pattern.",
+    "example": "He gave the keys to the manager.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "SENTENCE PATTERN: SUBJECT+GIVE/PASS/SEND/SHOW/TEACH/TELL+INDIRECT OBJECT+DIRECT OBJECT",
+    "title": "Verbs with Two Objects (give someone something)",
+    "description": "Verbs like give, pass, send, show, teach and tell can take an indirect object (the receiver) followed by a direct object (the thing given or sent).",
+    "example": "Can you show me the photo?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "SENTENCE PATTERN: SUBJECT+MAKE+OBJECT+COMPLEME NT (ADJ)",
+    "title": "'Make' + Object + Adjective",
+    "description": "The verb 'make' can be followed by an object and an adjective to show that something causes a change in that object's state or feeling.",
+    "example": "That song makes me happy.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "SENTENCE PATTERN: SUBJECT+V",
+    "title": "Basic Subject + Verb Sentences",
+    "description": "A sentence made only of a subject and a simple-tense verb, with no object or complement, e.g. 'Birds fly.'",
+    "example": "The baby is sleeping.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Basic S+V pattern is elementary sentence structure, not a distinct lesson point at B1."
+  },
+  {
+    "name": "SENTENCE PATTERN: SUBJECT+V+OBJECT",
+    "title": "Basic Word Order (Subject + Verb + Object)",
+    "description": "English statements follow a fixed Subject-Verb-Object order, with the subject first, the verb second and the object last.",
+    "example": "She reads a book every day.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Basic SVO order underlies every A1 sentence from the very first lesson; not a distinct standalone grammar point."
+  },
+  {
+    "name": "SUBORDINATE CLAUSE: after/albeit/although/because/before/despite/except/for/lest/like/once/since/so/than/though/till/unless/until/where/whereas/wheresoever/whether/while/whilst tagged as IN",
+    "title": "Subordinating Conjunctions (because, before, after, although...)",
+    "description": "Words such as 'because', 'before', 'after', 'although' and 'since' introduce a clause that adds a reason, time or contrast to the main clause.",
+    "example": "I stayed home because it rained.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "SUPERLATIVE OF SUPERIORITY: -est",
+    "title": "Superlative Adjectives (-est)",
+    "description": "Add '-est' to short adjectives, usually with 'the', to show that one thing has the most of a quality among several.",
+    "example": "This is the tallest building in the city.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "SUPERLATIVE OF SUPERIORITY: most+ADJ/ADV",
+    "title": "Superlative with most (most + adjective/adverb)",
+    "description": "Longer adjectives and adverbs form the superlative with 'the most' instead of adding '-est', used to compare three or more things.",
+    "example": "That was the most difficult exam I've taken.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TAG QUESTION: FOLLOWING AFFIRMATIVE SENTENCE",
+    "title": "Tag Questions after Affirmative Statements",
+    "description": "Add a short negative question (auxiliary + n't + subject pronoun) after a positive statement to check information or invite agreement.",
+    "example": "You like coffee, don't you?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TAG QUESTION: FOLLOWING NEGATIVE SENTENCE",
+    "title": "Tag Questions after Negative Statements",
+    "description": "Add a short positive question (auxiliary + subject pronoun) after a negative statement to check information or invite agreement.",
+    "example": "You don't like coffee, do you?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: FUTURE",
+    "title": "Future with will and going to",
+    "description": "Formed with 'will + base verb' for predictions and quick decisions, or 'am/is/are going to + base verb' for plans, plus the future progressive (will be + -ing) for actions in progress in the future.",
+    "example": "I'm going to visit my parents next weekend.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: FUTURE PERFECT",
+    "title": "Future Perfect (will have done)",
+    "description": "Formed with 'will have + past participle', it describes an action that will already be completed before a specific point in the future.",
+    "example": "By next year, I will have finished my degree.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: FUTURE PERFECT PROGRESSIVE",
+    "title": "Future Perfect Progressive (will have been doing)",
+    "description": "Formed with 'will have been + verb-ing', it emphasizes the duration of an action that will continue up to a specific point in the future.",
+    "example": "By June, I will have been working here for five years.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: FUTURE PROGRESSIVE",
+    "title": "Future Progressive (will be doing)",
+    "description": "Formed with 'will be' + -ing form, the future progressive describes an action that will be in progress at a specific future time, often used here in questions.",
+    "example": "Will you be using the car tomorrow morning?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PAST (BE)",
+    "title": "Past Simple: BE (was/were)",
+    "description": "Use was/were to describe past states, and combine with -ing for past continuous actions in progress; negate with wasn't/weren't.",
+    "example": "They were at home, and I was watching TV.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PAST PERFECT",
+    "title": "Past Perfect (had done)",
+    "description": "Formed with 'had' + past participle, the past perfect describes an action completed before another past action or time; 'had been doing' is the progressive form for ongoing past actions.",
+    "example": "By the time we arrived, the film had already started.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PAST PERFECT PROGRESSIVE",
+    "title": "Past Perfect Progressive (had been doing)",
+    "description": "Formed with 'had been + verb-ing', it describes an action that was ongoing up to a point before another past event, emphasizing duration.",
+    "example": "She had been waiting for an hour when the bus finally arrived.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PAST PROGRESSIVE",
+    "title": "Past Progressive (was/were doing)",
+    "description": "Formed with was/were + verb-ing, used to describe an action in progress at a specific moment in the past, often interrupted by another event.",
+    "example": "I was watching TV when she called.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PRESENT (BE)",
+    "title": "Present Simple: BE (am/is/are)",
+    "description": "Use am/is/are to state facts, identities, or descriptions in the present; add 'not' for negatives and invert subject and verb for questions.",
+    "example": "She is a teacher, and she isn't busy today.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PRESENT (lexical verbs)",
+    "title": "Present Simple & Past Simple (lexical verbs)",
+    "description": "Use the base verb for habits/facts with I/you/we/they, and the -ed or irregular past form for completed actions; make negatives and questions with do/does/did.",
+    "example": "I don't work on Sundays, but I worked yesterday.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PRESENT (lexical verbs; third person & singular)",
+    "title": "Present Simple: Third Person Singular (-s)",
+    "description": "Add -s/-es to the verb for he/she/it in the present simple; form negatives and questions with doesn't/does.",
+    "example": "She doesn't drink coffee, but she likes tea.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PRESENT (lexicalverbs)",
+    "title": "Present Simple Questions (do-support)",
+    "description": "A 'Do you...?' question pattern with a lexical verb, duplicating the present simple do-support pattern already taught elsewhere.",
+    "example": "Do you like coffee?",
+    "teachable": false,
+    "importance": 3,
+    "note": "Corpus duplicate/typo of the present-simple lexical-verb item; same pattern already covered there."
+  },
+  {
+    "name": "TENSE/ASPECT: PRESENT PERFECT",
+    "title": "Present Perfect (have/has done)",
+    "description": "Formed with have/has + past participle, used for past actions connected to now, recent events, or life experiences; includes the present perfect continuous (have been + -ing).",
+    "example": "I've already finished my homework.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PRESENT PERFECT PROGRESSIVE",
+    "title": "Present Perfect Progressive (have/has been doing)",
+    "description": "Formed with 'have/has been + verb-ing', it describes an action that started in the past and continues, or has just stopped, with effects visible now.",
+    "example": "I've been studying English for three years.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PRESENT PROGRESSIVE",
+    "title": "Present Continuous (be + -ing)",
+    "description": "Use am/is/are plus verb-ing to talk about actions happening now or temporary situations; negate and question with be.",
+    "example": "I'm cooking dinner right now.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TO-INFINITIVE: WITH NOTIONAL SUBJECT",
+    "title": "For + Noun/Pronoun + To-Infinitive",
+    "description": "Adds 'for + noun or pronoun' before a to-infinitive to show who performs the action, often after adjectives like 'important' or 'easy'.",
+    "example": "It's easy for him to learn languages.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "TO-INFINITIVE: not to DO",
+    "title": "Negative To-Infinitive (not to do)",
+    "description": "Places 'not' before a to-infinitive to negate it, used after verbs like 'decide', 'tell' or 'promise' to express a negative intention or instruction.",
+    "example": "I promised not to be late again.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "TO-INFINITIVE: to DO (not preceded by 'not')",
+    "title": "To-Infinitive of Purpose",
+    "description": "Use 'to' plus the base verb to explain the purpose or reason for an action, often answering 'why'.",
+    "example": "I called you to ask about the party.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "TO-INFINITIVE: to be DONE",
+    "title": "Passive To-Infinitive (to be done)",
+    "description": "Formed with 'to be' + past participle after nouns, adjectives or verbs, showing that something still needs to happen to the subject.",
+    "example": "There's still a lot of work to be done.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "TO-INFINITIVE: to have DONE",
+    "title": "Perfect Infinitive (to have done)",
+    "description": "'To have' plus a past participle refers to something completed before the main verb's time, often expressing assumption, hope or regret.",
+    "example": "He seems to have forgotten our meeting.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "These/Those N",
+    "title": "Demonstratives: these/those + noun",
+    "description": "The plural demonstrative determiners 'these' and 'those' go before a plural noun to point to things near or far from the speaker.",
+    "example": "Those shoes look really comfortable.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Elementary demonstrative + plural noun pattern already known by B1; corpus label reflects position/POS extraction limits, not a lesson."
+  },
+  {
+    "name": "These/Those are",
+    "title": "Demonstratives: 'These/Those are'",
+    "description": "Use 'these' for nearby plural things and 'those' for plural things farther away, followed by 'are' to describe them.",
+    "example": "These are my keys.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "These/Those are not",
+    "title": "Demonstrative Negatives: 'These/Those are not'",
+    "description": "Add 'not' after 'are' (or use 'aren't') with 'these/those' to say plural things are not something.",
+    "example": "Those are not my shoes.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "This/That N",
+    "title": "Demonstratives: this/that + Noun",
+    "description": "Using 'this' or 'that' directly before a singular noun to point to something near or far in space or time.",
+    "example": "This coffee is too hot for me.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Basic demonstrative + noun pattern normally taught at A1; the sentence-position restriction is a corpus extraction artefact, not a teaching point."
+  },
+  {
+    "name": "This/That is",
+    "title": "Demonstratives: 'This/That is'",
+    "description": "Use 'this' for something near and 'that' for something farther away, followed by 'is' to identify or describe a single thing.",
+    "example": "This is my phone.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "This/That is not",
+    "title": "Demonstrative Negatives: 'This/That is not'",
+    "description": "Add 'not' after 'is' (or use 'isn't') with 'this/that' to say a single nearby or distant thing is not something.",
+    "example": "That is not my bag.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "V+that+CLAUSE",
+    "title": "Verb + that-clause (I think that...)",
+    "description": "Verbs like think, know, hope, say, and believe can take a 'that' clause as their object; 'that' is often dropped in speech.",
+    "example": "I hope you can come to the party.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "V-ING (not preceded by 'not')",
+    "title": "-ING Form (Gerund/Participle)",
+    "description": "The -ing form of a verb can act like a noun, as in 'Swimming is fun', or describe something, as in 'the sleeping baby'.",
+    "example": "Swimming is my favorite hobby.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "V-ING: WITH NOTIONAL SUBJECT (expressed as possessive pronouns)",
+    "title": "Possessive + Gerund (his/her doing)",
+    "description": "A possessive pronoun is placed before an -ing form to show whose action is meant, mainly in more formal spoken or written English.",
+    "example": "I don't mind his coming late for once.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "VERB OBJECT V-ING",
+    "title": "Verb + Object + -ing",
+    "description": "Verbs like 'see', 'watch', 'hear' and 'find' can be followed by an object plus an -ing form to show that the action was in progress.",
+    "example": "I saw him waiting outside the station.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "VERB OBJECT not V-ING",
+    "title": "Verb + Object + not + -ing",
+    "description": "A verb followed by an object and then 'not' plus a gerund, describing the object not doing something; this corpus pattern mostly captures mis-parsed matches rather than real, frequent usage.",
+    "example": "I remember him not answering the phone.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Mostly mis-parsed corpus matches, not a reliable teaching pattern"
+  },
+  {
+    "name": "VERB OBJECT to DO",
+    "title": "Verb + Object + To-Infinitive (want someone to do)",
+    "description": "Verbs like want, ask, tell, and need can take an object followed by 'to' plus the base verb, meaning the object performs the action.",
+    "example": "I want you to help me.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "VERB V-ING",
+    "title": "Verb + -ING (enjoy doing)",
+    "description": "Some verbs, such as enjoy, like, stop, and finish, are followed directly by the -ing form of another verb.",
+    "example": "I enjoy reading books in the evening.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "VERB not V-ING",
+    "title": "Verb + not + -ing (negative gerund)",
+    "description": "Certain verbs (excluding be/have) can be followed by 'not' plus a gerund to show that an action is avoided or does not happen.",
+    "example": "I suggested not telling her the bad news yet.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "VERB not to DO",
+    "title": "Verb + Not + To-Infinitive",
+    "description": "Put 'not' before the to-infinitive to make the second verb negative, e.g. after decide, want, or try.",
+    "example": "I decided not to go to the party.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "VERB to DO",
+    "title": "Verb + To-Infinitive (want to do)",
+    "description": "Some verbs, such as want, like, need, and plan, are followed by 'to' plus the base verb to express intentions or desires.",
+    "example": "I want to learn English.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: How ...?",
+    "title": "Wh- Questions: How...?",
+    "description": "Formed with 'How' followed by an auxiliary/modal verb, then the subject and main verb; used to ask about manner or method.",
+    "example": "How do you make this soup?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: How ADJ/ADV ...?",
+    "title": "Wh- Questions: How + Adjective/Adverb (How old...?)",
+    "description": "'How' is combined with an adjective or adverb (old, much, often, far) to ask about degree, quantity or frequency.",
+    "example": "How often do you exercise?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: What ...?",
+    "title": "Wh- Questions: What...?",
+    "description": "Formed with 'What' followed by an auxiliary/modal verb, then the subject and main verb; used to ask about things, actions or ideas.",
+    "example": "What do you want for dinner?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: What N ...?",
+    "title": "Wh- + Noun Questions (What time...?)",
+    "description": "'What' is placed directly before a noun (time, color, kind, size, etc.) to ask for a specific piece of information.",
+    "example": "What time does the shop close?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: When ...?",
+    "title": "Wh- Questions: When...?",
+    "description": "Formed with 'When' followed by an auxiliary/modal verb, then the subject and main verb; used to ask about time.",
+    "example": "When does your class start?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: Where ...?",
+    "title": "Wh- Questions: Where...?",
+    "description": "Formed with 'Where' followed by an auxiliary/modal verb, then the subject and main verb; used to ask about location or place.",
+    "example": "Where do you live now?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: Which ...?",
+    "title": "Questions with 'Which...?'",
+    "description": "'Which' asks someone to choose from a known or limited set of options, standing alone as a pronoun at the start of a question.",
+    "example": "Which do you like better?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: Which N ...?",
+    "title": "'Which + Noun' Questions",
+    "description": "'Which' can go directly before a noun to ask someone to pick a specific item from a known set.",
+    "example": "Which bus goes downtown?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: Who ...?",
+    "title": "Wh- Question with Who",
+    "description": "'Who' asks about the identity of a person, typically placed at the start of the question and often functioning as its subject.",
+    "example": "Who left this message for me?",
+    "teachable": false,
+    "importance": 3,
+    "note": "Basic question form mastered well before B2; included only as a corpus sentence-position artefact."
+  },
+  {
+    "name": "WH- QUESTION: Whom ...?",
+    "title": "Questions with 'Whom...?'",
+    "description": "'Whom' is the formal object form of 'who', placed at the start of a question when asking about the person affected by the action.",
+    "example": "Whom did you meet yesterday?",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: Whose ...?",
+    "title": "Questions with 'Whose...?'",
+    "description": "'Whose' asks about ownership and can stand alone as a pronoun at the start of a question.",
+    "example": "Whose is this jacket?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: Whose N ...?",
+    "title": "'Whose + Noun' Questions",
+    "description": "'Whose' can go directly before a noun to ask who owns that thing.",
+    "example": "Whose bag is this?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "WH- QUESTION: Why ...?",
+    "title": "Wh- Questions: Why...?",
+    "description": "Formed with 'Why' followed by an auxiliary/modal verb, then the subject and main verb; used to ask for a reason or explanation.",
+    "example": "Why are you so tired today?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "WH-+to+INFINITIVE",
+    "title": "WH-word + To-Infinitive (what to do, how to say)",
+    "description": "Combine a question word like what, how, where, or when directly with a to-infinitive to express what someone should or can do, often after verbs like know, decide, or tell.",
+    "example": "I don't know what to say.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "WH-EVER",
+    "title": "Wh-ever Words (whoever, whatever, whichever)",
+    "description": "Adding '-ever' to a wh-word gives the meaning 'no matter who/what/which' or 'any one that', used in statements and free relative clauses.",
+    "example": "You can choose whatever topping you like.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "WISH+SECOND CONDITIONAL",
+    "title": "Wish + Past Simple (present wish)",
+    "description": "'Wish' followed by a past simple verb expresses a desire for a present situation to be different from reality.",
+    "example": "I wish I knew how to swim.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "WISH+THIRD CONDITIONAL",
+    "title": "Wish + Past Perfect (past regret)",
+    "description": "'Wish' followed by a past perfect verb expresses regret about something that did or didn't happen in the past.",
+    "example": "I wish I had studied harder for that exam.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "You are",
+    "title": "Present Simple 'be': You are",
+    "description": "The subject pronoun 'you' combined with 'are', the present simple form of the verb 'to be', used to make statements about the listener or people in general.",
+    "example": "You are right about that.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Basic present-simple 'be' mastered before B1; label reflects a sentence-initial corpus extraction constraint, not a new teaching point."
+  },
+  {
+    "name": "You are not",
+    "title": "To Be: You are not (negative)",
+    "description": "Add 'not' after 'are' to make a negative statement about 'you', usually contracted to 'you're not' or 'you aren't' in speech.",
+    "example": "You're not late.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "being+PAST PARTICIPLE",
+    "title": "Passive Participle Clause (being done)",
+    "description": "Formed with 'being' + past participle to give a passive reason or background circumstance for the main action, mostly in more formal English.",
+    "example": "Being asked to leave, he felt embarrassed.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "did DO",
+    "title": "Emphatic 'did' (I did do it)",
+    "description": "Stressed 'did' is placed before the base verb to emphasize that something really happened, often to contradict doubt or a previous statement.",
+    "example": "I did lock the door, I promise.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "do/does DO",
+    "title": "Emphatic do/does (do-support for emphasis)",
+    "description": "Adding stressed 'do/does' before the base verb in an affirmative sentence emphasizes or confirms the truth of a statement, often contrasting with doubt.",
+    "example": "I do enjoy spending time with you.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "few PLURAL NOUN",
+    "title": "Quantifier: few + plural noun",
+    "description": "'Few' (without 'a') means 'not many' or 'almost none' and goes before a plural countable noun.",
+    "example": "Few people came to the meeting.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "had it not been for ...",
+    "title": "'Had it not been for' (formal inversion)",
+    "description": "This is the formal, inverted version of 'if it hadn't been for': 'if' is dropped and 'had' moves before the subject to express a past hypothetical dependence on something.",
+    "example": "Had it not been for her quick thinking, we'd have lost everything.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "having been+PAST PARTICIPLE",
+    "title": "Perfect passive participle clauses (Having been + past participle)",
+    "description": "A reduced clause formed with 'having been' plus a past participle shows an action was completed before the main clause, often giving a reason; the past participle can also function as an adjective.",
+    "example": "Having been warned about the storm, we cancelled the trip.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "having+PAST PARTICIPLE",
+    "title": "Perfect Participle Clause (having done)",
+    "description": "Formed with 'having' + past participle at the start of a sentence to show that one action finished before another one happened.",
+    "example": "Having finished dinner, we went for a walk.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "he/she is",
+    "title": "To Be: He/She is (present simple)",
+    "description": "Use 'is' with third-person singular subjects (he, she, it) to state facts, identity, or feelings in the present.",
+    "example": "She is my sister.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "he/she is not",
+    "title": "To Be: He/She is not (negative)",
+    "description": "Add 'not' after 'is' to make a negative statement about a third person, often shortened to 'isn't' or 'he's/she's not'.",
+    "example": "He isn't at home.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "here is/are",
+    "title": "Here is/are",
+    "description": "Introduces or points out something nearby using 'here' followed by 'is' or 'are' plus a noun.",
+    "example": "Here is your coffee, sir.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Basic presentational structure normally learned below B1; not a substantive new point at this level."
+  },
+  {
+    "name": "hope/know/think+CLAUSE (without 'that')",
+    "title": "Omitting 'That' after Think/Know/Hope",
+    "description": "After verbs like 'think', 'know' and 'hope', the connector 'that' is often left out before the clause that follows in everyday speech.",
+    "example": "I think it's a good idea.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "if it hadn't been for ...",
+    "title": "'If it hadn't been for' (past unreal condition)",
+    "description": "This fixed phrase expresses a past hypothetical meaning 'without X having happened', showing that a past result depended on X; it uses the past perfect.",
+    "example": "If it hadn't been for the delay, we'd have missed the flight anyway.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "if it were not for ...",
+    "title": "'If it were not for' (present unreal condition)",
+    "description": "This fixed phrase introduces a present hypothetical condition meaning 'without X', showing that something else depends on X's existence; it uses the subjunctive 'were'.",
+    "example": "If it weren't for your help, I would still be lost.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "in order to DO",
+    "title": "Purpose Clause with 'in order to'",
+    "description": "Placed before a base-form verb to state the reason or purpose for an action; a slightly more formal alternative to 'to' alone.",
+    "example": "I left early in order to catch the train.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "it+BE(+ADV)+ADJ(+for+NP)+to+INFINITIVE",
+    "title": "It + be + Adjective + (for someone) + To-Infinitive",
+    "description": "Use 'it' as a dummy subject with 'be' and an adjective, optionally adding 'for + person', before a to-infinitive to comment on an action or situation.",
+    "example": "It's important for you to be on time.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "it+BE(+ADV)+ADJ+that+CLAUSE",
+    "title": "It is + adjective + that... (extraposition)",
+    "description": "'It' introduces a delayed subject clause after 'be' and an adjective, giving an opinion or reaction about the fact stated in the 'that' clause.",
+    "example": "It's strange that he hasn't called yet.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "know/wonder+WH-(CLAUSE) (except for 'whether')",
+    "title": "Embedded WH-Clauses after Know/Wonder",
+    "description": "After 'know' or 'wonder', add a wh-word (what, where, why, who, etc.) followed by normal statement word order, not question word order, to talk about information you have or are curious about.",
+    "example": "I wonder what time the movie starts.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "let's (not followed by 'not')",
+    "title": "Let's + Verb (Suggestions)",
+    "description": "Use 'let's' plus a base verb to suggest doing something together, as in 'let's go'; the negative 'let's not' is a separate pattern.",
+    "example": "Let's have some coffee.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "let's not",
+    "title": "Let's not (negative suggestion)",
+    "description": "Formed with 'let's not' plus the base verb, used to suggest that a group avoid doing something together.",
+    "example": "Let's not argue about this again.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "little UNCOUNTABLE NOUN",
+    "title": "Quantifier: little + uncountable noun",
+    "description": "'Little' (without 'a') means 'not much' or 'almost none' and goes before an uncountable noun.",
+    "example": "We have little money left this month.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "me/us/him/her/them (except for 'you' and 'it')",
+    "title": "Object Pronouns (me, us, him, her, them)",
+    "description": "Object pronouns replace a noun after a verb or preposition to show who or what receives the action.",
+    "example": "Can you help me and them tomorrow?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "much UNCOUNTABLE NOUN",
+    "title": "Quantifier: much + uncountable noun",
+    "description": "'Much' is used with uncountable nouns, mainly in questions and negative sentences, to talk about a large quantity.",
+    "example": "I don't have much time today.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "my/our/your/her/their (except for 'his' and 'its')",
+    "title": "Possessive Adjectives (my, our, your, her, their)",
+    "description": "Possessive adjectives go before a noun to show who it belongs to; they stay the same for singular and plural nouns.",
+    "example": "This is our house and that is their car.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "not+V-ING",
+    "title": "Negative -ing Form (not doing)",
+    "description": "'Not' is placed directly before an -ing form to negate a gerund or participle, often introducing a reason or circumstance.",
+    "example": "Not knowing the address, I got lost.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "so ADJ/ADV (that) CLAUSE",
+    "title": "so + Adjective/Adverb (that) + Clause",
+    "description": "'So + adjective/adverb (+ that)' introduces a clause that shows the result of a high degree of a quality, e.g. 'so tired that I fell asleep'.",
+    "example": "She was so tired that she fell asleep on the sofa.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "so as to DO",
+    "title": "Purpose clauses with 'so as to'",
+    "description": "Use 'so as to' + base verb to express purpose, meaning 'in order to'; it is often used with 'not' for negative purpose and sounds a little more formal than 'to' alone.",
+    "example": "She left early so as to avoid the traffic.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "such (a/an) ADJ NOUN",
+    "title": "such (a/an) + Adjective + Noun",
+    "description": "'Such' before '(a/an) + adjective + noun' emphasizes the degree of a quality, similar to 'so', often used in exclamations and vivid descriptions.",
+    "example": "It was such a boring movie that I fell asleep.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "the COMPARATIVE (...), the COMPARATIVE",
+    "title": "The Comparative..., the Comparative... (the more, the better)",
+    "description": "This pattern pairs two comparative phrases to show that a change in one thing causes a related change in another.",
+    "example": "The more you practice, the better you get.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "the fact(s) that+CLAUSE",
+    "title": "The fact that + clause",
+    "description": "'The fact that' introduces a noun clause presenting something as true, often used as the subject or object of a sentence in slightly formal speech.",
+    "example": "The fact that she apologized surprised everyone.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "there+AUX+be",
+    "title": "There + Modal + Be",
+    "description": "Combines 'there is/are' with a modal verb such as 'must', 'might' or 'should' to express certainty, possibility or necessity about existence.",
+    "example": "There must be another way to solve this.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "there+be",
+    "title": "There is / There are",
+    "description": "'There' plus a form of 'be' introduces the existence of something; negate with 'isn't/aren't' and invert for questions such as 'Is there...?'.",
+    "example": "There are two cats in the garden.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "they are",
+    "title": "Present Simple: 'they are'",
+    "description": "Use 'are' with the plural pronoun 'they' to make simple present statements with the verb 'to be'.",
+    "example": "They are my friends.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "they are not",
+    "title": "Present Simple Negative: 'they are not'",
+    "description": "Add 'not' after 'are' (or use the contraction 'aren't') to make negative statements with 'they' using the verb 'to be'.",
+    "example": "They are not at home today.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "too ADJ/ADV to+INFINITIVE",
+    "title": "too + Adjective/Adverb + to-infinitive",
+    "description": "'Too + adjective/adverb + to-infinitive' shows that something is excessive to the point that a result becomes impossible, e.g. 'too tired to walk'.",
+    "example": "It's too cold to go swimming today.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "we are",
+    "title": "To Be: We are (present simple)",
+    "description": "Use 'are' with the subject 'we' to describe facts or states about a group that includes the speaker.",
+    "example": "We are neighbors.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "we are not",
+    "title": "To Be: We are not (negative)",
+    "description": "Add 'not' after 'are' to make a negative statement about 'we', usually contracted to 'we're not' or 'we aren't'.",
+    "example": "We aren't ready yet.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "were it not for ...",
+    "title": "'Were it not for' (formal inversion)",
+    "description": "This is the formal, inverted version of 'if it were not for': 'if' is dropped and 'were' moves before the subject to express a present hypothetical dependence on something.",
+    "example": "Were it not for the rain, we'd be at the beach now.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "whether",
+    "title": "Whether (noun clauses and alternatives)",
+    "description": "'Whether' introduces a clause expressing a choice between options, used after verbs like know, ask, or decide, often with 'or not'.",
+    "example": "I'm not sure whether he's coming tonight.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  }
+]

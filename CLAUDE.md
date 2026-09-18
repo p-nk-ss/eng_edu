@@ -34,6 +34,7 @@ npx prisma db seed                     # idempotent curriculum seed (prisma/seed
 npx prisma generate                    # after schema changes (works without a DB)
 
 npm run vocab:classify    # offline vocab topic classification via TypeSafe Jev
+npm run grammar:enrich    # offline grammar topic enrichment via Claude (title/description/example/teachable/importance)
 npm run curriculum:preview # print the deterministic selection for the next 5 lessons
 ```
 
@@ -64,6 +65,9 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
 - **Curriculum data has NO thematic categories** (CEFR-J vocab v1.5) → `VocabItem.topic=null`.
   Resolved in M3a: curated theme list + Jev classification. See
   `docs/superpowers/specs/2026-09-18-m3a-curriculum-selection-design.md` and `data/README.md`.
+- **Grammar topics are CEFR-J corpus labels, not teaching topics** — enriched once into
+  `data/grammar-topics.json` via Claude (M3b-1); selection skips `teachable=false` and orders by
+  `importance`. See `docs/superpowers/specs/2026-09-18-m3b1-grammar-enrichment-design.md`.
 - **Env loading**: `.env.local` holds `DATABASE_URL` (create it in **UTF-8** — PowerShell defaults to
   UTF-16, which dotenv can't parse). `prisma.config.ts` loads `.env` then `.env.local`. Scripts run
   **directly** via `tsx` (not `prisma db seed`) must load `.env.local` **before** importing
@@ -81,7 +85,12 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
     classified into themes via TypeSafe Jev (`data/vocab-topics.csv`) and applied by the seed;
     `Profile` seeded from `data/profile.json`; deterministic selection (`selectLessonInputs`);
     `npm run curriculum:preview`.
-  - M3b lesson generation · M3c graders/`judge` role · M3d exercise player — not started.
+  - **M3b-1** ✅ — all 266 `GrammarTopic`s enriched via Claude into `data/grammar-topics.json`
+    (title, description, example, `teachable`, `importance`); grammar-focus selection skips
+    non-teachable topics and orders by `importance`; syllabus progress widget counts teachable
+    topics only; `npm run grammar:enrich`. See
+    `docs/superpowers/specs/2026-09-18-m3b1-grammar-enrichment-design.md`.
+  - M3b-2 lesson generation · M3c graders/`judge` role · M3d exercise player — not started.
 - M4 Spaced repetition · M5 Conversation · M6 Scenarios + wrap-up.
 
 ## Dev guidelines

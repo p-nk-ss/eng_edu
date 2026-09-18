@@ -158,6 +158,11 @@ model GrammarTopic {
   timesUsed   Int      @default(0)
   lastUsedAt  DateTime?
   sortOrder   Int      // syllabus ordering within a level
+  title       String?  // learner-facing title from data/grammar-topics.json (M3b-1); NULL until enriched
+  description String?  // one-paragraph explanation, from data/grammar-topics.json
+  example     String?  // one example sentence, from data/grammar-topics.json
+  teachable   Boolean  @default(true) // false = never selected as a lesson focus, not counted in progress
+  importance  Int      @default(2) // 1 core .. 3 peripheral; orders topics inside a level
   errors      ErrorRecord[] // back-relation for mastery matching
 }
 
@@ -201,7 +206,7 @@ Lesson generation is a **two-step process**:
 
 1. **Deterministic selection (code, not LLM)**: `lib/curriculum.ts` picks for today's lesson, **in this order**:
    - **Conversation theme** — chosen first, deterministically, from the **curated theme list** in `src/lib/curriculum/themes.ts` by weighted least-recently-used rotation (`Lesson.theme` history; themes listed in `Profile.preferredThemes` return about twice as often). CEFR-J v1.5 has no thematic categories, so every `VocabItem.topic` is assigned once, offline, by TypeSafe Jev (`npm run vocab:classify` → `data/vocab-topics.csv` → seed). This theme is an *input* to the next two steps and to Claude — it is **not** chosen by the LLM. Design: `docs/superpowers/specs/2026-09-18-m3a-curriculum-selection-design.md`.
-   - 1 grammar focus: the next `GrammarTopic` with `status != MASTERED` at the user's level (prioritize `PRACTICING` topics with errors over `NOT_STARTED`).
+   - 1 grammar focus: the next **teachable** `GrammarTopic` with `status != MASTERED` at the user's level — `PRACTICING` with open errors → `PRACTICING` → `INTRODUCED` → `NOT_STARTED`, then by `importance` (1 core … 3 peripheral), then `sortOrder`; titles, descriptions, examples, `teachable` and `importance` come from `data/grammar-topics.json`, generated once offline by Claude (`npm run grammar:enrich`), because CEFR-J items are corpus pattern labels, not teaching topics.
    - 6–10 `VocabItem`s: mix of `LEARNING` items due for reinforcement + `NEW` items whose `topic` equals the selected theme's key, with fallbacks (next band in theme → `general` at level → any `NEW` item at level).
    - Due `ErrorRecord`s for the review block.
 2. **Content generation (Claude)**: the selected **theme + grammar topic + vocab list + errors** are passed into the lesson-generation prompt. Claude writes the exercises, conversation framing, and scenario *around* these inputs — it does **not** choose the theme or the grammar focus.
