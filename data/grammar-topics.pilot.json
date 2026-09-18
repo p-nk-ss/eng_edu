@@ -1,0 +1,272 @@
+[
+  {
+    "name": "-thing ADJ",
+    "title": "Adjectives after -thing/-body/-one words",
+    "description": "Compounds like something, nothing, anyone and everybody place the describing adjective right after them, not before, e.g. 'something interesting'.",
+    "example": "Let's do something fun this weekend.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "ADVERBS OF ATTITUDES: apparently/clearly/fortunately/frankly/unfortunately",
+    "title": "Attitude Adverbs (apparently, clearly, fortunately...)",
+    "description": "Sentence adverbs such as apparently, clearly, fortunately, frankly and unfortunately, usually placed at the start, show the speaker's opinion about the whole sentence.",
+    "example": "Unfortunately, the train was cancelled.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "COMPARATIVE OF SUPERIORITY: more+ADJ/ADV",
+    "title": "Comparatives with more (more + adjective/adverb)",
+    "description": "Longer adjectives and adverbs form the comparative with more before them instead of an -er ending.",
+    "example": "This job is more interesting than my last one.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "COMPARATIVE and COMPARATIVE (the same adjective)",
+    "title": "Repeated Comparatives (bigger and bigger)",
+    "description": "Repeating the same comparative form joined by 'and' shows that a quality is continuously increasing or decreasing over time.",
+    "example": "The traffic in this city is getting worse and worse.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "COMPARISON OF EQUALITY: not as/so ... as",
+    "title": "Comparison of Equality: not as/so ... as",
+    "description": "The pattern 'not as/so + adjective + as' compares two things that are not equal in a certain quality.",
+    "example": "This film isn't as good as the book.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "DETERMINER: another",
+    "title": "Another (determiner and pronoun)",
+    "description": "Another means 'one more' or 'a different one'; it goes before a singular noun or stands alone as a pronoun.",
+    "example": "Can I have another coffee, please?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "INDEFINITE PRONOUN/PROP-WORDS: ones (except for 'one')",
+    "title": "Ones (as a substitute pronoun)",
+    "description": "Ones replaces a plural noun already mentioned, so you don't have to repeat it, often after an adjective.",
+    "example": "I don't like these shoes; I prefer the red ones.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "INTENSIFIED COMPARATIVES: a lot/by far/even/far/much/still",
+    "title": "Intensifiers with Comparatives (much, far, even, still)",
+    "description": "Words like much, far, a lot, even and still are placed before a comparative adjective or adverb to strengthen the degree of difference.",
+    "example": "This phone is much better than my old one.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "PASSIVE: PAST",
+    "title": "Past Passive (was/were done)",
+    "description": "Formed with was/were + past participle, it focuses on the action or the receiver of the action rather than who did it.",
+    "example": "The window was broken last night.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "PHRASAL VERBS (V+NP+PARTICLE)",
+    "title": "Phrasal verbs (separable: verb + object + particle)",
+    "description": "Many two-part verbs (like turn off, pick up) can have the object placed between the verb and the particle.",
+    "example": "Can you turn the lights off, please?",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "POSSESSIVE PRONOUNS (except for 'his' and 'its')",
+    "title": "Possessive Pronouns (mine, yours, hers, ours, theirs)",
+    "description": "Possessive pronouns stand in for a possessive noun phrase to show ownership, e.g. 'this seat is mine' instead of 'my seat'.",
+    "example": "Is this jacket yours or hers?",
+    "teachable": false,
+    "importance": 3,
+    "note": "A2-level pronoun set typically mastered before B1; not worth a dedicated lesson at this level."
+  },
+  {
+    "name": "PRONOUN: others (excluding 'the",
+    "title": "Pronoun: others (without 'the')",
+    "description": "'Others' without 'the' means 'other people or things in general', contrasted with something already mentioned, rather than a specific known group.",
+    "example": "Some people like tea, others prefer coffee.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "Please+INFINITIVE",
+    "title": "Please + base verb (polite request)",
+    "description": "Please is added before an imperative verb to make a request sound more polite, usually at the start of a sentence.",
+    "example": "Please close the door.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "RECIPROCAL PRONOUN: each other",
+    "title": "Reciprocal Pronoun: each other",
+    "description": "'Each other' (like 'one another') shows that two or more people direct the same action toward one another, expressing a mutual relationship.",
+    "example": "We always help each other with our homework.",
+    "teachable": true,
+    "importance": 3,
+    "note": ""
+  },
+  {
+    "name": "REFLEXIVE PRONOUNS",
+    "title": "Reflexive Pronouns (myself, yourself, himself...)",
+    "description": "Reflexive pronouns show the subject and object of a verb are the same person, and are also used to add emphasis to a noun or pronoun.",
+    "example": "I taught myself how to cook.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "SUPERLATIVE OF SUPERIORITY: most+ADJ/ADV",
+    "title": "Superlatives with most (most + adjective/adverb)",
+    "description": "Longer adjectives and adverbs form the superlative with the most before them instead of an -est ending.",
+    "example": "That was the most beautiful sunset I've seen.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: FUTURE",
+    "title": "Future (will / going to / future progressive)",
+    "description": "Will and be going to express future plans, predictions, and decisions; will/be + -ing (future progressive) describes an action that will be in progress at a future time.",
+    "example": "I'll call you tonight, and I'm going to visit her tomorrow.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: FUTURE PROGRESSIVE",
+    "title": "Future Progressive (will be doing)",
+    "description": "Form the future progressive with 'will be' plus the -ing form to describe an action that will be in progress at a specific future time.",
+    "example": "Will you be using the car tomorrow morning?",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PAST PERFECT",
+    "title": "Past Perfect (had done)",
+    "description": "Form the past perfect with 'had' plus a past participle to show an action completed before another point in the past; 'had been doing' adds emphasis on duration.",
+    "example": "She had already left when I arrived.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PAST PROGRESSIVE",
+    "title": "Past Progressive (was/were doing)",
+    "description": "Formed with was/were + -ing, it describes an action in progress at a specific past moment, often interrupted by another event.",
+    "example": "I was watching TV when you called.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "TENSE/ASPECT: PRESENT PERFECT",
+    "title": "Present Perfect (have done)",
+    "description": "Formed with have/has + past participle, it links the past to now, for finished actions with present relevance, experiences, or ongoing situations (including have been doing).",
+    "example": "I've lived in this city for five years.",
+    "teachable": true,
+    "importance": 1,
+    "note": ""
+  },
+  {
+    "name": "These/Those N",
+    "title": "Demonstratives: these/those + noun",
+    "description": "'These' and 'those' are used before plural nouns to point to things that are near or far from the speaker.",
+    "example": "Those shoes look really comfortable.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Elementary A1/A2 demonstrative pattern already familiar before B1; extraction limited by corpus position rules."
+  },
+  {
+    "name": "This/That N",
+    "title": "Demonstratives: this / that + noun",
+    "description": "This and that combine with a singular noun to point to something near (this) or far away (that) from the speaker.",
+    "example": "This book is really interesting.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Basic A1-level demonstrative + noun pattern; the sentence-initial restriction is a corpus extraction artefact, not a real teaching point."
+  },
+  {
+    "name": "VERB OBJECT V-ING",
+    "title": "Verb + object + -ing (see someone doing)",
+    "description": "Some verbs (like see, hear, watch, keep) are followed by an object plus an -ing form to say what someone was doing.",
+    "example": "I saw him crossing the street.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "You are",
+    "title": "Verb \"to be\": you are",
+    "description": "The pronoun 'you' combines with 'are', the second-person form of 'to be', used in simple statements about identity or qualities.",
+    "example": "You are right about that.",
+    "teachable": false,
+    "importance": 3,
+    "note": "Basic A1 'to be' form; appears at B1 only due to corpus sentence-position extraction, not a new teaching point."
+  },
+  {
+    "name": "few PLURAL NOUN",
+    "title": "Few + plural noun",
+    "description": "Few goes before a plural countable noun to mean 'not many, almost none', showing a small or limited number.",
+    "example": "Few people came to the meeting.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "little UNCOUNTABLE NOUN",
+    "title": "Little + uncountable noun",
+    "description": "Little goes before an uncountable noun to mean 'not much, almost none', showing a negative or limited amount.",
+    "example": "We have little money left this month.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "much UNCOUNTABLE NOUN",
+    "title": "Much + uncountable noun",
+    "description": "Much is used with uncountable nouns to talk about quantity, mainly in questions and negative sentences.",
+    "example": "I don't have much time today.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "so ADJ/ADV (that) CLAUSE",
+    "title": "so + Adjective/Adverb (that) clause",
+    "description": "'So + adjective/adverb', optionally followed by 'that' and a clause, introduces the result caused by a high degree of a quality.",
+    "example": "She was so tired that she fell asleep on the sofa.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  },
+  {
+    "name": "too ADJ/ADV to+INFINITIVE",
+    "title": "too + Adjective/Adverb + to-infinitive",
+    "description": "'Too' before an adjective or adverb, followed by a to-infinitive, shows that a high degree of a quality prevents an action.",
+    "example": "It's too cold to go swimming today.",
+    "teachable": true,
+    "importance": 2,
+    "note": ""
+  }
+]
