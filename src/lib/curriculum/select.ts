@@ -43,6 +43,10 @@ export interface GrammarCandidate {
   sortOrder: number;
   /** Count of this topic's ErrorRecords whose status is not MASTERED. */
   openErrors: number;
+  /** false = never a lesson focus (trivial at its level / corpus artefact). From data/grammar-topics.json. */
+  teachable: boolean;
+  /** 1 core .. 3 peripheral, relative to the topic's own level. */
+  importance: number;
 }
 
 const grammarRank = (t: GrammarCandidate): number =>
@@ -53,10 +57,14 @@ const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 export function pickGrammarFocus<T extends GrammarCandidate>(topics: T[], level: CefrBand): T | null {
   for (const band of CEFR_BANDS.slice(CEFR_BANDS.indexOf(level))) {
-    const pool = topics.filter((t) => t.cefrLevel === band && t.status !== "MASTERED");
-    if (pool.length === 0) continue;
+    const pool = topics.filter((t) => t.cefrLevel === band && t.status !== "MASTERED" && t.teachable);
+    if (pool.length === 0) continue; // nothing teachable left here -> next band
     return [...pool].sort(
-      (a, b) => grammarRank(a) - grammarRank(b) || a.sortOrder - b.sortOrder || cmp(a.name, b.name),
+      (a, b) =>
+        grammarRank(a) - grammarRank(b) ||
+        a.importance - b.importance ||
+        a.sortOrder - b.sortOrder ||
+        cmp(a.name, b.name),
     )[0];
   }
   return null;

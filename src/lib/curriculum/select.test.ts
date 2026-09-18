@@ -44,8 +44,10 @@ describe("pickTheme", () => {
   });
 });
 
-const G = (name: string, cefrLevel: string, status: string, sortOrder: number, openErrors = 0): GrammarCandidate =>
-  ({ name, cefrLevel, status, sortOrder, openErrors });
+const G = (
+  name: string, cefrLevel: string, status: string, sortOrder: number, openErrors = 0,
+  extra: Partial<Pick<GrammarCandidate, "teachable" | "importance">> = {},
+): GrammarCandidate => ({ name, cefrLevel, status, sortOrder, openErrors, teachable: true, importance: 2, ...extra });
 
 describe("pickGrammarFocus", () => {
   it("prioritises PRACTICING-with-errors > PRACTICING > INTRODUCED > NOT_STARTED, then sortOrder", () => {
@@ -70,6 +72,34 @@ describe("pickGrammarFocus", () => {
   it("returns null when everything from the level upward is mastered", () => {
     expect(pickGrammarFocus([G("x", "C2", "MASTERED", 1)], "C2")).toBeNull();
     expect(pickGrammarFocus([], "B1")).toBeNull();
+  });
+
+  it("never picks a non-teachable topic", () => {
+    const topics = [G("trivial", "B1", "NOT_STARTED", 1, 0, { teachable: false }), G("real", "B1", "NOT_STARTED", 2)];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("real");
+  });
+
+  it("orders by importance before sortOrder inside a status group", () => {
+    const topics = [
+      G("peripheral", "B1", "NOT_STARTED", 1, 0, { importance: 3 }),
+      G("useful", "B1", "NOT_STARTED", 2, 0, { importance: 2 }),
+      G("core", "B1", "NOT_STARTED", 9, 0, { importance: 1 }),
+    ];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("core");
+  });
+
+  it("keeps the status group above importance", () => {
+    const topics = [
+      G("core-new", "B1", "NOT_STARTED", 1, 0, { importance: 1 }),
+      G("practising-peripheral", "B1", "PRACTICING", 9, 0, { importance: 3 }),
+    ];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("practising-peripheral");
+  });
+
+  it("treats a band with only non-teachable topics as exhausted", () => {
+    const topics = [G("trivial", "B1", "NOT_STARTED", 1, 0, { teachable: false }), G("b2", "B2", "NOT_STARTED", 1)];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("b2");
+    expect(pickGrammarFocus([topics[0]], "B1")).toBeNull();
   });
 });
 

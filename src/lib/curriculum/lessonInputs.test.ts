@@ -19,8 +19,8 @@ function fakeDb(over: Partial<Record<string, unknown>> = {}) {
     }),
     lesson: table("lesson", over.lessons ?? [{ theme: "technology" }]),
     grammarTopic: table("grammarTopic", over.grammar ?? [
-      { id: "g1", name: "Past Simple", cefrLevel: "B1", status: "NOT_STARTED", sortOrder: 2, _count: { errors: 0 } },
-      { id: "g2", name: "Present Perfect", cefrLevel: "B1", status: "PRACTICING", sortOrder: 5, _count: { errors: 1 } },
+      { id: "g1", name: "Past Simple", cefrLevel: "B1", status: "NOT_STARTED", sortOrder: 2, teachable: true, importance: 2, _count: { errors: 0 } },
+      { id: "g2", name: "Present Perfect", cefrLevel: "B1", status: "PRACTICING", sortOrder: 5, teachable: true, importance: 2, _count: { errors: 1 } },
     ]),
     vocabItem: table("vocabItem", over.vocab ?? [
       { id: "v1", headword: "colleague", cefrLevel: "B1", topic: "work", status: "NEW", lastSeenAt: null },
@@ -68,8 +68,8 @@ describe("selectLessonInputs", () => {
   it("prefers a PRACTICING topic with open errors over one with a better sortOrder", async () => {
     const { db } = fakeDb({
       grammar: [
-        { id: "gA", name: "A", cefrLevel: "B1", status: "PRACTICING", sortOrder: 1, _count: { errors: 0 } },
-        { id: "gB", name: "B", cefrLevel: "B1", status: "PRACTICING", sortOrder: 9, _count: { errors: 2 } },
+        { id: "gA", name: "A", cefrLevel: "B1", status: "PRACTICING", sortOrder: 1, teachable: true, importance: 2, _count: { errors: 0 } },
+        { id: "gB", name: "B", cefrLevel: "B1", status: "PRACTICING", sortOrder: 9, teachable: true, importance: 2, _count: { errors: 2 } },
       ],
     });
     const out = await selectLessonInputs(db, now);
@@ -82,5 +82,16 @@ describe("selectLessonInputs", () => {
       lessons: [],
     });
     expect((await selectLessonInputs(db, now)).theme.key).toBe("work"); // plain THEMES order
+  });
+
+  it("skips non-teachable grammar topics and prefers higher importance", async () => {
+    const { db } = fakeDb({
+      grammar: [
+        { id: "g0", name: "You are", cefrLevel: "B1", status: "NOT_STARTED", sortOrder: 1, teachable: false, importance: 1, _count: { errors: 0 } },
+        { id: "g1", name: "-thing ADJ", cefrLevel: "B1", status: "NOT_STARTED", sortOrder: 2, teachable: true, importance: 3, _count: { errors: 0 } },
+        { id: "g2", name: "PAST PERFECT", cefrLevel: "B1", status: "NOT_STARTED", sortOrder: 14, teachable: true, importance: 1, _count: { errors: 0 } },
+      ],
+    });
+    expect((await selectLessonInputs(db, now)).grammarTopic?.id).toBe("g2");
   });
 });

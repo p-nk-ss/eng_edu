@@ -30,7 +30,7 @@ async function main() {
 
     const s = await selectLessonInputs(db);
     console.log(`\nLesson +${n}  theme: ${s.theme.label} [${s.theme.key}]`);
-    console.log(`  grammar : ${s.grammarTopic ? `${s.grammarTopic.name} (${s.grammarTopic.cefrLevel}, ${s.grammarTopic.status})` : "— syllabus mastered —"}`);
+    console.log(`  grammar : ${s.grammarTopic ? `${s.grammarTopic.title ?? s.grammarTopic.name} (${s.grammarTopic.cefrLevel}, ${s.grammarTopic.status})` : "— syllabus mastered —"}`);
     console.log(`  vocab   : ${s.vocab.map((v) => `${v.headword}${v.topic === s.theme.key ? "" : `{${v.topic ?? "?"}}`}`).join(", ")}`);
     console.log(`  due errs: ${s.dueErrors.length}`);
     history.unshift(s.theme.key);
