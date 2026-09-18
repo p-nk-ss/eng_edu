@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { prisma } from "../src/lib/db";
-import { loadSeedData } from "../src/lib/curriculum/load";
+import { DATA_DIR, loadSeedData } from "../src/lib/curriculum/load";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { buildGrammarEnrichment, buildTopicAssignments, parseProfile } from "../src/lib/curriculum/seedExtras";
@@ -14,7 +14,19 @@ import { buildGrammarEnrichment, buildTopicAssignments, parseProfile } from "../
  *  - applies data/vocab-topics.csv to VocabItem.topic and creates the Profile if missing.
  *  - applies data/grammar-topics.json (title, description, example, teachable, importance) to GrammarTopic.
  */
-const DATA_DIR = path.join(process.cwd(), "data");
+
+/** Await createMany in 2000-row slices. A single createMany call with thousands of rows makes
+ *  Prisma's pg adapter dispatch several INSERTs on one client without awaiting each between them
+ *  (a pg DeprecationWarning) — chunking keeps every statement awaited before the next starts. */
+async function createManyChunked<T>(
+  create: (data: T[]) => Promise<unknown>,
+  rows: T[],
+  size = 2000,
+): Promise<void> {
+  for (let i = 0; i < rows.length; i += size) {
+    await create(rows.slice(i, i + size));
+  }
+}
 
 /** Create the single Profile from data/profile.json — only if none exists (never overwrites edits). */
 async function seedProfile() {
@@ -50,7 +62,7 @@ async function seedVocabTopics() {
 /** Apply data/grammar-topics.json to GrammarTopic. One bulk UPDATE; only changed rows are touched. */
 async function seedGrammarEnrichment() {
   const file = path.join(DATA_DIR, "grammar-topics.json");
-  if (!existsSync(file)) return console.warn("data/grammar-topics.json missing - grammar topics keep their raw names (teachable, importance 2).");
+  if (!existsSync(file)) return console.warn("data/grammar-topics.json missing — grammar topics keep their raw names (teachable, importance 2).");
   const known = new Set((await prisma.grammarTopic.findMany({ select: { name: true } })).map((t) => t.name));
   const rows = buildGrammarEnrichment(readFileSync(file, "utf8"), known);
   const names = rows.map((r) => r.name);
@@ -77,29 +89,30 @@ async function main() {
   const { grammar, vocab } = loadSeedData();
   console.log(`Seeding ${grammar.length} grammar topics + ${vocab.length} vocab items...`);
 
-  await prisma.grammarTopic.createMany({
-    data: grammar.map((g) => ({
+  await createManyChunked(
+    (data) => prisma.grammarTopic.createMany({ data, skipDuplicates: true }),
+    grammar.map((g) => ({
       name: g.name,
       cefrLevel: g.cefrLevel,
       category: g.category,
       sortOrder: g.sortOrder,
     })),
-    skipDuplicates: true,
-  });
+  );
 
-  await seedGrammarEnrichment();
-
-  await prisma.vocabItem.createMany({
-    data: vocab.map((v) => ({
+  await createManyChunked(
+    (data) => prisma.vocabItem.createMany({ data, skipDuplicates: true }),
+    vocab.map((v) => ({
       headword: v.headword,
       pos: v.pos ?? "", // avoid NULL in the [headword,pos] unique (NULL breaks dedupe)
       cefrLevel: v.cefrLevel,
       isPhrase: v.isPhrase,
       topic: v.topic,
     })),
-    skipDuplicates: true,
-  });
+  );
 
+  // Grammar enrichment runs AFTER vocab is loaded: a typo in the hand-edited JSON throws and
+  // must not be able to abort the seed before the vocabulary pool exists on a fresh DB.
+  await seedGrammarEnrichment();
   await seedVocabTopics();
   await seedProfile();
 

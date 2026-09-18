@@ -34,6 +34,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Pilot artefacts of the classify/enrich scripts (reviewed, never kept)
+data/*.pilot.*
+
 # Testing / coverage
 /coverage
 

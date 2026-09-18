@@ -8,18 +8,19 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import { z } from "zod";
-import { loadGrammarVariants, loadSeedData } from "../src/lib/curriculum/load";
+import { DATA_DIR, loadGrammarVariants, loadSeedData } from "../src/lib/curriculum/load";
 import {
   batchByLevel, enrichBatch, enrichmentSchema, parseEnrichmentFile, pendingTopics, pilotSample,
   serializeEnrichmentFile, type GrammarEnrichment,
 } from "../src/lib/curriculum/grammarEnrichment";
 import { completeJson } from "../src/lib/llm/index";
+import type { CompleteArgs } from "../src/lib/llm/types";
 
 loadEnv({ path: ".env" });
 loadEnv({ path: ".env.local", override: true });
 
 const pilot = process.argv.includes("--pilot");
-const outFile = path.join("data", pilot ? "grammar-topics.pilot.json" : "grammar-topics.json");
+const outFile = path.join(DATA_DIR, pilot ? "grammar-topics.pilot.json" : "grammar-topics.json");
 
 async function main() {
   if (process.env.ANTHROPIC_API_KEY) {
@@ -38,8 +39,8 @@ async function main() {
   const batches = batchByLevel(pendingTopics(scope, all));
   console.log(`${scope.length} topics in scope, ${all.length} already enriched, ${batches.length} batches to run`);
 
-  const ask = (p: { system: string; user: string }) =>
-    completeJson<GrammarEnrichment[]>("lesson_generation", { system: p.system, messages: [{ role: "user", content: p.user }] }, z.array(enrichmentSchema));
+  const ask = (args: CompleteArgs) =>
+    completeJson<GrammarEnrichment[]>("lesson_generation", args, z.array(enrichmentSchema));
 
   for (const [i, batch] of batches.entries()) {
     const started = Date.now();

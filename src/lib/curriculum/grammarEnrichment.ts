@@ -1,24 +1,13 @@
 import { z } from "zod";
 import { CEFR_BANDS, type CefrBand, type GrammarSeed, type GrammarVariant } from "./parse";
-import { grammarEnrichmentPrompt } from "../prompts/grammarEnrichment";
+import { enrichmentSchema, grammarEnrichmentPrompt, type GrammarEnrichment } from "../prompts/grammarEnrichment";
+import type { CompleteArgs } from "../llm/types";
 
-/** One enriched grammar topic, as stored in data/grammar-topics.json. Join key: `name`. */
-export const enrichmentSchema = z
-  .object({
-    name: z.string().min(1),
-    title: z.string().min(3).max(80),
-    description: z.string().min(20).max(400),
-    example: z.string().min(5).max(200),
-    teachable: z.boolean(),
-    importance: z.union([z.literal(1), z.literal(2), z.literal(3)]),
-    note: z.string().max(200).default(""),
-  })
-  .refine((e) => e.teachable || e.note.trim().length > 0, {
-    message: "note is required when teachable is false",
-    path: ["note"],
-  });
-
-export type GrammarEnrichment = z.infer<typeof enrichmentSchema>;
+/**
+ * The response contract (schema + limits) lives next to the prompt that produces it — see
+ * `src/lib/prompts/grammarEnrichment.ts`. Re-exported here so existing imports keep working.
+ */
+export { enrichmentSchema, type GrammarEnrichment };
 
 export interface GrammarBatch {
   level: CefrBand;
@@ -61,6 +50,20 @@ export function validateBatch(requested: string[], returned: { name: string }[])
 const FILE_LABEL = "grammar-topics JSON";
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
+/** `issue.path[0]` is the array index; if that element has a string `name`, name it in the message
+ *  (this file is hand-edited by a person, 266 records deep — an index alone is not enough). */
+function describeIssue(issue: { path: PropertyKey[]; message: string }, raw: unknown): string {
+  const [index, ...rest] = issue.path;
+  const field = rest.map(String).join(".");
+  if (typeof index === "number" && Array.isArray(raw)) {
+    const name = (raw[index] as { name?: unknown } | undefined)?.name;
+    if (typeof name === "string") {
+      return `record "${name}" (index ${index})${field ? ` ${field}` : ""}: ${issue.message}`;
+    }
+  }
+  return `${issue.path.join(".")}: ${issue.message}`;
+}
+
 export function parseEnrichmentFile(jsonText: string): GrammarEnrichment[] {
   if (jsonText.trim() === "") return [];
   let raw: unknown;
@@ -72,7 +75,7 @@ export function parseEnrichmentFile(jsonText: string): GrammarEnrichment[] {
   const res = z.array(enrichmentSchema).safeParse(raw);
   if (!res.success) {
     throw new Error(
-      `${FILE_LABEL} is invalid: ` + res.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
+      `${FILE_LABEL} is invalid: ` + res.error.issues.map((i) => describeIssue(i, raw)).join("; "),
     );
   }
   return res.data;
@@ -96,11 +99,12 @@ export function pilotSample(topics: GrammarSeed[]): GrammarSeed[] {
   );
 }
 
-export type AskEnrichment = (prompt: { system: string; user: string }) => Promise<GrammarEnrichment[]>;
+export type AskEnrichment = (args: CompleteArgs) => Promise<GrammarEnrichment[]>;
 
 /**
  * Enrich one same-level batch. `ask` is the LLM call (injected so this stays testable);
- * its own failures propagate. A name mismatch in the answer gets exactly one retry.
+ * its own failures propagate. A name mismatch in the answer gets exactly one retry, with a
+ * second user message telling the model exactly what was wrong and asking for the full corrected array.
  */
 export async function enrichBatch(
   batch: GrammarBatch,
@@ -108,13 +112,26 @@ export async function enrichBatch(
   ask: AskEnrichment,
 ): Promise<GrammarEnrichment[]> {
   const names = batch.topics.map((t) => t.name);
-  const prompt = grammarEnrichmentPrompt({
+  const args = grammarEnrichmentPrompt({
     level: batch.level,
     topics: names.map((name) => ({ name, variants: variants.get(name) ?? [] })),
   });
   let mismatch = "";
   for (let attempt = 0; attempt < 2; attempt++) {
-    const records = await ask(prompt);
+    const request: CompleteArgs =
+      attempt === 0
+        ? args
+        : {
+            ...args,
+            messages: [
+              ...args.messages,
+              {
+                role: "user",
+                content: `${mismatch}. Return the complete corrected JSON array with exactly the requested names, one object per input item.`,
+              },
+            ],
+          };
+    const records = await ask(request);
     try {
       validateBatch(names, records);
       return records;

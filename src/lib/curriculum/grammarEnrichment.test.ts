@@ -86,6 +86,18 @@ describe("enrichment file", () => {
     expect(() => parseEnrichmentFile("{ nope")).toThrow(/grammar-topics/);
     expect(() => parseEnrichmentFile(JSON.stringify([{ name: "x" }]))).toThrow(/grammar-topics/);
   });
+
+  it("names the record when a field is invalid deep in a hand-edited file", () => {
+    const records = [
+      rec({ name: "a" }),
+      rec({ name: "b" }),
+      rec({ name: "c" }),
+      rec({ name: "TENSE/ASPECT: PAST PERFECT", description: "short" }),
+    ];
+    expect(() => parseEnrichmentFile(JSON.stringify(records))).toThrow(
+      /record "TENSE\/ASPECT: PAST PERFECT" \(index 3\) description: /,
+    );
+  });
 });
 
 describe("pilotSample", () => {
@@ -110,9 +122,11 @@ describe("enrichBatch", () => {
     const ask = vi.fn().mockResolvedValue([rec({ name: "a" }), rec({ name: "b" })]);
     const out = await enrichBatch(batch, variants, ask);
     expect(out.map((r) => r.name)).toEqual(["a", "b"]);
-    const prompt = ask.mock.calls[0][0] as { system: string; user: string };
-    expect(prompt.user).toContain("X.a");
-    expect(JSON.parse(prompt.user.slice(prompt.user.indexOf("{"))).topics[1]).toEqual({ name: "b", variants: [] });
+    const prompt = ask.mock.calls[0][0] as { system: string; messages: { role: string; content: string }[] };
+    expect(prompt.messages).toHaveLength(1);
+    const content = prompt.messages[0].content;
+    expect(content).toContain("X.a");
+    expect(JSON.parse(content.slice(content.indexOf("{"))).topics[1]).toEqual({ name: "b", variants: [] });
   });
 
   it("retries once when names do not match, then succeeds", async () => {
@@ -122,6 +136,9 @@ describe("enrichBatch", () => {
       .mockResolvedValueOnce([rec({ name: "a" }), rec({ name: "b" })]);
     expect((await enrichBatch(batch, variants, ask)).length).toBe(2);
     expect(ask).toHaveBeenCalledTimes(2);
+    const retryPrompt = ask.mock.calls[1][0] as { messages: { role: string; content: string }[] };
+    expect(retryPrompt.messages).toHaveLength(2);
+    expect(retryPrompt.messages[1].content).toContain('missing "b"');
   });
 
   it("throws naming the level and the mismatch after the second bad answer", async () => {
