@@ -18,8 +18,9 @@ import { createTypeSafeClient } from "../src/lib/typesafe/client";
 loadEnv({ path: ".env" });
 loadEnv({ path: ".env.local", override: true });
 
-const BATCH_SIZE = 40; // 40 questions x ~22 criteria stays far below the 64k-token request limit
-const CONCURRENCY = 4;
+const BATCH_SIZE = 1; // neighbouring words in a shared `state` contaminate each other's answers;
+// tokens per word are dominated by the ~22 criteria, so batching saved almost nothing anyway.
+const CONCURRENCY = 8;
 const PILOT_PER_LEVEL = 34; // x6 CEFR bands ~= 200 words
 
 const args = process.argv.slice(2);
@@ -62,7 +63,7 @@ async function main() {
       }));
       appendFileSync(outFile, rows.map(toCsvLine).join("\n") + "\n", "utf8"); // progress survives a crash
       fresh.push(...rows);
-      console.log(`  ${fresh.length}/${todo.length}`);
+      if (fresh.length % 200 === 0 || fresh.length === todo.length) console.log(`  ${fresh.length}/${todo.length}`);
     }
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
