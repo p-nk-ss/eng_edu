@@ -4,6 +4,7 @@ import {
   parseGrammarRows,
   parseVocabRows,
   mergeVocab,
+  collectGrammarVariants,
 } from "./parse";
 
 describe("normalizeCefrLevel", () => {
@@ -95,5 +96,32 @@ describe("mergeVocab", () => {
       { headword: "set", pos: "verb", cefrLevel: "A2", isPhrase: false, topic: null },
       { headword: "cloak", pos: "noun", cefrLevel: "C1", isPhrase: false, topic: null },
     ]);
+  });
+});
+
+describe("collectGrammarVariants", () => {
+  const header = ["ID", "Shorthand Code", "Grammatical Item", "Sentence Type", "CEFR-J Level", "F", "CI", "EGP", "GSELO", "Notes"];
+  const rows = [
+    header,
+    ["62", "TA.PRPF.AFF", "TENSE/ASPECT: PRESENT PERFECT", "AFF. DEC.", "A2.2", "", "", "", "", ""],
+    ["62-1", "TA.PRPF.NEG", " TENSE/ASPECT: PRESENT PERFECT ", "NEG. DEC.", "B1.1", "", "", "", "", "note-neg"],
+    ["2", "PP.you_are", "You are", "AFF. DEC.", "B1.1", "", "", "", "", "note-you"],
+    ["x", "NO.NAME", "  ", "AFF. DEC.", "A1", "", "", "", "", ""],
+    ["short"],
+  ];
+
+  it("groups every row by trimmed name, in file order", () => {
+    const v = collectGrammarVariants(rows);
+    expect([...v.keys()]).toEqual(["TENSE/ASPECT: PRESENT PERFECT", "You are"]);
+    expect(v.get("TENSE/ASPECT: PRESENT PERFECT")).toEqual([
+      { shorthand: "TA.PRPF.AFF", sentenceType: "AFF. DEC.", note: "" },
+      { shorthand: "TA.PRPF.NEG", sentenceType: "NEG. DEC.", note: "note-neg" },
+    ]);
+    expect(v.get("You are")).toEqual([{ shorthand: "PP.you_are", sentenceType: "AFF. DEC.", note: "note-you" }]);
+  });
+
+  it("skips the header, blank names and short rows", () => {
+    expect(collectGrammarVariants([header]).size).toBe(0);
+    expect(collectGrammarVariants(rows).has("")).toBe(false);
   });
 });

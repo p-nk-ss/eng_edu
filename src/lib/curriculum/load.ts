@@ -5,12 +5,14 @@ import {
   parseGrammarRows,
   parseVocabRows,
   mergeVocab,
+  collectGrammarVariants,
   type GrammarSeed,
+  type GrammarVariant,
   type VocabSeed,
 } from "./parse";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const GRAMMAR_FILE = "cefrj-grammar-profile-20180315.csv";
+export const DATA_DIR = path.join(process.cwd(), "data");
+export const GRAMMAR_FILE = "cefrj-grammar-profile-20180315.csv";
 const VOCAB_A1B2_FILE = "cefrj-vocabulary-profile-1.5.csv";
 const VOCAB_C1C2_FILE = "octanove-vocabulary-profile-c1c2-1.0.csv";
 
@@ -28,4 +30,9 @@ export function loadSeedData(dataDir = DATA_DIR): SeedData {
   // Primary CEFR-J list wins on (headword,pos) collision; octanove only adds new items.
   const vocab = mergeVocab(vocabPrimary, vocabC1C2);
   return { grammar, vocab };
+}
+
+/** Every CSV variant row per grammar topic name (no DB) — input for the enrichment script. */
+export function loadGrammarVariants(dataDir = DATA_DIR): Map<string, GrammarVariant[]> {
+  return collectGrammarVariants(parseCsv(readFileSync(path.join(dataDir, GRAMMAR_FILE), "utf8")));
 }

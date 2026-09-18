@@ -43,6 +43,35 @@ export function parseGrammarRows(rows: string[][]): GrammarSeed[] {
   return out;
 }
 
+export interface GrammarVariant {
+  shorthand: string;
+  sentenceType: string;
+  /** Dataset note (Japanese) describing the corpus extraction constraint; "" when absent. */
+  note: string;
+}
+
+/**
+ * All CSV rows sharing a Grammatical Item name, in file order. The seed collapses these
+ * AFF/NEG/INT variants into one GrammarTopic (dedup by name); enrichment needs them all.
+ * Key = the same trimmed name parseGrammarRows uses.
+ */
+export function collectGrammarVariants(rows: string[][]): Map<string, GrammarVariant[]> {
+  const out = new Map<string, GrammarVariant[]>();
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const name = (r[2] ?? "").trim();
+    if (!name) continue;
+    const list = out.get(name) ?? [];
+    list.push({
+      shorthand: (r[1] ?? "").trim(),
+      sentenceType: (r[3] ?? "").trim(),
+      note: (r[9] ?? "").trim(),
+    });
+    out.set(name, list);
+  }
+  return out;
+}
+
 export interface VocabSeed {
   headword: string;
   pos: string | null;
