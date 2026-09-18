@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseTopicRows } from "./classify";
+import { parseEnrichmentFile, type GrammarEnrichment } from "./grammarEnrichment";
 import { parseLevel } from "./select";
 import { isTopicKey, THEME_KEYS } from "./themes";
 
@@ -58,4 +59,18 @@ export function parseProfile(jsonText: string): ProfileSeed {
     throw new Error("data/profile.json is invalid: " + res.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
   }
   return res.data;
+}
+
+/** data/grammar-topics.json -> records for the seed's bulk UPDATE. Unknown/duplicate names abort the seed. */
+export function buildGrammarEnrichment(jsonText: string, knownNames: ReadonlySet<string>): GrammarEnrichment[] {
+  const records = parseEnrichmentFile(jsonText);
+  const seen = new Set<string>();
+  for (const r of records) {
+    if (!knownNames.has(r.name)) {
+      throw new Error(`grammar-topics.json: "${r.name}" is not a grammar topic in the syllabus (name must match the dataset verbatim)`);
+    }
+    if (seen.has(r.name)) throw new Error(`grammar-topics.json: duplicate "${r.name}"`);
+    seen.add(r.name);
+  }
+  return records;
 }

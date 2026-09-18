@@ -3,7 +3,7 @@ import { prisma } from "../src/lib/db";
 import { loadSeedData } from "../src/lib/curriculum/load";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { buildTopicAssignments, parseProfile } from "../src/lib/curriculum/seedExtras";
+import { buildGrammarEnrichment, buildTopicAssignments, parseProfile } from "../src/lib/curriculum/seedExtras";
 
 /**
  * Idempotent curriculum seed. Uses createMany + skipDuplicates so re-running:
@@ -12,6 +12,7 @@ import { buildTopicAssignments, parseProfile } from "../src/lib/curriculum/seedE
  *  - adds only new items if the committed datasets grow.
  * Data + attribution: data/README.md (CEFR-J, Octanove — CC BY-SA 4.0).
  *  - applies data/vocab-topics.csv to VocabItem.topic and creates the Profile if missing.
+ *  - applies data/grammar-topics.json (title, description, example, teachable, importance) to GrammarTopic.
  */
 const DATA_DIR = path.join(process.cwd(), "data");
 
@@ -46,6 +47,32 @@ async function seedVocabTopics() {
   console.log(`Vocab topics: ${rows.length} assignments in CSV, ${updated} rows updated.`);
 }
 
+/** Apply data/grammar-topics.json to GrammarTopic. One bulk UPDATE; only changed rows are touched. */
+async function seedGrammarEnrichment() {
+  const file = path.join(DATA_DIR, "grammar-topics.json");
+  if (!existsSync(file)) return console.warn("data/grammar-topics.json missing - grammar topics keep their raw names (teachable, importance 2).");
+  const known = new Set((await prisma.grammarTopic.findMany({ select: { name: true } })).map((t) => t.name));
+  const rows = buildGrammarEnrichment(readFileSync(file, "utf8"), known);
+  const names = rows.map((r) => r.name);
+  const titles = rows.map((r) => r.title);
+  const descriptions = rows.map((r) => r.description);
+  const examples = rows.map((r) => r.example);
+  // booleans/ints travel as text[] and are cast in SQL - avoids driver-specific array typing
+  const teachables = rows.map((r) => String(r.teachable));
+  const importances = rows.map((r) => String(r.importance));
+  const updated = await prisma.$executeRaw`
+    UPDATE "GrammarTopic" AS g
+    SET "title" = d.title, "description" = d.description, "example" = d.example,
+        "teachable" = d.teachable::boolean, "importance" = d.importance::int
+    FROM unnest(${names}::text[], ${titles}::text[], ${descriptions}::text[], ${examples}::text[],
+                ${teachables}::text[], ${importances}::text[])
+         AS d(name, title, description, example, teachable, importance)
+    WHERE g."name" = d.name
+      AND (g."title", g."description", g."example", g."teachable", g."importance")
+          IS DISTINCT FROM (d.title, d.description, d.example, d.teachable::boolean, d.importance::int)`;
+  console.log(`Grammar enrichment: ${rows.length} records in JSON, ${updated} rows updated.`);
+}
+
 async function main() {
   const { grammar, vocab } = loadSeedData();
   console.log(`Seeding ${grammar.length} grammar topics + ${vocab.length} vocab items...`);
@@ -59,6 +86,8 @@ async function main() {
     })),
     skipDuplicates: true,
   });
+
+  await seedGrammarEnrichment();
 
   await prisma.vocabItem.createMany({
     data: vocab.map((v) => ({
