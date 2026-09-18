@@ -83,7 +83,8 @@ M3b-2 is always L1 → English.
 
 ### 2. Deterministic checks — `src/lib/lesson/exerciseChecks.ts`
 
-`checkExercise(type, content, ctx): string[]` (empty = fine). `ctx = { vocab: { id, headword }[] }`.
+`checkExercise(content, ctx): string[]` (empty = fine; the type is the content's own `type` tag).
+`ctx = { vocab: { id, headword }[] }`.
 
 - every `answer` index within its options; `rationales.length === options.length`;
 - number of `___` markers equals `gaps.length` (`cloze_mc`, `open_cloze`); exactly one `___` turn in
@@ -92,7 +93,10 @@ M3b-2 is always L1 → English.
   distractor or reordering is possible (`tokens.length ≥ answer.length`, `answer.length ≥ 3`);
 - `match`: `answer` is a permutation of `0..n-1`;
 - `error_correct`: `answer` within `tokens`; no `accept` entry equals the wrong token (normalized);
-- `dictation`: normalized `tts` ∈ normalized `accept`;
+- `dictation`: `tts` matches an `accept` entry under **loose** normalization (`normalizeLoose` =
+  `normalizeAnswer` + all punctuation except apostrophes removed) — SPEC's own example keys
+  `"I'd like a coffee, please."` with `"i'd like a coffee please"`, which the strict contract alone
+  would reject;
 - all typed `accept` entries are non-empty after normalization (SPEC normalization contract: trim →
   collapse whitespace → lowercase → strip edge punctuation → straighten quotes) — the normalizer is
   implemented here as `normalizeAnswer()` and later reused by the graders;
