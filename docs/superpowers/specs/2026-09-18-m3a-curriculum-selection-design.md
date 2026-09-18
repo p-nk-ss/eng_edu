@@ -120,7 +120,8 @@ model Lesson  { …  theme           String? }   // theme key; enables LRU rotat
 
 ### 6. Selection — `src/lib/curriculum/select.ts`
 
-Pure functions over in-memory arrays (no DB, no clock — `now` is a parameter):
+Pure functions over in-memory arrays (no DB, no clock). The DB wrapper lives in a separate file
+(`lessonInputs.ts`) with an injectable `db`, so `select.ts` never imports Prisma:
 
 - `parseLevel(level)` — `"B1+"` → `"B1"`; throws on an unrecognised value.
 - `pickTheme(themes, preferred, recentThemes)` — weighted least-recently-used. For each theme,
@@ -132,9 +133,10 @@ Pure functions over in-memory arrays (no DB, no clock — `now` is a parameter):
   `PRACTICING` with open (non-`MASTERED`) errors → `PRACTICING` → `INTRODUCED` → `NOT_STARTED`;
   within a group by `sortOrder`. If the level is exhausted, continue at the next CEFR band.
   Returns `null` only when the whole syllabus is mastered.
-- `pickVocab(items, theme, level, now, target = 8)` — 6–10 items:
+- `pickVocab(items, theme, level, target = 8)` — 6–10 items:
   up to 3 `LEARNING` items (oldest `lastSeenAt` first), then `NEW` items with `topic === theme` at
-  `level`, then one band above, then `general` at `level`. Stable order: CEFR band, then headword.
+  `level`, then one band above, then `general` at `level`, then any `NEW` item at `level` (covers
+  an unclassified DB). Stable order within a pool: headword.
   Returns fewer than 6 only if the pools are genuinely exhausted.
 
 Thin DB wrapper:
@@ -177,7 +179,7 @@ manual verification checkpoint for M3a.
 - `select.test.ts` — rotation order, preferred weighting, tie-breaks, LRU after history; grammar
   priority groups and band overflow; vocab mix, pool exhaustion fallbacks, determinism (same input
   → same output); `parseLevel`.
-- `selectLessonInputs` — one test with mocked Prisma (pattern from `progress.test.ts`), incl.
+- `selectLessonInputs` — tested against a hand-written fake `db` object (injected), incl.
   `ProfileMissingError`.
 - Seed helpers (CSV → topic map, profile validation) as pure functions with unit tests.
 - The classification script's batching/threshold/resume logic lives in testable pure helpers; the
