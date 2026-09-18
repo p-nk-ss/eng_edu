@@ -79,8 +79,10 @@ export interface ClientOptions {
   baseUrl?: string;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
-  /** Retries after the first attempt, for 429/529 only. */
+  /** Retries after the first attempt, for retryable HTTP statuses and network failures. */
   maxRetries?: number;
+  /** Per-request timeout; a timeout aborts the request, which is treated as a network failure. */
+  timeoutMs?: number;
 }
 
 export interface SystemOneRequest<Q extends Record<string, Question>> {
@@ -98,7 +100,8 @@ export interface TypeSafeClient {
   systemOne<Q extends Record<string, Question>>(req: SystemOneRequest<Q>): Promise<SystemOneResult<Q>>;
 }
 
-const RETRYABLE = new Set([429, 529]);
+const RETRYABLE = new Set([429, 500, 502, 503, 504, 529]);
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 export function createTypeSafeClient(opts: ClientOptions = {}): TypeSafeClient {
   const apiKey = opts.apiKey ?? process.env.TYPESAFE_API_KEY;
@@ -107,6 +110,7 @@ export function createTypeSafeClient(opts: ClientOptions = {}): TypeSafeClient {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const maxRetries = opts.maxRetries ?? 4;
+  const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   return {
     async systemOne(req) {
@@ -116,11 +120,24 @@ export function createTypeSafeClient(opts: ClientOptions = {}): TypeSafeClient {
         questions: req.questions,
       });
       for (let attempt = 0; ; attempt++) {
-        const res = await fetchImpl(`${baseUrl}/v1/systemone`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body,
-        });
+        let res: Response;
+        try {
+          res = await fetchImpl(`${baseUrl}/v1/systemone`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+            body,
+            signal: AbortSignal.timeout(timeoutMs),
+          });
+        } catch (err) {
+          // Network failure (incl. our own timeout abort) — same backoff/retry budget as a
+          // retryable HTTP status.
+          if (attempt < maxRetries) {
+            await sleep(1000 * 2 ** attempt);
+            continue;
+          }
+          const message = err instanceof Error ? err.message : String(err);
+          throw new TypeSafeError(`TypeSafe request failed (network error: ${message})`, 0, message);
+        }
         if (res.ok) {
           const data = await res.json();
           return { answers: data.answers, usage: data.usage };

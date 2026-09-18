@@ -114,4 +114,11 @@ describe("pickVocab", () => {
     const picked = pickVocab(items, "food", "B1");
     expect(new Set(picked.map((p) => p.id)).size).toBe(picked.length);
   });
+
+  it("is a total order: same-headword NEW items tie-break on id, regardless of input order", () => {
+    const dupA: VocabCandidate = { id: "id-a", headword: "limit", cefrLevel: "B1", topic: "food", status: "NEW", lastSeenAt: null };
+    const dupB: VocabCandidate = { id: "id-b", headword: "limit", cefrLevel: "B1", topic: "food", status: "NEW", lastSeenAt: null };
+    expect(pickVocab([dupA, dupB], "food", "B1").map((v) => v.id)).toEqual(["id-a", "id-b"]);
+    expect(pickVocab([dupB, dupA], "food", "B1").map((v) => v.id)).toEqual(["id-a", "id-b"]);
+  });
 });

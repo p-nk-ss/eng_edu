@@ -48,13 +48,32 @@ describe("selectLessonInputs", () => {
     expect(out.vocab.map((v) => v.id)).toEqual(["v1", "v2"]);
     expect(out.dueErrors).toEqual([{ id: "e1" }]);
 
-    expect(calls.lesson).toMatchObject({ where: { theme: { not: null } }, orderBy: { date: "desc" } });
+    expect(calls.lesson).toMatchObject({
+      where: { theme: { not: null } },
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+    });
     expect(calls.errorRecord).toMatchObject({
       where: { nextReviewAt: { lte: now }, status: { not: "MASTERED" } },
     });
     expect(calls.vocabItem).toMatchObject({
       where: { OR: [{ status: "LEARNING" }, { status: "NEW", cefrLevel: { in: ["B1", "B2"] } }] },
+      orderBy: { id: "asc" },
     });
+    expect(calls.grammarTopic).toMatchObject({
+      where: { status: { not: "MASTERED" } },
+      orderBy: { id: "asc" },
+    });
+  });
+
+  it("prefers a PRACTICING topic with open errors over one with a better sortOrder", async () => {
+    const { db } = fakeDb({
+      grammar: [
+        { id: "gA", name: "A", cefrLevel: "B1", status: "PRACTICING", sortOrder: 1, _count: { errors: 0 } },
+        { id: "gB", name: "B", cefrLevel: "B1", status: "PRACTICING", sortOrder: 9, _count: { errors: 2 } },
+      ],
+    });
+    const out = await selectLessonInputs(db, now);
+    expect(out.grammarTopic?.id).toBe("gB");
   });
 
   it("ignores preferred theme keys that no longer exist", async () => {

@@ -4,7 +4,7 @@ import type { VocabSeed } from "./parse";
 import type { ChoiceAnswer } from "../typesafe/client";
 import {
   wordKey, TOPIC_CRITERIA, buildBatch, resolveTopic, stratifiedSample, pendingWords, chunk,
-  TOPIC_CSV_HEADER, toCsvLine, parseTopicRows, sortTopicRows,
+  TOPIC_CSV_HEADER, toCsvLine, parseTopicRows, sortTopicRows, parseNumberFlag,
 } from "./classify";
 
 const w = (headword: string, pos: string | null, cefrLevel: VocabSeed["cefrLevel"] = "A1"): VocabSeed => ({
@@ -74,5 +74,37 @@ describe("classify helpers", () => {
     const r = (headword: string, pos: string) => ({ headword, pos, topic: "general", confidence: 1, rawTopic: "general" });
     expect(sortTopicRows([r("b", "noun"), r("a", "verb"), r("a", "noun")]).map((x) => `${x.headword}/${x.pos}`))
       .toEqual(["a/noun", "a/verb", "b/noun"]);
+  });
+});
+
+describe("parseNumberFlag", () => {
+  it("returns the fallback when the flag is absent", () => {
+    expect(parseNumberFlag(["--pilot"], "--threshold", 0.5)).toBe(0.5);
+  });
+
+  it("parses a valid numeric value", () => {
+    expect(parseNumberFlag(["--threshold", "0.7"], "--threshold", 0.5)).toBe(0.7);
+    expect(parseNumberFlag(["--limit", "10"], "--limit", Infinity, { min: 1, integer: true })).toBe(10);
+  });
+
+  it("throws a clear error when the flag's value is not a finite number", () => {
+    expect(() => parseNumberFlag(["--threshold"], "--threshold", 0.5)).toThrow(/--threshold/);
+    expect(() => parseNumberFlag(["--threshold", "--limit"], "--threshold", 0.5)).toThrow(/--threshold/);
+    expect(() => parseNumberFlag(["--threshold", "nope"], "--threshold", 0.5)).toThrow(/number/i);
+  });
+
+  it("enforces min/max range", () => {
+    expect(() => parseNumberFlag(["--threshold", "1.5"], "--threshold", 0.5, { min: 0, max: 1 })).toThrow(
+      /--threshold/,
+    );
+    expect(() => parseNumberFlag(["--threshold", "-0.1"], "--threshold", 0.5, { min: 0, max: 1 })).toThrow(
+      /--threshold/,
+    );
+  });
+
+  it("enforces integer when required", () => {
+    expect(() => parseNumberFlag(["--limit", "2.5"], "--limit", Infinity, { min: 1, integer: true })).toThrow(
+      /integer/i,
+    );
   });
 });

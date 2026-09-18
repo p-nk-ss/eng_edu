@@ -31,6 +31,8 @@ async function seedVocabTopics() {
   if (!existsSync(file)) return console.warn("data/vocab-topics.csv missing — VocabItem.topic stays NULL.");
   const rows = buildTopicAssignments(readFileSync(file, "utf8"));
   let updated = 0;
+  // 2000: bounds the size of a single statement's array parameters (headwords/poses/topics
+  // below) — not a Postgres limit, just keeps each round-trip's payload modest.
   for (let i = 0; i < rows.length; i += 2000) {
     const part = rows.slice(i, i + 2000);
     const headwords = part.map((r) => r.headword);

@@ -10,8 +10,8 @@ import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import { loadSeedData } from "../src/lib/curriculum/load";
 import {
-  buildBatch, chunk, parseTopicRows, pendingWords, resolveTopic, sortTopicRows, stratifiedSample,
-  toCsvLine, TOPIC_CSV_HEADER, type TopicRow,
+  buildBatch, chunk, parseNumberFlag, parseTopicRows, pendingWords, resolveTopic, sortTopicRows,
+  stratifiedSample, toCsvLine, TOPIC_CSV_HEADER, type TopicRow,
 } from "../src/lib/curriculum/classify";
 import { createTypeSafeClient } from "../src/lib/typesafe/client";
 
@@ -25,14 +25,19 @@ const PILOT_PER_LEVEL = 34; // x6 CEFR bands ~= 200 words
 
 const args = process.argv.slice(2);
 const flag = (name: string) => args.includes(name);
-const opt = (name: string, fallback: number) => {
-  const i = args.indexOf(name);
-  return i >= 0 ? Number(args[i + 1]) : fallback;
-};
 
 const pilot = flag("--pilot");
-const threshold = opt("--threshold", 0.5);
-const limit = opt("--limit", Infinity);
+let threshold: number;
+let limit: number;
+try {
+  // Validate before creating the client or touching any file: a bad flag (e.g. NaN threshold)
+  // must never silently send a whole paid run to `general`.
+  threshold = parseNumberFlag(args, "--threshold", 0.5, { min: 0, max: 1 });
+  limit = parseNumberFlag(args, "--limit", Infinity, { min: 1, integer: true });
+} catch (e) {
+  console.error(e instanceof Error ? e.message : String(e));
+  process.exit(1);
+}
 const outFile = path.join("data", pilot ? "vocab-topics.pilot.csv" : "vocab-topics.csv");
 
 async function main() {

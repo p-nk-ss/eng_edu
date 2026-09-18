@@ -94,4 +94,58 @@ describe("createTypeSafeClient", () => {
     ).rejects.toMatchObject({ status: 422 });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
+
+  it("retries 504 with backoff, then succeeds", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(json({ error: "gateway timeout" }, 504))
+      .mockResolvedValueOnce(json(okBody));
+    const sleep = vi.fn(noSleep);
+    const client = createTypeSafeClient({ apiKey: "k", fetchImpl, sleep });
+
+    const res = await client.systemOne({ state: "x", questions: { ok: noul("?", { true: "y", false: "n" }) } });
+
+    expect(res.answers.ok.noul).toBe(0.95);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries a network failure (fetch rejects), then succeeds", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("ECONNRESET"))
+      .mockResolvedValueOnce(json(okBody));
+    const sleep = vi.fn(noSleep);
+    const client = createTypeSafeClient({ apiKey: "k", fetchImpl, sleep });
+
+    const res = await client.systemOne({ state: "x", questions: { ok: noul("?", { true: "y", false: "n" }) } });
+
+    expect(res.answers.ok.noul).toBe(0.95);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives up after maxRetries on a persistent network failure, throwing TypeSafeError(status 0) with the cause", async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new Error("ECONNRESET"));
+    const client = createTypeSafeClient({ apiKey: "k", fetchImpl, sleep: noSleep, maxRetries: 2 });
+
+    const err = await client
+      .systemOne({ state: "x", questions: { ok: noul("?", { true: "y", false: "n" }) } })
+      .catch((e) => e);
+
+    expect(err).toBeInstanceOf(TypeSafeError);
+    expect(err.status).toBe(0);
+    expect(err.body).toContain("ECONNRESET");
+    expect(fetchImpl).toHaveBeenCalledTimes(3); // 1 try + 2 retries
+  });
+
+  it("passes an AbortSignal (per-request timeout) to fetch", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(json(okBody));
+    const client = createTypeSafeClient({ apiKey: "k", fetchImpl, sleep: noSleep });
+
+    await client.systemOne({ state: "x", questions: { ok: noul("?", { true: "y", false: "n" }) } });
+
+    const [, init] = (fetchImpl.mock.calls[0] as any[]);
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
 });

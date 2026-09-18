@@ -36,7 +36,7 @@ export async function selectLessonInputs(db: LessonInputsDb = prisma, now = new 
 
   const lessons = await db.lesson.findMany({
     where: { theme: { not: null } },
-    orderBy: { date: "desc" },
+    orderBy: [{ date: "desc" }, { id: "desc" }],
     take: ROTATION_HISTORY,
     select: { theme: true },
   });
@@ -46,6 +46,7 @@ export async function selectLessonInputs(db: LessonInputsDb = prisma, now = new 
 
   const topics = await db.grammarTopic.findMany({
     where: { status: { not: "MASTERED" } },
+    orderBy: { id: "asc" },
     include: { _count: { select: { errors: { where: { status: { not: "MASTERED" } } } } } },
   });
   const grammarTopic = pickGrammarFocus(
@@ -60,6 +61,7 @@ export async function selectLessonInputs(db: LessonInputsDb = prisma, now = new 
         { status: "NEW", cefrLevel: { in: nextBand ? [level, nextBand] : [level] } },
       ],
     },
+    orderBy: { id: "asc" },
   });
   const vocab = pickVocab(vocabPool, theme.key, level);
 

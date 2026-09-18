@@ -48,12 +48,15 @@ export interface GrammarCandidate {
 const grammarRank = (t: GrammarCandidate): number =>
   t.status === "PRACTICING" ? (t.openErrors > 0 ? 0 : 1) : t.status === "INTRODUCED" ? 2 : 3;
 
+// Plain code-unit comparison — avoids locale/ICU-dependent ordering from localeCompare.
+const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
 export function pickGrammarFocus<T extends GrammarCandidate>(topics: T[], level: CefrBand): T | null {
   for (const band of CEFR_BANDS.slice(CEFR_BANDS.indexOf(level))) {
     const pool = topics.filter((t) => t.cefrLevel === band && t.status !== "MASTERED");
     if (pool.length === 0) continue;
     return [...pool].sort(
-      (a, b) => grammarRank(a) - grammarRank(b) || a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+      (a, b) => grammarRank(a) - grammarRank(b) || a.sortOrder - b.sortOrder || cmp(a.name, b.name),
     )[0];
   }
   return null;
@@ -78,7 +81,9 @@ export function pickVocab<T extends VocabCandidate>(
 ): T[] {
   const size = Math.min(10, Math.max(6, target));
   const nextBand: CefrBand | undefined = CEFR_BANDS[CEFR_BANDS.indexOf(level) + 1];
-  const byHeadword = (a: T, b: T) => a.headword.localeCompare(b.headword);
+  // Total order: headword, then id — Postgres row order is otherwise unspecified for ties
+  // (e.g. same headword, different pos), which would make lesson vocab non-deterministic.
+  const byHeadword = (a: T, b: T) => cmp(a.headword, b.headword) || cmp(a.id, b.id);
   const seenAt = (v: T) => v.lastSeenAt?.getTime() ?? -Infinity; // never seen = oldest
 
   const learning = items

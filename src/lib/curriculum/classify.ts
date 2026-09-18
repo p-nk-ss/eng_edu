@@ -1,6 +1,6 @@
 import { choice, type ChoiceAnswer, type ChoiceQuestion } from "../typesafe/client";
 import { parseCsv } from "./csv";
-import { CEFR_BANDS, type VocabSeed } from "./parse";
+import { CEFR_BANDS, wordKey, type VocabSeed } from "./parse";
 import { GENERAL_DESCRIPTION, GENERAL_TOPIC, THEMES } from "./themes";
 
 export interface TopicRow {
@@ -13,7 +13,8 @@ export interface TopicRow {
   rawTopic: string;
 }
 
-export const wordKey = (headword: string, pos: string | null): string => `${headword} ${pos ?? ""}`;
+// Re-exported so existing `import { wordKey } from "./classify"` call sites keep working.
+export { wordKey };
 
 export const TOPIC_CRITERIA: Record<string, string> = {
   ...Object.fromEntries(THEMES.map((t) => [t.key, t.description])),
@@ -90,4 +91,34 @@ export function parseTopicRows(csvText: string): TopicRow[] {
 export function sortTopicRows(rows: TopicRow[]): TopicRow[] {
   const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
   return [...rows].sort((a, b) => cmp(a.headword, b.headword) || cmp(a.pos, b.pos));
+}
+
+/**
+ * Parse a `--name value` numeric flag out of argv. Returns `fallback` when the flag is absent;
+ * throws a clear Error when the flag is present but its value is missing, not a finite number,
+ * or fails the given constraints — never returns NaN.
+ */
+export function parseNumberFlag(
+  args: readonly string[],
+  name: string,
+  fallback: number,
+  opts: { min?: number; max?: number; integer?: boolean } = {},
+): number {
+  const i = args.indexOf(name);
+  if (i < 0) return fallback;
+  const raw = args[i + 1];
+  const value = Number(raw);
+  if (raw === undefined || !Number.isFinite(value)) {
+    throw new Error(`${name} expects a number, got ${JSON.stringify(raw ?? "")}`);
+  }
+  if (opts.integer && !Number.isInteger(value)) {
+    throw new Error(`${name} must be an integer, got ${raw}`);
+  }
+  if (opts.min !== undefined && value < opts.min) {
+    throw new Error(`${name} must be >= ${opts.min}, got ${value}`);
+  }
+  if (opts.max !== undefined && value > opts.max) {
+    throw new Error(`${name} must be <= ${opts.max}, got ${value}`);
+  }
+  return value;
 }
