@@ -117,15 +117,20 @@ model ConversationTurn {
 }
 
 model GrammarTopic {
-  id         String        @id @default(cuid())
-  name       String        @unique
-  cefrLevel  String
-  category   String?
-  status     TopicStatus   @default(NOT_STARTED)
-  timesUsed  Int           @default(0)
-  lastUsedAt DateTime?
-  sortOrder  Int
-  errors     ErrorRecord[]
+  id          String        @id @default(cuid())
+  name        String        @unique
+  cefrLevel   String
+  category    String?
+  status      TopicStatus   @default(NOT_STARTED)
+  timesUsed   Int           @default(0)
+  lastUsedAt  DateTime?
+  sortOrder   Int
+  title       String? // learner-facing title from data/grammar-topics.json (M3b-1); NULL until enriched
+  description String?
+  example     String?
+  teachable   Boolean       @default(true) // false = never selected as a lesson focus, not counted in progress
+  importance  Int           @default(2) // 1 core .. 3 peripheral; orders topics inside a level
+  errors      ErrorRecord[]
 }
 
 model VocabItem {
