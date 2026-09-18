@@ -20,7 +20,8 @@
     "db:psql": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/db.ps1 psql",
     "vocab:classify": "tsx scripts/classify-vocab.ts",
     "curriculum:preview": "tsx scripts/curriculum-preview.ts",
-    "grammar:enrich": "tsx scripts/enrich-grammar.ts"
+    "grammar:enrich": "tsx scripts/enrich-grammar.ts",
+    "lesson:generate": "tsx scripts/lesson-preview.ts"
   },
   "dependencies": {
     "next": "15.5.20",
