@@ -39,4 +39,9 @@ describe("parseProfile", () => {
     expect(() => parseProfile(JSON.stringify({ ...valid, preferredThemes: ["general"] }))).toThrow(/general/);
     expect(() => parseProfile(JSON.stringify({ ...valid, level: "intermediate" }))).toThrow(/level/i);
   });
+
+  it("names the file on malformed JSON", () => {
+    expect(() => parseProfile("{ not json")).toThrow(/data\/profile\.json/);
+    expect(() => parseProfile("{ not json")).toThrow(/JSON/i);
+  });
 });

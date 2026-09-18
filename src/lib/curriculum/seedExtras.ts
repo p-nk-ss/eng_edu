@@ -47,7 +47,13 @@ const profileSchema = z.object({
 export type ProfileSeed = z.infer<typeof profileSchema>;
 
 export function parseProfile(jsonText: string): ProfileSeed {
-  const res = profileSchema.safeParse(JSON.parse(jsonText));
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch (e) {
+    throw new Error("data/profile.json is not valid JSON: " + (e instanceof Error ? e.message : String(e)));
+  }
+  const res = profileSchema.safeParse(parsed);
   if (!res.success) {
     throw new Error("data/profile.json is invalid: " + res.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
   }
