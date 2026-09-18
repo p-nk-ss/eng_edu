@@ -10,7 +10,7 @@ export const THEMES: readonly Theme[] = [
   { key: "work", label: "Work & careers", description: "Jobs, professions, workplaces, colleagues, hiring, meetings, tasks and office life. Not money or companies as such (business) and not school (education)." },
   { key: "business", label: "Business & money", description: "Money, prices, banking, trade, companies, economy, finance, marketing and ownership. Not the daily activity of doing a job (work) and not buying personal goods (shopping)." },
   { key: "technology", label: "Technology & internet", description: "Computers, software, devices, the internet, data, machines, engineering and digital tools. Not pure science or research (science)." },
-  { key: "science", label: "Science & research", description: "Scientific fields, experiments, theories, mathematics, physics, chemistry, space and research methods. Not practical devices or software (technology) and not medicine (health)." },
+  { key: "science", label: "Science & research", description: "Scientific fields, experiments, theories, mathematics, physics, chemistry, space and research methods. Not practical devices or software (technology) and not medicine (health). A formal-sounding or rare word is NOT science unless it names an actual scientific field, method or finding (general)." },
   { key: "education", label: "Education & learning", description: "Schools, universities, studying, teaching, exams, subjects, classroom objects and academic skills." },
   { key: "health", label: "Health & medicine", description: "Illness, injuries, treatment, doctors, hospitals, medicines, mental health and healthy habits. Not plain body parts or looks (body)." },
   { key: "body", label: "Body & appearance", description: "Parts of the body, physical appearance, looks, physical actions and the senses. Not illness or treatment (health) and not clothes (shopping)." },
@@ -27,7 +27,7 @@ export const THEMES: readonly Theme[] = [
   { key: "arts", label: "Arts & culture", description: "Painting, literature, theatre, museums, design, history, religion, traditions and cultural heritage. Not popular films, pop music or games (entertainment)." },
   { key: "shopping", label: "Shopping & clothes", description: "Shops, buying personal goods, clothes, shoes, accessories, fashion, sizes and colours of clothing." },
   { key: "society", label: "Society, law & politics", description: "Government, politics, law, crime, police, war, rights, social problems, institutions and public affairs." },
-  { key: "communication", label: "Communication & language", description: "Speaking, writing, languages, grammar terms, messages, phone calls, letters, conversation and ways of expressing or reporting something." },
+  { key: "communication", label: "Communication & language", description: "Speaking, writing, languages, grammar terms, messages, phone calls, letters, conversation and the act of expressing or reporting something. Not people or roles defined by another theme, such as a student (education) or a soldier (society), and not unrelated abstract nouns with no link to language." },
 ];
 
 /** Not a lesson theme — the bucket for words with no clear theme. Never rotated. */
