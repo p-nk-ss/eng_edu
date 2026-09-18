@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { CEFR_BANDS, type CefrBand, type GrammarSeed } from "./parse";
+import { CEFR_BANDS, type CefrBand, type GrammarSeed, type GrammarVariant } from "./parse";
+import { grammarEnrichmentPrompt } from "../prompts/grammarEnrichment";
 
 /** One enriched grammar topic, as stored in data/grammar-topics.json. Join key: `name`. */
 export const enrichmentSchema = z
@@ -93,4 +94,33 @@ export function pilotSample(topics: GrammarSeed[]): GrammarSeed[] {
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .slice(0, PILOT_PER_LEVEL),
   );
+}
+
+export type AskEnrichment = (prompt: { system: string; user: string }) => Promise<GrammarEnrichment[]>;
+
+/**
+ * Enrich one same-level batch. `ask` is the LLM call (injected so this stays testable);
+ * its own failures propagate. A name mismatch in the answer gets exactly one retry.
+ */
+export async function enrichBatch(
+  batch: GrammarBatch,
+  variants: Map<string, GrammarVariant[]>,
+  ask: AskEnrichment,
+): Promise<GrammarEnrichment[]> {
+  const names = batch.topics.map((t) => t.name);
+  const prompt = grammarEnrichmentPrompt({
+    level: batch.level,
+    topics: names.map((name) => ({ name, variants: variants.get(name) ?? [] })),
+  });
+  let mismatch = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const records = await ask(prompt);
+    try {
+      validateBatch(names, records);
+      return records;
+    } catch (e) {
+      mismatch = e instanceof Error ? e.message : String(e);
+    }
+  }
+  throw new Error(`Grammar enrichment failed twice for the ${batch.level} batch starting at "${names[0]}": ${mismatch}`);
 }

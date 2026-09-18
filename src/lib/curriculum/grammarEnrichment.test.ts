@@ -1,9 +1,9 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type { GrammarSeed } from "./parse";
 import {
   enrichmentSchema, batchByLevel, pendingTopics, validateBatch,
-  parseEnrichmentFile, serializeEnrichmentFile, pilotSample, type GrammarEnrichment,
+  parseEnrichmentFile, serializeEnrichmentFile, pilotSample, enrichBatch, type GrammarEnrichment,
 } from "./grammarEnrichment";
 
 const T = (name: string, cefrLevel: GrammarSeed["cefrLevel"], sortOrder: number): GrammarSeed =>
@@ -99,5 +99,40 @@ describe("pilotSample", () => {
     expect(sample).toHaveLength(18);
     expect(sample[0].name).toBe("a2-19"); // sortOrder 1
     expect(sample.some((t) => t.cefrLevel === "A1")).toBe(false);
+  });
+});
+
+describe("enrichBatch", () => {
+  const batch = { level: "B1" as const, topics: [T("a", "B1", 1), T("b", "B1", 2)] };
+  const variants = new Map([["a", [{ shorthand: "X.a", sentenceType: "AFF. DEC.", note: "" }]]]);
+
+  it("builds the prompt from the batch and returns validated records", async () => {
+    const ask = vi.fn().mockResolvedValue([rec({ name: "a" }), rec({ name: "b" })]);
+    const out = await enrichBatch(batch, variants, ask);
+    expect(out.map((r) => r.name)).toEqual(["a", "b"]);
+    const prompt = ask.mock.calls[0][0] as { system: string; user: string };
+    expect(prompt.user).toContain("X.a");
+    expect(JSON.parse(prompt.user.slice(prompt.user.indexOf("{"))).topics[1]).toEqual({ name: "b", variants: [] });
+  });
+
+  it("retries once when names do not match, then succeeds", async () => {
+    const ask = vi
+      .fn()
+      .mockResolvedValueOnce([rec({ name: "a" })])
+      .mockResolvedValueOnce([rec({ name: "a" }), rec({ name: "b" })]);
+    expect((await enrichBatch(batch, variants, ask)).length).toBe(2);
+    expect(ask).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws naming the level and the mismatch after the second bad answer", async () => {
+    const ask = vi.fn().mockResolvedValue([rec({ name: "a" })]);
+    await expect(enrichBatch(batch, variants, ask)).rejects.toThrow(/B1.*missing "b"/);
+    expect(ask).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not swallow errors thrown by ask", async () => {
+    const ask = vi.fn().mockRejectedValue(new Error("LLM JSON validation failed"));
+    await expect(enrichBatch(batch, variants, ask)).rejects.toThrow("LLM JSON validation failed");
+    expect(ask).toHaveBeenCalledTimes(1);
   });
 });
