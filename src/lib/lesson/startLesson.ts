@@ -1,0 +1,65 @@
+import type { PrismaClient } from "@prisma/client";
+import { prisma } from "../db";
+import { selectLessonInputs, type LessonInputs, type LessonInputsDb } from "../curriculum/lessonInputs";
+import type { GenerationInputs } from "../prompts/lessonGeneration";
+import { createLesson, type CreateLessonDb } from "./createLesson";
+import { planExerciseMix } from "./exerciseMix";
+import type { ExerciseTypeName } from "./exerciseSchemas";
+import { generateLesson, type GenerationDeps } from "./generateLesson";
+
+export type StartLessonDb = LessonInputsDb & CreateLessonDb & Pick<PrismaClient, "lesson">;
+
+const SUMMARY_HISTORY = 3;
+
+export function toGenerationInputs(inputs: LessonInputs, mix: ExerciseTypeName[], summaries: string[]): GenerationInputs {
+  const t = inputs.grammarTopic;
+  return {
+    profile: {
+      level: inputs.profile.level,
+      goals: inputs.profile.goals,
+      interests: inputs.profile.interests,
+      nativeLang: inputs.profile.nativeLang,
+    },
+    theme: { key: inputs.theme.key, label: inputs.theme.label, description: inputs.theme.description },
+    // Not-yet-enriched DB: fall back to the dataset name rather than sending "null" to Claude.
+    grammar: t ? { id: t.id, title: t.title ?? t.name, description: t.description ?? "", example: t.example ?? "" } : null,
+    vocab: inputs.vocab.map((v) => ({ id: v.id, headword: v.headword, pos: v.pos, cefrLevel: v.cefrLevel })),
+    mix,
+    summaries,
+  };
+}
+
+/** POST /api/lesson/start. Idempotent per local calendar day. Sequential queries only. */
+export async function startLesson(deps: {
+  db?: StartLessonDb;
+  generation: GenerationDeps;
+  now?: Date;
+}): Promise<{ lessonId: string; reused: boolean }> {
+  const db = deps.db ?? (prisma as unknown as StartLessonDb);
+  const now = deps.now ?? new Date();
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  const existing = await db.lesson.findFirst({
+    where: { status: { in: ["PLANNED", "IN_PROGRESS"] }, date: { gte: dayStart, lt: dayEnd } },
+    orderBy: [{ date: "desc" }, { id: "desc" }],
+    select: { id: true },
+  });
+  if (existing) return { lessonId: existing.id, reused: true };
+
+  const inputs = await selectLessonInputs(db, now);
+  const lessonNumber = (await db.lesson.count()) + 1;
+  const mix = planExerciseMix(lessonNumber, { hasGrammar: inputs.grammarTopic !== null });
+
+  const recent = await db.lesson.findMany({
+    where: { status: "COMPLETED", summary: { not: null } },
+    orderBy: [{ date: "desc" }, { id: "desc" }],
+    take: SUMMARY_HISTORY,
+    select: { summary: true },
+  });
+  const summaries = recent.map((l) => l.summary).filter((s): s is string => s !== null);
+
+  const draft = await generateLesson(toGenerationInputs(inputs, mix, summaries), deps.generation);
+  const lessonId = await createLesson(db, draft, inputs, mix, now);
+  return { lessonId, reused: false };
+}
