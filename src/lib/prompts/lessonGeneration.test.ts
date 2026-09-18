@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { LESSON_LIMITS, lessonEnvelopeSchema, lessonGenerationPrompt, type GenerationInputs } from "./lessonGeneration";
+import { OPEN_WRITING_WORDS } from "../lesson/exerciseSchemas";
 
 const input: GenerationInputs = {
   profile: { level: "B1", goals: "conversational fluency", interests: "IT, QA", nativeLang: "ru" },
@@ -58,6 +59,16 @@ describe("lessonGenerationPrompt", () => {
     const payload = JSON.parse(args.messages[0].content.slice(args.messages[0].content.indexOf("{")));
     expect(payload.grammar).toBeNull();
     expect(args.system).toMatch(/vocabulary/i);
+  });
+
+  it("specifies the validator bounds in the exercise shape descriptions", () => {
+    const mixWithBounds = ["FILL_BLANK", "MATCH", "OPEN_WRITING"];
+    const args = lessonGenerationPrompt({ ...input, mix: mixWithBounds as any });
+    const { system } = args;
+    expect(system).toContain("1-3 gaps");
+    expect(system).toMatch(/exactly once/i);
+    expect(system).toContain(`${OPEN_WRITING_WORDS.min}`);
+    expect(system).toContain(`${OPEN_WRITING_WORDS.max}`);
   });
 });
 

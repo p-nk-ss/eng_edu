@@ -24,6 +24,7 @@ const TAG_TO_TYPE = new Map(EXERCISE_TYPES.map((t) => [EXERCISE_TYPE_TAGS[t], t]
 export const typeForTag = (tag: string): ExerciseTypeName | undefined => TAG_TO_TYPE.get(tag);
 
 export const EXPLAIN_LIMITS = { min: 10, max: 400 } as const;
+export const OPEN_WRITING_WORDS = { min: 30, max: 120 } as const;
 
 const text = z.string().min(1);
 const base = {
@@ -70,7 +71,7 @@ const translation = z.object({
 });
 const openWriting = z.object({
   type: z.literal("open_writing"), prompt: z.string().min(10),
-  minWords: z.number().int().min(30).max(120), hint: z.string().optional(), ...base,
+  minWords: z.number().int().min(OPEN_WRITING_WORDS.min).max(OPEN_WRITING_WORDS.max), hint: z.string().optional(), ...base,
 });
 
 export const exerciseContentSchema = z.discriminatedUnion("type", [

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { EXERCISE_TYPES, EXERCISE_TYPE_TAGS, parseExercise, typeForTag } from "./exerciseSchemas";
+import { EXERCISE_TYPES, EXERCISE_TYPE_TAGS, OPEN_WRITING_WORDS, parseExercise, typeForTag } from "./exerciseSchemas";
 import { VALID_EXERCISES } from "./fixtures";
 
 describe("exercise schemas", () => {
@@ -49,5 +49,13 @@ describe("exercise schemas", () => {
       expect(res.ok, field).toBe(false);
       expect(!res.ok && res.reason, field).toContain(field);
     }
+  });
+
+  it("exports OPEN_WRITING_WORDS and enforces its bounds", () => {
+    expect(OPEN_WRITING_WORDS).toEqual({ min: 30, max: 120 });
+    const res1 = parseExercise({ ...VALID_EXERCISES.OPEN_WRITING, minWords: OPEN_WRITING_WORDS.max + 1 });
+    expect(res1.ok).toBe(false);
+    const res2 = parseExercise({ ...VALID_EXERCISES.OPEN_WRITING, minWords: OPEN_WRITING_WORDS.max });
+    expect(res2.ok).toBe(true);
   });
 });

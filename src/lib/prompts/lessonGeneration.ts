@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { CompleteArgs } from "../llm/types";
-import { EXERCISE_TYPE_TAGS, EXPLAIN_LIMITS, type ExerciseTypeName } from "../lesson/exerciseSchemas";
+import { EXERCISE_TYPE_TAGS, EXPLAIN_LIMITS, OPEN_WRITING_WORDS, type ExerciseTypeName } from "../lesson/exerciseSchemas";
 
 /** Limits are stated in the prompt AND enforced by the schema from these same constants. */
 export const LESSON_LIMITS = {
@@ -45,14 +45,14 @@ export interface GenerationInputs {
 const SHAPES: Record<ExerciseTypeName, string> = {
   MULTIPLE_CHOICE: '{"type":"mcq","prompt":"She ___ to work every day.","options":["go","goes","going","gone"],"answer":1,"rationales":["one short reason per option"],"explain":"...","vocab":[]} - 3-5 options, answer = index of the single correct option, rationales has one entry per option.',
   CLOZE_DROPDOWN: '{"type":"cloze_mc","text":"I have lived here ___ 2019, ___ five years.","gaps":[{"options":["since","for"],"answer":0},{"options":["since","for"],"answer":1}],"explain":"...","vocab":[]} - 1-4 gaps, one ___ per gap in reading order, 2-4 options each.',
-  FILL_BLANK: '{"type":"open_cloze","text":"It was a ___ (BEAUTY) day.","gaps":[{"root":"BEAUTY","accept":["beautiful"]}],"explain":"...","vocab":[]} - the learner TYPES the word; root is optional (word formation); accept lists every correct variant.',
+  FILL_BLANK: '{"type":"open_cloze","text":"It was a ___ (BEAUTY) day.","gaps":[{"root":"BEAUTY","accept":["beautiful"]}],"explain":"...","vocab":[]} - 1-3 gaps, one ___ per gap in reading order; the learner TYPES the word; root is optional (word formation); accept lists every correct variant.',
   WORD_BANK: '{"type":"word_bank","tokens":["work","I","to","go","goes"],"answer":["I","go","to","work"],"accept_alt":[],"explain":"...","vocab":[]} - tokens = the answer words shuffled plus 1-2 distractors; accept_alt lists other correct orders.',
-  MATCH: '{"type":"match","left":["frankly","broke","deadline"],"right":["with no money","the latest time to finish something","to be honest"],"answer":[2,0,1],"explain":"...","vocab":[]} - 3-6 pairs; answer[i] = index in right that matches left[i]; right must be shuffled.',
+  MATCH: '{"type":"match","left":["frankly","broke","deadline"],"right":["with no money","the latest time to finish something","to be honest"],"answer":[2,0,1],"explain":"...","vocab":[]} - 3-6 pairs; answer[i] = index in right that matches left[i] (each index of right used exactly once); right must be shuffled.',
   DIALOGUE_GAP: '{"type":"dialogue_gap","turns":["A: Sorry I am late.","B: ___"],"options":["No worries.","You are welcome."],"answer":0,"explain":"...","vocab":[]} - exactly one turn contains ___; 2-4 options.',
   DICTATION: '{"type":"dictation","tts":"I\'d like a coffee, please.","accept":["i\'d like a coffee please","i would like a coffee please"],"explain":"...","vocab":[]} - tts is spoken aloud to the learner; accept lists lowercase variants without commas or final punctuation and MUST include the tts sentence itself.',
   ERROR_CORRECTION: '{"type":"error_correct","tokens":["She","don\'t","like","tea"],"answer":1,"accept":["doesn\'t","does not"],"explain":"...","vocab":[]} - the sentence split into tokens with exactly ONE wrong token; answer = its index; accept = every correct replacement.',
   TRANSLATION: '{"type":"translation","source":"<one Russian sentence>","reference":"<its natural English translation>","hint":"optional","explain":"...","vocab":[]} - the learner translates source into English.',
-  OPEN_WRITING: '{"type":"open_writing","prompt":"<a concrete writing task>","minWords":60,"hint":"optional","explain":"...","vocab":[]} - minWords between 30 and 120.',
+  OPEN_WRITING: `{"type":"open_writing","prompt":"<a concrete writing task>","minWords":60,"hint":"optional","explain":"...","vocab":[]} - minWords between ${OPEN_WRITING_WORDS.min} and ${OPEN_WRITING_WORDS.max}.`,
 };
 
 function systemPrompt(input: GenerationInputs): string {
