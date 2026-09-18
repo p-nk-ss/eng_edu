@@ -55,17 +55,31 @@ const grammarRank = (t: GrammarCandidate): number =>
 // Plain code-unit comparison — avoids locale/ICU-dependent ordering from localeCompare.
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
+const byFocusPriority = <T extends GrammarCandidate>(pool: T[]): T[] =>
+  [...pool].sort(
+    (a, b) =>
+      grammarRank(a) - grammarRank(b) ||
+      a.importance - b.importance ||
+      a.sortOrder - b.sortOrder ||
+      cmp(a.name, b.name),
+  );
+
 export function pickGrammarFocus<T extends GrammarCandidate>(topics: T[], level: CefrBand): T | null {
-  for (const band of CEFR_BANDS.slice(CEFR_BANDS.indexOf(level))) {
-    const pool = topics.filter((t) => t.cefrLevel === band && t.status !== "MASTERED" && t.teachable);
+  const open = topics.filter((t) => t.status !== "MASTERED" && t.teachable);
+  const at = CEFR_BANDS.indexOf(level);
+
+  // Review-as-diagnosis: unfinished CORE topics of the band directly below come first
+  // (a B1 learner is checked on A2 Present Perfect before B1 Past Perfect).
+  if (at > 0) {
+    const below = CEFR_BANDS[at - 1];
+    const core = open.filter((t) => t.cefrLevel === below && t.importance === 1);
+    if (core.length > 0) return byFocusPriority(core)[0];
+  }
+
+  for (const band of CEFR_BANDS.slice(at)) {
+    const pool = open.filter((t) => t.cefrLevel === band);
     if (pool.length === 0) continue; // nothing teachable left here -> next band
-    return [...pool].sort(
-      (a, b) =>
-        grammarRank(a) - grammarRank(b) ||
-        a.importance - b.importance ||
-        a.sortOrder - b.sortOrder ||
-        cmp(a.name, b.name),
-    )[0];
+    return byFocusPriority(pool)[0];
   }
   return null;
 }

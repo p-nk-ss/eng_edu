@@ -101,6 +101,39 @@ describe("pickGrammarFocus", () => {
     expect(pickGrammarFocus(topics, "B1")?.name).toBe("b2");
     expect(pickGrammarFocus([topics[0]], "B1")).toBeNull();
   });
+
+  it("serves unfinished core (importance 1) topics of the band below before the learner's own band", () => {
+    const topics = [
+      G("b1-core", "B1", "NOT_STARTED", 1, 0, { importance: 1 }),
+      G("a2-core", "A2", "NOT_STARTED", 9, 0, { importance: 1 }),
+      G("a2-useful", "A2", "NOT_STARTED", 1, 0, { importance: 2 }),
+    ];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("a2-core");
+  });
+
+  it("ignores below-level topics that are mastered, non-teachable or not core", () => {
+    const topics = [
+      G("a2-done", "A2", "MASTERED", 1, 0, { importance: 1 }),
+      G("a2-trivial", "A2", "NOT_STARTED", 1, 0, { importance: 1, teachable: false }),
+      G("a2-useful", "A2", "NOT_STARTED", 1, 0, { importance: 2 }),
+      G("b1", "B1", "NOT_STARTED", 5),
+    ];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("b1");
+  });
+
+  it("looks only ONE band below and applies the same ordering inside the below-level core", () => {
+    const topics = [
+      G("a1-core", "A1", "NOT_STARTED", 1, 0, { importance: 1 }),
+      G("a2-new", "A2", "NOT_STARTED", 1, 0, { importance: 1 }),
+      G("a2-practising", "A2", "PRACTICING", 9, 1, { importance: 1 }),
+    ];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("a2-practising");
+    expect(pickGrammarFocus([topics[0]], "B1")).toBeNull();
+  });
+
+  it("has no band below A1", () => {
+    expect(pickGrammarFocus([G("a1", "A1", "NOT_STARTED", 1, 0, { importance: 1 })], "A1")?.name).toBe("a1");
+  });
 });
 
 const V = (

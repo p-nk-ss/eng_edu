@@ -35,7 +35,7 @@ export async function selectLessonInputs(db: LessonInputsDb = prisma, now = new 
   const nextBand = CEFR_BANDS[CEFR_BANDS.indexOf(level) + 1];
 
   const lessons = await db.lesson.findMany({
-    where: { theme: { not: null } },
+    where: { theme: { not: null }, status: { in: ["IN_PROGRESS", "COMPLETED"] } }, // an unstarted lesson must not burn its theme
     orderBy: [{ date: "desc" }, { id: "desc" }],
     take: ROTATION_HISTORY,
     select: { theme: true },

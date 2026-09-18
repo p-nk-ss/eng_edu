@@ -49,7 +49,7 @@ describe("selectLessonInputs", () => {
     expect(out.dueErrors).toEqual([{ id: "e1" }]);
 
     expect(calls.lesson).toMatchObject({
-      where: { theme: { not: null } },
+      where: { theme: { not: null }, status: { in: ["IN_PROGRESS", "COMPLETED"] } },
       orderBy: [{ date: "desc" }, { id: "desc" }],
     });
     expect(calls.errorRecord).toMatchObject({
