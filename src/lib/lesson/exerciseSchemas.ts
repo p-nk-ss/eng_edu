@@ -25,6 +25,12 @@ export const typeForTag = (tag: string): ExerciseTypeName | undefined => TAG_TO_
 
 export const EXPLAIN_LIMITS = { min: 10, max: 400 } as const;
 export const OPEN_WRITING_WORDS = { min: 30, max: 120 } as const;
+export const MCQ_OPTIONS = { min: 3, max: 5 } as const;
+export const CLOZE_GAPS = { min: 1, max: 4 } as const;
+/** Options per gap of a cloze_mc dropdown, and per dialogue_gap turn. */
+export const CHOICE_OPTIONS = { min: 2, max: 4 } as const;
+export const OPEN_CLOZE_GAPS = { min: 1, max: 3 } as const;
+export const MATCH_PAIRS = { min: 3, max: 6 } as const;
 
 const text = z.string().min(1);
 const base = {
@@ -32,27 +38,27 @@ const base = {
   /** ids of the target VocabItems this exercise practises (drives vocab streaks in M3c). */
   vocab: z.array(z.string()).default([]),
 };
-const choice = { options: z.array(text).min(2).max(4), answer: z.number().int().min(0) };
+const choice = { options: z.array(text).min(CHOICE_OPTIONS.min).max(CHOICE_OPTIONS.max), answer: z.number().int().min(0) };
 
 const mcq = z.object({
   type: z.literal("mcq"), prompt: z.string().min(5),
-  options: z.array(text).min(3).max(5), answer: z.number().int().min(0),
+  options: z.array(text).min(MCQ_OPTIONS.min).max(MCQ_OPTIONS.max), answer: z.number().int().min(0),
   rationales: z.array(z.string()), ...base,
 });
 const clozeMc = z.object({
   type: z.literal("cloze_mc"), text: z.string().min(5),
-  gaps: z.array(z.object(choice)).min(1).max(4), ...base,
+  gaps: z.array(z.object(choice)).min(CLOZE_GAPS.min).max(CLOZE_GAPS.max), ...base,
 });
 const openCloze = z.object({
   type: z.literal("open_cloze"), text: z.string().min(5),
-  gaps: z.array(z.object({ root: z.string().optional(), accept: z.array(text).min(1) })).min(1).max(3), ...base,
+  gaps: z.array(z.object({ root: z.string().optional(), accept: z.array(text).min(1) })).min(OPEN_CLOZE_GAPS.min).max(OPEN_CLOZE_GAPS.max), ...base,
 });
 const wordBank = z.object({
   type: z.literal("word_bank"), tokens: z.array(text).min(3), answer: z.array(text).min(3),
   accept_alt: z.array(z.array(text)).default([]), ...base,
 });
 const match = z.object({
-  type: z.literal("match"), left: z.array(text).min(3).max(6), right: z.array(text).min(3).max(6),
+  type: z.literal("match"), left: z.array(text).min(MATCH_PAIRS.min).max(MATCH_PAIRS.max), right: z.array(text).min(MATCH_PAIRS.min).max(MATCH_PAIRS.max),
   answer: z.array(z.number().int().min(0)), ...base,
 });
 const dialogueGap = z.object({

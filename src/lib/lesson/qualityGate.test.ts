@@ -54,6 +54,18 @@ describe("runQualityGate", () => {
     expect(f.max()).toBeLessThanOrEqual(4);
   });
 
+  it("skips a malformed answer (no numeric noul) rather than scoring it 0 - a missing score never drops", async () => {
+    const systemOne = vi.fn().mockResolvedValue({
+      // Malformed: no "noul" field at all on the key_correct answer.
+      answers: { key_correct: { type: "noul" }, other_correct: { type: "noul", noul: 0.05 }, on_focus: { type: "noul", noul: 0.9 } },
+      usage: { input_tokens: 1, output_tokens: 1 },
+    });
+    const client = { systemOne } as unknown as TypeSafeClient;
+    const res = await runQualityGate([E.MULTIPLE_CHOICE], grammar, client);
+    expect(res.verdicts[0].scores).toEqual({ other_correct: 0.05, on_focus: 0.9 });
+    expect(res.verdicts[0].drop).toBe(false);
+  });
+
   it("is skipped (nothing dropped) without a client or when the client fails", async () => {
     const none = await runQualityGate([E.MULTIPLE_CHOICE], grammar, null);
     expect(none).toMatchObject({ status: "skipped" });

@@ -29,12 +29,30 @@ export function toGenerationInputs(inputs: LessonInputs, mix: ExerciseTypeName[]
   };
 }
 
-/** POST /api/lesson/start. Idempotent per local calendar day. Sequential queries only. */
-export async function startLesson(deps: {
-  db?: StartLessonDb;
-  generation: GenerationDeps;
-  now?: Date;
-}): Promise<{ lessonId: string; reused: boolean }> {
+export interface StartLessonResult {
+  lessonId: string;
+  reused: boolean;
+  /** Present only when a lesson was freshly generated (reused: false) - for the route's log line. */
+  attempts?: 1 | 2;
+  drops?: number;
+}
+
+// A double click, a page reload or React StrictMode's double effect must not start a second
+// 1-3 minute paid generation. While a call is running, further calls join the SAME promise;
+// cleared in `finally` so the next call (after success OR failure) starts fresh.
+let inFlight: Promise<StartLessonResult> | null = null;
+
+/** POST /api/lesson/start. Idempotent per local calendar day. Single-flighted. Sequential queries only. */
+export function startLesson(deps: { db?: StartLessonDb; generation: GenerationDeps; now?: Date }): Promise<StartLessonResult> {
+  if (inFlight) return inFlight;
+  const p = runStartLesson(deps).finally(() => {
+    inFlight = null;
+  });
+  inFlight = p;
+  return p;
+}
+
+async function runStartLesson(deps: { db?: StartLessonDb; generation: GenerationDeps; now?: Date }): Promise<StartLessonResult> {
   const db = deps.db ?? (prisma as unknown as StartLessonDb);
   const now = deps.now ?? new Date();
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -61,5 +79,5 @@ export async function startLesson(deps: {
 
   const draft = await generateLesson(toGenerationInputs(inputs, mix, summaries), deps.generation);
   const lessonId = await createLesson(db, draft, inputs, mix, now);
-  return { lessonId, reused: false };
+  return { lessonId, reused: false, attempts: draft.attempts, drops: draft.drops.length };
 }

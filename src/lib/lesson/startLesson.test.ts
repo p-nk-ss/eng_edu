@@ -33,7 +33,7 @@ const generation = { ask: vi.fn(), gate: vi.fn() };
 
 beforeEach(() => {
   vi.mocked(selectLessonInputs).mockReset().mockResolvedValue(inputs as never);
-  vi.mocked(generateLesson).mockReset().mockResolvedValue({ exercises: [] } as never);
+  vi.mocked(generateLesson).mockReset().mockResolvedValue({ exercises: [], attempts: 1, drops: [] } as never);
   vi.mocked(createLesson).mockReset().mockResolvedValue("L9");
 });
 
@@ -58,7 +58,7 @@ describe("startLesson", () => {
 
   it("selects, plans the mix from the lesson number, generates and persists", async () => {
     const f = fakeDb(null);
-    expect(await startLesson({ db: f.db, generation, now })).toEqual({ lessonId: "L9", reused: false });
+    expect(await startLesson({ db: f.db, generation, now })).toEqual({ lessonId: "L9", reused: false, attempts: 1, drops: 0 });
 
     const genInputs = vi.mocked(generateLesson).mock.calls[0][0];
     expect(genInputs.mix).toContain("OPEN_WRITING"); // 2 existing lessons -> lesson 3
@@ -77,5 +77,43 @@ describe("startLesson", () => {
     vi.mocked(selectLessonInputs).mockResolvedValue({ ...inputs, grammarTopic: null } as never);
     await startLesson({ db: fakeDb(null).db, generation, now });
     expect(vi.mocked(generateLesson).mock.calls[0][0].mix).not.toContain("ERROR_CORRECTION");
+  });
+
+  it("single-flights concurrent calls: one generation, the same result for both callers", async () => {
+    const f = fakeDb(null);
+    let resolveGen!: (v: unknown) => void;
+    vi.mocked(generateLesson).mockReturnValue(new Promise((r) => (resolveGen = r)) as never);
+
+    const p1 = startLesson({ db: f.db, generation, now });
+    const p2 = startLesson({ db: f.db, generation, now });
+    resolveGen({ exercises: [], attempts: 1, drops: [] });
+    const [r1, r2] = await Promise.all([p1, p2]);
+
+    expect(generateLesson).toHaveBeenCalledTimes(1);
+    expect(f.findFirst).toHaveBeenCalledTimes(1);
+    expect(r1).toEqual(r2);
+    expect(r1).toEqual({ lessonId: "L9", reused: false, attempts: 1, drops: 0 });
+  });
+
+  it("starts fresh after the in-flight call settles - success then a new call", async () => {
+    const f = fakeDb(null);
+    await startLesson({ db: f.db, generation, now });
+    await startLesson({ db: f.db, generation, now });
+    expect(generateLesson).toHaveBeenCalledTimes(2);
+    expect(f.findFirst).toHaveBeenCalledTimes(2);
+  });
+
+  it("starts fresh after the in-flight call settles - failure then a new call also clears it", async () => {
+    const f = fakeDb(null);
+    vi.mocked(generateLesson).mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce({ exercises: [], attempts: 1, drops: [] } as never);
+    await expect(startLesson({ db: f.db, generation, now })).rejects.toThrow("boom");
+    await expect(startLesson({ db: f.db, generation, now })).resolves.toEqual({ lessonId: "L9", reused: false, attempts: 1, drops: 0 });
+  });
+
+  it("when generateLesson rejects, createLesson is never called and the error propagates", async () => {
+    const f = fakeDb(null);
+    vi.mocked(generateLesson).mockRejectedValue(new Error("generation blew up"));
+    await expect(startLesson({ db: f.db, generation, now })).rejects.toThrow("generation blew up");
+    expect(createLesson).not.toHaveBeenCalled();
   });
 });

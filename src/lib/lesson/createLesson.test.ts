@@ -11,8 +11,9 @@ const draft: LessonDraft = {
   warmup: { intro: "Let us talk about work.", questions: ["q1?", "q2?", "q3?"] },
   scenario: { title: "A missed deadline", role: "You are a QA engineer.", goal: "Agree on a new date.", opening: "Got a minute?" },
   qualityGate: "partial",
-  drops: [{ attempt: 1, index: 3, reason: "x" }],
+  drops: [{ attempt: 1, index: 3, type: "MATCH", reason: "x" }],
   attempts: 1,
+  gateScores: [{ exerciseIndex: 0, scores: { key_correct: 0.95 } }],
 };
 const inputs = {
   profile: { id: "p1" },
@@ -49,7 +50,16 @@ describe("buildPlan", () => {
         written: { exerciseIds: ["E1", "E2"] },
         scenario: draft.scenario,
       },
-      meta: { grammarTopicId: "g1", vocabIds: ["v1", "v2"], exerciseMix: ["MULTIPLE_CHOICE", "TRANSLATION"], qualityGate: "partial", drops: 1, attempts: 1 },
+      meta: {
+        grammarTopicId: "g1",
+        vocabIds: ["v1", "v2"],
+        exerciseMix: ["MULTIPLE_CHOICE", "TRANSLATION"],
+        qualityGate: "partial",
+        drops: 1,
+        dropReasons: ["attempt 1 #3 MATCH: x"],
+        gateScores: [{ exerciseIndex: 0, scores: { key_correct: 0.95 } }],
+        attempts: 1,
+      },
     });
   });
 });

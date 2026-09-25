@@ -13,6 +13,18 @@ export interface LessonDrop {
   reason: string;
 }
 
+/** "attempt N #i TYPE: reason" for the persisted plan and the API error payload; TYPE is omitted when unknown. */
+export function formatDrop(d: LessonDrop): string {
+  const type = d.type ? ` ${d.type}` : "";
+  return `attempt ${d.attempt} #${d.index}${type}: ${d.reason}`;
+}
+
+export interface GateScoreEntry {
+  /** Index into the returned exercises array (and so into sections.written.exerciseIds once persisted). */
+  exerciseIndex: number;
+  scores: Record<string, number>;
+}
+
 export interface LessonDraft {
   exercises: { type: ExerciseTypeName; content: ExerciseContent }[];
   warmup: LessonEnvelope["warmup"];
@@ -20,6 +32,8 @@ export interface LessonDraft {
   qualityGate: GateResult["status"];
   drops: LessonDrop[];
   attempts: 1 | 2;
+  /** Jev gate scores for the kept, gated exercises of the successful attempt only. */
+  gateScores: GateScoreEntry[];
 }
 
 export interface GenerationDeps {
@@ -83,21 +97,30 @@ export async function generateLesson(inputs: GenerationInputs, deps: GenerationD
     });
 
     const gate = await deps.gate(valid.map((v) => v.content), grammar);
-    const survivors = valid.filter((v, i) => {
+    const survivors: { index: number; type: ExerciseTypeName; content: ExerciseContent; scores?: Record<string, number> }[] = [];
+    valid.forEach((v, i) => {
       const verdict = gate.verdicts[i];
-      if (verdict?.drop) drops.push({ attempt, index: v.index, type: v.type, reason: verdict.reason ?? "gate: dropped" });
-      return !verdict?.drop;
+      if (verdict?.drop) {
+        drops.push({ attempt, index: v.index, type: v.type, reason: verdict.reason ?? "gate: dropped" });
+        return;
+      }
+      survivors.push({ ...v, scores: verdict?.scores });
     });
 
     if (survivors.length >= MIN_EXERCISES) {
       const order = (t: ExerciseTypeName) => inputs.mix.indexOf(t);
+      const sorted = survivors.slice().sort((a, b) => order(a.type) - order(b.type));
+      const gateScores: GateScoreEntry[] = sorted
+        .map((v, exerciseIndex) => (v.scores ? { exerciseIndex, scores: v.scores } : null))
+        .filter((e): e is GateScoreEntry => e !== null);
       return {
-        exercises: survivors.sort((a, b) => order(a.type) - order(b.type)).map(({ type, content }) => ({ type, content })),
+        exercises: sorted.map(({ type, content }) => ({ type, content })),
         warmup: envelope.warmup,
         scenario: envelope.scenario,
         qualityGate: gate.status,
         drops,
         attempts: attempt,
+        gateScores,
       };
     }
     drops.push({ attempt, index: -1, reason: `only ${survivors.length} of ${inputs.mix.length} exercises survived (need ${MIN_EXERCISES})` });

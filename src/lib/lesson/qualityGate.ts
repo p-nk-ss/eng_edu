@@ -37,7 +37,12 @@ export async function runQualityGate(
       const index = queue[next++];
       const c = exercises[index];
       const res = await client!.systemOne({ state: gateState(c, grammar), questions: gateQuestions(c, grammar) });
-      const scores = Object.fromEntries(Object.entries(res.answers).map(([k, a]) => [k, "noul" in a ? a.noul : 0]));
+      // A malformed answer (no numeric "noul") is skipped, not scored 0 - a missing score never drops.
+      const scores: Record<string, number> = {};
+      for (const [k, a] of Object.entries(res.answers)) {
+        const n = (a as { noul?: unknown }).noul;
+        if (typeof n === "number") scores[k] = n;
+      }
       const reason = gateVerdict(scores);
       verdicts[index] = { index, gated: true, drop: reason !== null, scores, ...(reason ? { reason } : {}) };
     }

@@ -11,7 +11,13 @@ export const maxDuration = 300; // one Agent SDK generation can take 1-3 minutes
 /** Start (or resume) today's lesson. Voice-service health checks join in M5. */
 export async function POST(): Promise<NextResponse> {
   try {
-    return NextResponse.json(await startLesson({ generation: liveGenerationDeps() }));
+    const result = await startLesson({ generation: liveGenerationDeps() });
+    // Counts only - never exercise content, never secrets.
+    console.info(
+      `lesson/start: lessonId=${result.lessonId} reused=${result.reused}` +
+        (result.reused ? "" : ` attempts=${result.attempts} drops=${result.drops}`),
+    );
+    return NextResponse.json({ lessonId: result.lessonId, reused: result.reused });
   } catch (e) {
     if (e instanceof ProfileMissingError) return NextResponse.json({ error: e.message }, { status: 409 });
     if (e instanceof LessonGenerationError) {

@@ -93,6 +93,24 @@ describe("checkExercise", () => {
     expect(checkExercise(broken(VALID_EXERCISES.FILL_BLANK, { gaps: [{ accept: ["..."] }] }), ctx).join()).toMatch(/empty/);
   });
 
+  it("flags options that are identical after normalizeAnswer - a duplicated correct option breaks index grading", () => {
+    expect(
+      checkExercise(broken(VALID_EXERCISES.MULTIPLE_CHOICE, { options: ["finish", "Finish", "finishing", "finishes"] }), ctx).join(),
+    ).toMatch(/duplicate option/);
+    expect(
+      checkExercise(
+        broken(VALID_EXERCISES.CLOZE_DROPDOWN, { gaps: [{ options: ["since", "Since"], answer: 0 }, { options: ["since", "for"], answer: 1 }] }),
+        ctx,
+      ).join(),
+    ).toMatch(/gap 1.*duplicate option/);
+    expect(
+      checkExercise(broken(VALID_EXERCISES.DIALOGUE_GAP, { options: ["No worries.", "no worries"] }), ctx).join(),
+    ).toMatch(/duplicate option/);
+    expect(
+      checkExercise(broken(VALID_EXERCISES.MATCH, { right: ["with no money", "with no money", "to be honest"] }), ctx).join(),
+    ).toMatch(/duplicate option/);
+  });
+
   it("does not reject exercises for vocab attribution issues", () => {
     expect(checkExercise(broken(VALID_EXERCISES.MULTIPLE_CHOICE, { vocab: ["ghost"] }), ctx)).toEqual([]);
     expect(checkExercise(broken(VALID_EXERCISES.MULTIPLE_CHOICE, { vocab: ["v2"] }), ctx)).toEqual([]);

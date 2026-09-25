@@ -80,15 +80,31 @@ export function checkExercise(c: ExerciseContent, _ctx: CheckContext): string[] 
   const nonEmptyAccept = (accept: string[], label: string) => {
     if (accept.some((a) => normalizeAnswer(a) === "")) problems.push(`${label}: an accept entry is empty after normalization`);
   };
+  /** Options identical after normalizeAnswer are a defect: index-based grading would mark the twin wrong. */
+  const noDuplicateOptions = (options: string[], label: string) => {
+    const seen = new Set<string>();
+    for (const o of options) {
+      const norm = normalizeAnswer(o);
+      if (seen.has(norm)) {
+        problems.push(`${label}: duplicate option "${o}"`);
+        return;
+      }
+      seen.add(norm);
+    }
+  };
 
   switch (c.type) {
     case "mcq":
       inRange(c.answer, c.options, "mcq");
       if (c.rationales.length !== c.options.length) problems.push("mcq: rationales must have one entry per option");
+      noDuplicateOptions(c.options, "mcq");
       break;
     case "cloze_mc":
       if (gapCount(c.text) !== c.gaps.length) problems.push(`cloze_mc: text has ${gapCount(c.text)} ___ markers for ${c.gaps.length} gaps`);
-      c.gaps.forEach((g, i) => inRange(g.answer, g.options, `cloze_mc gap ${i + 1}`));
+      c.gaps.forEach((g, i) => {
+        inRange(g.answer, g.options, `cloze_mc gap ${i + 1}`);
+        noDuplicateOptions(g.options, `cloze_mc gap ${i + 1}`);
+      });
       break;
     case "open_cloze":
       if (gapCount(c.text) !== c.gaps.length) problems.push(`open_cloze: text has ${gapCount(c.text)} ___ markers for ${c.gaps.length} gaps`);
@@ -109,11 +125,13 @@ export function checkExercise(c: ExerciseContent, _ctx: CheckContext): string[] 
       } else if ([...c.answer].sort((a, b) => a - b).some((v, i) => v !== i)) {
         problems.push("match: answer must be a permutation of the right column indexes");
       }
+      noDuplicateOptions(c.right, "match");
       break;
     }
     case "dialogue_gap":
       inRange(c.answer, c.options, "dialogue_gap");
       if (c.turns.filter((t) => t.includes("___")).length !== 1) problems.push("dialogue_gap: exactly one turn must contain ___");
+      noDuplicateOptions(c.options, "dialogue_gap");
       break;
     case "dictation":
       nonEmptyAccept(c.accept, "dictation");

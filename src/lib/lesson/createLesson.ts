@@ -1,7 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import type { LessonInputs } from "../curriculum/lessonInputs";
 import type { ExerciseTypeName } from "./exerciseSchemas";
-import type { LessonDraft } from "./generateLesson";
+import { formatDrop, type GateScoreEntry, type LessonDraft } from "./generateLesson";
 
 export type CreateLessonDb = Pick<PrismaClient, "$transaction">;
 
@@ -20,6 +20,10 @@ export interface LessonPlan {
     exerciseMix: string[];
     qualityGate: LessonDraft["qualityGate"];
     drops: number;
+    /** "attempt N #i TYPE: reason" - human-readable, for diagnostics only. */
+    dropReasons: string[];
+    /** Jev gate scores for the kept, gated exercises - indexes into sections.written.exerciseIds. */
+    gateScores: GateScoreEntry[];
     attempts: 1 | 2;
   };
 }
@@ -37,7 +41,14 @@ export function buildPlan(
       written: { exerciseIds },
       scenario: draft.scenario,
     },
-    meta: { ...meta, qualityGate: draft.qualityGate, drops: draft.drops.length, attempts: draft.attempts },
+    meta: {
+      ...meta,
+      qualityGate: draft.qualityGate,
+      drops: draft.drops.length,
+      dropReasons: draft.drops.map(formatDrop),
+      gateScores: draft.gateScores,
+      attempts: draft.attempts,
+    },
   };
 }
 

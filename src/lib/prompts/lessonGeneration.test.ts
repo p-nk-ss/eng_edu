@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { LESSON_LIMITS, lessonEnvelopeSchema, lessonGenerationPrompt, type GenerationInputs } from "./lessonGeneration";
-import { OPEN_WRITING_WORDS } from "../lesson/exerciseSchemas";
+import { CHOICE_OPTIONS, CLOZE_GAPS, MATCH_PAIRS, MCQ_OPTIONS, OPEN_CLOZE_GAPS, OPEN_WRITING_WORDS } from "../lesson/exerciseSchemas";
 
 const input: GenerationInputs = {
   profile: { level: "B1", goals: "conversational fluency", interests: "IT, QA", nativeLang: "ru" },
@@ -69,6 +69,18 @@ describe("lessonGenerationPrompt", () => {
     expect(system).toMatch(/exactly once/i);
     expect(system).toContain(`${OPEN_WRITING_WORDS.min}`);
     expect(system).toContain(`${OPEN_WRITING_WORDS.max}`);
+  });
+
+  it("states each shared bound in the prompt only when that exercise type is requested", () => {
+    const mixWithBounds = ["MULTIPLE_CHOICE", "CLOZE_DROPDOWN", "FILL_BLANK", "MATCH", "DIALOGUE_GAP"];
+    const { system } = lessonGenerationPrompt({ ...input, mix: mixWithBounds as any }) as { system: string };
+    expect(system).toContain(`${MCQ_OPTIONS.min}-${MCQ_OPTIONS.max} options`);
+    expect(system).toContain(`${CLOZE_GAPS.min}-${CLOZE_GAPS.max} gaps`);
+    expect(system).toContain(`${OPEN_CLOZE_GAPS.min}-${OPEN_CLOZE_GAPS.max} gaps`);
+    expect(system).toContain(`${MATCH_PAIRS.min}-${MATCH_PAIRS.max} pairs`);
+    // CHOICE_OPTIONS is shared by cloze_mc gaps and dialogue_gap options - both requested here.
+    const choiceMentions = (system.match(new RegExp(`${CHOICE_OPTIONS.min}-${CHOICE_OPTIONS.max} options`, "g")) ?? []).length;
+    expect(choiceMentions).toBeGreaterThanOrEqual(2);
   });
 });
 

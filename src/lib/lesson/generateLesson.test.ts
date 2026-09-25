@@ -71,6 +71,29 @@ describe("generateLesson", () => {
     expect(gate.mock.calls[0][1]).toEqual({ title: "Past Perfect (had done)", description: "had + past participle." });
   });
 
+  it("carries the gate scores of kept exercises only, indexed into the final (sorted) exercises array", async () => {
+    const ask = vi.fn<GenerationDeps["ask"]>().mockResolvedValue(envelope(all));
+    const gate = vi.fn<GenerationDeps["gate"]>(async (exs) => ({
+      status: "passed",
+      verdicts: exs.map((c, index) => ({
+        index,
+        gated: c.type === "mcq" || c.type === "cloze_mc",
+        drop: false,
+        ...(c.type === "mcq" || c.type === "cloze_mc" ? { scores: { key_correct: 0.9 } } : {}),
+      })),
+    }));
+    const draft = await generateLesson(inputs, deps(ask, gate));
+    const mcqIndex = draft.exercises.findIndex((e) => e.type === "MULTIPLE_CHOICE");
+    const clozeIndex = draft.exercises.findIndex((e) => e.type === "CLOZE_DROPDOWN");
+    expect(draft.gateScores).toHaveLength(2);
+    expect(draft.gateScores).toEqual(
+      expect.arrayContaining([
+        { exerciseIndex: mcqIndex, scores: { key_correct: 0.9 } },
+        { exerciseIndex: clozeIndex, scores: { key_correct: 0.9 } },
+      ]),
+    );
+  });
+
   it("regenerates once when fewer than 5 survive, and the second attempt can rescue the lesson", async () => {
     const ask = vi.fn<GenerationDeps["ask"]>().mockResolvedValueOnce(envelope(all.slice(0, 3))).mockResolvedValueOnce(envelope(all));
     const draft = await generateLesson(inputs, deps(ask));
