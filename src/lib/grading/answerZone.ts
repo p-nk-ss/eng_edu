@@ -30,9 +30,24 @@ function zones(c: ExerciseContent): { text: string; part: number | null }[] {
   }
 }
 
+/** Typed/free-text zones where the learner's own text (not the key) must be checked (F3). */
+const FREE_TEXT_TYPES = new Set<ExerciseContent["type"]>(["open_cloze", "error_correct", "translation"]);
+
+/** The learner's own text for a zone - for error_correct, GradePart.given is "<token> -> <fix>". */
+function learnerText(c: ExerciseContent, part: GradePart): string {
+  if (c.type === "error_correct") {
+    const i = part.given.indexOf(" -> ");
+    return i === -1 ? part.given : part.given.slice(i + 4);
+  }
+  return part.given;
+}
+
 /**
  * Credit only words that are part of the answer (M3b-2 final review: presence in the prompt is
  * not practice). A word is correct only if every zone it appears in was answered correctly.
+ * For typed/free-text zones, a zone judged correct still gives no credit unless the learner's
+ * own text actually contains the headword (a synonym or paraphrase accepted by the judge is not
+ * "practice" of that word) - final review F3.
  */
 export function vocabOutcomes(
   c: ExerciseContent,
@@ -42,12 +57,16 @@ export function vocabOutcomes(
   const headwords = new Map(vocab.map((v) => [v.id, v.headword]));
   const all = zones(c);
   const out: VocabOutcome[] = [];
-  for (const id of c.vocab) {
+  for (const id of new Set(c.vocab)) {
     const headword = headwords.get(id);
     if (!headword) continue;
     const hits = all.filter((z) => headwordOccurs(headword, z.text));
     if (hits.length === 0) continue;
     const correct = hits.every((z) => (z.part === null ? judged.isCorrect : judged.parts[z.part]?.correct === true));
+    if (correct && FREE_TEXT_TYPES.has(c.type)) {
+      const missing = hits.some((z) => !headwordOccurs(headword, learnerText(c, judged.parts[z.part ?? 0])));
+      if (missing) continue;
+    }
     out.push({ id, correct });
   }
   return out;

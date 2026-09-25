@@ -6,6 +6,7 @@ import { nextVocabState, vocabOutcomes, withoutCredited } from "./answerZone";
 
 const ok = { isCorrect: true, parts: [{ correct: true, given: "", expected: "" }] };
 const bad = { isCorrect: false, parts: [{ correct: false, given: "", expected: "" }] };
+const TRANSLATION = E.TRANSLATION as Extract<ExerciseContent, { type: "translation" }>;
 
 describe("vocabOutcomes", () => {
   it("gives no credit to a word that is only in the prompt, not in the answer", () => {
@@ -14,8 +15,10 @@ describe("vocabOutcomes", () => {
   });
 
   it("credits a word in the reference of a translation with the exercise verdict", () => {
-    expect(vocabOutcomes(E.TRANSLATION, ok, FIXTURE_VOCAB)).toEqual([{ id: "v1", correct: true }]);
-    expect(vocabOutcomes(E.TRANSLATION, bad, FIXTURE_VOCAB)).toEqual([{ id: "v1", correct: false }]);
+    // given carries the headword (F3: credit needs the learner's own text to contain it).
+    const withVerdict = (isCorrect: boolean) => ({ isCorrect, parts: [{ correct: isCorrect, given: TRANSLATION.reference, expected: TRANSLATION.reference }] });
+    expect(vocabOutcomes(E.TRANSLATION, withVerdict(true), FIXTURE_VOCAB)).toEqual([{ id: "v1", correct: true }]);
+    expect(vocabOutcomes(E.TRANSLATION, withVerdict(false), FIXTURE_VOCAB)).toEqual([{ id: "v1", correct: false }]);
   });
 
   it("credits a match word with the verdict of its own pair", () => {
@@ -42,6 +45,40 @@ describe("vocabOutcomes", () => {
   it("gives no credit for open writing and ignores unknown ids", () => {
     expect(vocabOutcomes(E.OPEN_WRITING, ok, FIXTURE_VOCAB)).toEqual([]);
     expect(vocabOutcomes({ ...E.TRANSLATION, vocab: ["ghost"] } as ExerciseContent, ok, FIXTURE_VOCAB)).toEqual([]);
+  });
+
+  it("credits only words the learner actually produced in a typed/free-text zone", () => {
+    const cloze = {
+      type: "open_cloze",
+      text: "It was a ___ situation.",
+      gaps: [{ accept: ["deadline"] }],
+      explain: "x",
+      vocab: ["v1"],
+    } as ExerciseContent;
+    const correctGap = (given: string) => ({ isCorrect: true, parts: [{ correct: true, given, expected: "deadline" }] });
+
+    // Jev accepted a synonym: the zone is correct, but the learner never typed "deadline".
+    expect(vocabOutcomes(cloze, correctGap("due date"), FIXTURE_VOCAB)).toEqual([]);
+    // The learner typed the keyed word itself: credited correct.
+    expect(vocabOutcomes(cloze, correctGap("deadline"), FIXTURE_VOCAB)).toEqual([{ id: "v1", correct: true }]);
+    // A wrong verdict is unchanged regardless of the learner's text.
+    const wrongGap = { isCorrect: false, parts: [{ correct: false, given: "due date", expected: "deadline" }] };
+    expect(vocabOutcomes(cloze, wrongGap, FIXTURE_VOCAB)).toEqual([{ id: "v1", correct: false }]);
+  });
+
+  it("credits a translation only when the learner's own answer contains the headword", () => {
+    const correct = (given: string) => ({ isCorrect: true, parts: [{ correct: true, given, expected: TRANSLATION.reference }] });
+    // Accepted paraphrase without the headword: no credit either way.
+    expect(vocabOutcomes(E.TRANSLATION, correct("I finished the report before the due date."), FIXTURE_VOCAB)).toEqual([]);
+    // The headword is present: credited correct.
+    expect(vocabOutcomes(E.TRANSLATION, correct("I finished the report before the deadline."), FIXTURE_VOCAB)).toEqual([
+      { id: "v1", correct: true },
+    ]);
+  });
+
+  it("dedupes repeated vocab ids into one outcome", () => {
+    const judged = { isCorrect: true, parts: [{ correct: true, given: TRANSLATION.reference, expected: TRANSLATION.reference }] };
+    expect(vocabOutcomes({ ...E.TRANSLATION, vocab: ["v1", "v1"] } as ExerciseContent, judged, FIXTURE_VOCAB)).toEqual([{ id: "v1", correct: true }]);
   });
 });
 
