@@ -109,6 +109,8 @@ export interface GradeResult {
   gradedBy: GradedBy;
   vocabCredit: VocabOutcome[];
   jevScores?: Record<string, number>;
+  /** MCQ only: per-option rationales, revealed after grading (never part of the pre-answer view). */
+  rationales?: string[];
 }
 
 export interface LessonGrammar {

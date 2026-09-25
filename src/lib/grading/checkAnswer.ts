@@ -54,6 +54,7 @@ export function buildResult(
   correctAnswer: string,
   judged: JudgeOutcome,
   vocabCredit: VocabOutcome[],
+  rationales?: string[],
 ): GradeResult {
   let feedback: GradeFeedback | null = null;
   if (judged.translation) {
@@ -65,6 +66,7 @@ export function buildResult(
   return {
     version: 1, exerciseId, isCorrect: judged.isCorrect, parts: judged.parts, correctAnswer, explain, feedback,
     gradedBy: judged.gradedBy, vocabCredit, ...(judged.jevScores ? { jevScores: judged.jevScores } : {}),
+    ...(rationales ? { rationales } : {}),
   };
 }
 
@@ -94,7 +96,10 @@ async function runCheck(exerciseId: string, raw: unknown, deps: CheckDeps): Prom
 
   const local = gradeLocally(content, ans.answer);
   const judged = await runJudge(content, ans.answer, local, { grammar, level: profile?.level ?? "B1" }, deps.judge);
-  const result = buildResult(exerciseId, content.explain, local.correctAnswer, judged, vocabOutcomes(content, judged, vocab));
+  const result = buildResult(
+    exerciseId, content.explain, local.correctAnswer, judged, vocabOutcomes(content, judged, vocab),
+    content.type === "mcq" ? content.rationales : undefined,
+  );
   if (deps.dryRun) return { ...result, alreadyAnswered: false };
 
   const outcome = await recordAnswer(db, {

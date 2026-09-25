@@ -114,4 +114,12 @@ describe("checkAnswer", () => {
     expect(a).toEqual(b);
     expect(f.raw.exercise.findUnique).toHaveBeenCalledTimes(1);
   });
+
+  it("returns the MCQ rationales with the grade, and none for other types", async () => {
+    const f = fakeDb([row("e-rat", E.MULTIPLE_CHOICE)]);
+    const out = await checkAnswer("e-rat", { selected: 1 }, { db: f.db, judge, now });
+    expect(out.rationales).toEqual((E.MULTIPLE_CHOICE as { rationales: string[] }).rationales);
+    const g = fakeDb([row("e-norat", E.DIALOGUE_GAP)]);
+    expect((await checkAnswer("e-norat", { selected: 0 }, { db: g.db, judge, now })).rationales).toBeUndefined();
+  });
 });
