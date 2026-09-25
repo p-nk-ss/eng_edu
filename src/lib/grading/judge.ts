@@ -1,6 +1,6 @@
 import type { ExerciseContent } from "../lesson/exerciseSchemas";
 import type { CompleteArgs } from "../llm/types";
-import { translationFeedbackPrompt } from "../prompts/translationFeedback";
+import { TRANSLATION_CATEGORIES, translationFeedbackPrompt } from "../prompts/translationFeedback";
 import { TRANSLATION_ACCEPT, translationRequest } from "../prompts/translationJudge";
 import { VARIANT_ACCEPT, variantRequest } from "../prompts/variantGate";
 import { writingFeedbackPrompt } from "../prompts/writingFeedback";
@@ -58,8 +58,9 @@ export async function runJudge(
       if (typeof score !== "number") continue;
       jevScores[`variant_${v.part}`] = score;
       if (score >= VARIANT_ACCEPT) parts[v.part] = { ...parts[v.part], correct: true };
-    } catch {
+    } catch (e) {
       // Jev is best effort: keep the strict local verdict for this part.
+      console.warn("[judge] Jev unavailable:", messageOf(e));
     }
   }
   if (Object.keys(jevScores).length === 0) return base;
@@ -81,14 +82,18 @@ async function judgeTranslation(
       const acceptable = res.answers.acceptable?.noul;
       const errorType = res.answers.error_type;
       if (typeof acceptable === "number") {
-        jevScores = { acceptable, ...(errorType ? { error_type_confidence: errorType.confidence } : {}) };
-        jevCategory = errorType?.choice ?? null;
+        jevScores = {
+          acceptable,
+          ...(typeof errorType?.confidence === "number" ? { error_type_confidence: errorType.confidence } : {}),
+        };
+        jevCategory = errorType && (TRANSLATION_CATEGORIES as readonly string[]).includes(errorType.choice) ? errorType.choice : null;
         if (acceptable >= TRANSLATION_ACCEPT) {
           return { isCorrect: true, parts: [{ correct: true, given: a.text, expected: c.reference }], gradedBy: "jev", jevScores };
         }
       }
-    } catch {
+    } catch (e) {
       // fall through to Claude
+      console.warn("[judge] Jev unavailable:", messageOf(e));
     }
   }
 

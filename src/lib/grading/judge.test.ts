@@ -1,10 +1,12 @@
 // @vitest-environment node
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { VALID_EXERCISES as E } from "../lesson/fixtures";
 import type { TypeSafeClient } from "../typesafe/client";
 import { gradeLocally } from "./graders";
 import { countWords, GradingUnavailableError, runJudge, type JudgeDeps } from "./judge";
 import type { Answer, TranslationFeedback, WritingFeedback } from "./types";
+
+afterEach(() => vi.restoreAllMocks());
 
 const ctx = { grammar: { id: "g1", title: "Past Simple", description: "Finished past actions." }, level: "B1" };
 
@@ -47,8 +49,16 @@ describe("runJudge - typed variants", () => {
   });
 
   it("falls back to strict grading when Jev throws", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     const client = { systemOne: vi.fn().mockRejectedValue(new Error("HTTP 504")) } as unknown as TypeSafeClient;
     await expect(judge(E.FILL_BLANK, typo, deps({ jev: () => client }))).resolves.toMatchObject({ isCorrect: false, gradedBy: "local" });
+  });
+
+  it("logs the error message (not the request) when Jev fails during variant checking", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const client = { systemOne: vi.fn().mockRejectedValue(new Error("HTTP 504")) } as unknown as TypeSafeClient;
+    await judge(E.FILL_BLANK, typo, deps({ jev: () => client }));
+    expect(warn).toHaveBeenCalledWith("[judge] Jev unavailable:", "HTTP 504");
   });
 });
 
@@ -75,6 +85,28 @@ describe("runJudge - translation", () => {
   it("goes straight to Claude without Jev", async () => {
     const askTranslation = vi.fn().mockResolvedValue({ ...fb, isCorrect: true, category: "none" });
     expect(await judge(E.TRANSLATION, answer, deps({ askTranslation }))).toMatchObject({ isCorrect: true, gradedBy: "claude" });
+  });
+
+  it("stores error_type_confidence only when Jev returns a number", async () => {
+    const jev = jevReturning({ acceptable: { type: "noul", noul: 0.3 }, error_type: { type: "choice", choice: "grammar", probabilities: {}, confidence: "high" } });
+    const askTranslation = vi.fn().mockResolvedValue(fb);
+    const out = await judge(E.TRANSLATION, answer, deps({ jev: () => jev.client, askTranslation }));
+    expect(out.jevScores).toEqual({ acceptable: 0.3 });
+  });
+
+  it("passes jevCategory to Claude only when it is a known translation category", async () => {
+    const jev = jevReturning({ acceptable: { type: "noul", noul: 0.3 }, error_type: { type: "choice", choice: "not_a_real_category", probabilities: {}, confidence: 0.7 } });
+    const askTranslation = vi.fn().mockResolvedValue(fb);
+    await judge(E.TRANSLATION, answer, deps({ jev: () => jev.client, askTranslation }));
+    expect(askTranslation.mock.calls[0][0].messages[0].content).toContain('"jev_category": null');
+  });
+
+  it("logs the error message (not the request) when Jev fails during translation acceptance", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const client = { systemOne: vi.fn().mockRejectedValue(new Error("network down")) } as unknown as TypeSafeClient;
+    const askTranslation = vi.fn().mockResolvedValue(fb);
+    await judge(E.TRANSLATION, answer, deps({ jev: () => client, askTranslation }));
+    expect(warn).toHaveBeenCalledWith("[judge] Jev unavailable:", "network down");
   });
 
   it("raises GradingUnavailableError when Claude fails", async () => {
