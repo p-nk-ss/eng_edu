@@ -6,6 +6,8 @@ vi.mock("@/lib/curriculum/progress", () => ({
     { level: "A1", grammarTotal: 84, grammarMastered: 3, vocabTotal: 1164, vocabKnown: 10 },
   ]),
 }));
+vi.mock("@/lib/stats/streak", () => ({ getStreak: vi.fn().mockResolvedValue({ days: 4, atRisk: true }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import DashboardPage from "./page";
 
@@ -20,5 +22,7 @@ describe("DashboardPage", () => {
     expect(screen.getByText(/streak/i)).toBeInTheDocument();
     expect(screen.getByText(/syllabus progress/i)).toBeInTheDocument();
     expect(screen.getByText(/grammar 3\/84/i)).toBeInTheDocument();
+    expect(screen.getByText(/4 days/i)).toBeInTheDocument();
+    expect(screen.getByText(/answer one exercise today to keep it/i)).toBeInTheDocument();
   });
 });
