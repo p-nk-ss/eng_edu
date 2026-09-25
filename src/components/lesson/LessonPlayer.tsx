@@ -144,12 +144,12 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
         )}
         {graded ? (
           <button type="button" autoFocus onClick={next}
-            className="min-h-11 self-end rounded-xl bg-primary px-6 py-3 font-display font-bold text-on-primary">
+            className="min-h-11 self-end rounded-xl bg-primary px-6 py-3 font-display font-bold text-on-primary hover:opacity-90">
             {isLast ? "See results" : "Next"}
           </button>
         ) : (
           <button type="submit" disabled={!answer || phase === "checking"}
-            className="flex min-h-11 items-center gap-2 self-end rounded-xl bg-primary px-6 py-3 font-display font-bold text-on-primary disabled:opacity-40">
+            className="flex min-h-11 items-center gap-2 self-end rounded-xl bg-primary px-6 py-3 font-display font-bold text-on-primary enabled:hover:opacity-90 disabled:opacity-40">
             {phase === "checking" && <Loader2 size={18} className="motion-safe:animate-spin" aria-hidden />}
             {phase === "checking" ? "Checking..." : phase === "error" ? "Try again" : "Check"}
           </button>

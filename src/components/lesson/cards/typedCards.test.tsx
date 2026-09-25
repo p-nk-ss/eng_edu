@@ -84,6 +84,15 @@ describe("TranslationCard / WritingCard", () => {
     expect(onChange).toHaveBeenLastCalledWith({ text: "one two  three" });
   });
 
+  it("writing: says in text (not colour alone) when the minimum is reached", () => {
+    render(<WritingCard view={v<ViewOf<"open_writing">>("e1", E.OPEN_WRITING)} disabled={false} result={null} onChange={vi.fn()} />);
+    const box = screen.getByRole("textbox");
+    fireEvent.change(box, { target: { value: "word ".repeat(59) } });
+    expect(screen.queryByText(/minimum reached/i)).not.toBeInTheDocument();
+    fireEvent.change(box, { target: { value: "word ".repeat(60) } });
+    expect(screen.getByText(/minimum reached/i)).toBeInTheDocument();
+  });
+
   it("Enter adds a newline, Ctrl+Enter submits", () => {
     const onSubmit = vi.fn();
     render(<WritingCard view={v<ViewOf<"open_writing">>("e1", E.OPEN_WRITING)} disabled={false} result={null} onChange={vi.fn()} onSubmit={onSubmit} />);

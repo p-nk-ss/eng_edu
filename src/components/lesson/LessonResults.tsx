@@ -37,7 +37,7 @@ export function LessonResults({ items }: { items: PlayerItem[] }) {
         {items.map(({ view, result }) => (
           <li key={view.id} className="rounded-card border border-border bg-surface p-3">
             <details>
-              <summary className="flex cursor-pointer items-start gap-2">
+              <summary className="flex min-h-11 cursor-pointer items-start gap-2">
                 {result?.isCorrect ? <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-success" aria-hidden /> : <XCircle size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden />}
                 <span className="sr-only">{result?.isCorrect ? "Correct:" : "Wrong:"}</span>
                 <span className="flex min-w-0 flex-col">
@@ -50,7 +50,7 @@ export function LessonResults({ items }: { items: PlayerItem[] }) {
           </li>
         ))}
       </ol>
-      <Link href="/" className="flex min-h-11 items-center justify-center self-start rounded-xl bg-primary px-5 py-3 font-display font-bold text-on-primary">
+      <Link href="/" className="flex min-h-11 items-center justify-center self-start rounded-xl bg-primary px-5 py-3 font-display font-bold text-on-primary hover:opacity-90">
         Back to dashboard
       </Link>
     </section>

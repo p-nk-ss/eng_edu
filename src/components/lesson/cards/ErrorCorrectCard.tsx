@@ -26,7 +26,7 @@ export function ErrorCorrectCard({ view, disabled, onChange }: CardProps<"error_
               setFix(t);
               emit(i, t);
             }}
-            className={`min-h-11 rounded-xl border px-3 py-1 ${index === i ? "border-danger bg-surface-2 line-through" : "border-border bg-surface hover:bg-surface-2"}`}
+            className={`min-h-11 max-w-full break-words rounded-xl border px-3 py-1 ${index === i ? "border-danger bg-surface-2 line-through" : "border-border bg-surface hover:bg-surface-2"}`}
           >
             {t}
           </button>

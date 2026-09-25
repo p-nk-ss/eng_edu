@@ -25,7 +25,7 @@ export function ClozeSelectCard({ view, disabled, onChange }: CardProps<"cloze_m
               value={values[i] ?? ""}
               disabled={disabled}
               onChange={(e) => set(i, e.target.value)}
-              className="mx-1 min-h-11 rounded-xl border border-border bg-surface px-3 py-1 font-semibold"
+              className="mx-1 min-h-11 max-w-full rounded-xl border border-border bg-surface px-3 py-1 font-semibold"
             >
               <option value="">...</option>
               {view.gaps[i].options.map((o, k) => (

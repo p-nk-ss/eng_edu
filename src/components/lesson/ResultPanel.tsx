@@ -4,16 +4,16 @@ import type { ExerciseView } from "@/lib/lesson/lessonView";
 
 const SEVERITY_CLASS: Record<WritingCorrection["severity"], string> = {
   minor: "border-border text-muted-foreground",
-  moderate: "border-warning text-warning",
-  major: "border-danger text-danger",
+  moderate: "border-warning text-foreground",
+  major: "border-danger text-foreground",
 };
 
 export function ResultPanel({ result, type }: { result: GradeResult; type: ExerciseView["type"] }) {
   const ok = result.isCorrect;
   const fb = result.feedback;
   return (
-    <div className="flex flex-col gap-3 rounded-card border border-border bg-surface-2 p-4">
-      <p role="status" className={`flex items-center gap-2 font-display text-lg font-bold ${ok ? "text-success" : "text-danger"}`}>
+    <div className={`flex flex-col gap-3 rounded-card border-2 bg-surface p-4 motion-safe:animate-rise ${ok ? "border-success" : "border-danger"}`}>
+      <p role="status" className={`flex items-center gap-2 font-display text-xl font-bold ${ok ? "text-success" : "text-danger"}`}>
         {ok ? <CheckCircle2 size={24} className="motion-safe:animate-pop" aria-hidden /> : <XCircle size={24} aria-hidden />}
         {ok ? "Correct" : "Not quite"}
       </p>
@@ -21,7 +21,7 @@ export function ResultPanel({ result, type }: { result: GradeResult; type: Exerc
       {result.parts.length > 1 && (
         <ul className="flex flex-col gap-1 text-sm">
           {result.parts.map((p, i) => (
-            <li key={i} className="flex items-center gap-2">
+            <li key={i} className="flex flex-wrap items-center gap-x-2 gap-y-1">
               {p.correct ? <CheckCircle2 size={16} className="shrink-0 text-success" aria-hidden /> : <XCircle size={16} className="shrink-0 text-danger" aria-hidden />}
               <span className="sr-only">{p.correct ? "Correct:" : "Wrong:"}</span>
               <span>you: {p.given || "-"}</span>
@@ -54,7 +54,7 @@ export function ResultPanel({ result, type }: { result: GradeResult; type: Exerc
           {fb.corrections && fb.corrections.length > 0 && (
             <ol className="flex flex-col gap-2">
               {fb.corrections.map((k, i) => (
-                <li key={i} className="rounded-xl border border-border bg-surface p-3 text-sm">
+                <li key={i} className="rounded-xl border border-border bg-surface-2 p-3 text-sm">
                   <p className="flex flex-wrap items-center gap-2">
                     <span className="line-through">{k.original}</span>
                     <span aria-hidden>-&gt;</span>

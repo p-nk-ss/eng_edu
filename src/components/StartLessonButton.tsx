@@ -30,7 +30,7 @@ export function StartLessonButton() {
         type="button"
         onClick={start}
         disabled={pending}
-        className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-3 font-display font-bold text-on-primary disabled:opacity-40"
+        className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-3 font-display font-bold text-on-primary enabled:hover:opacity-90 disabled:opacity-40"
       >
         {pending && <Loader2 size={18} className="motion-safe:animate-spin" aria-hidden />}
         {pending ? "Preparing your lesson..." : error ? "Try again" : "Start today's lesson"}

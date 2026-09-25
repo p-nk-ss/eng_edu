@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { CardProps } from "./types";
 
-const tile = "min-h-11 rounded-xl border px-3 py-1 font-semibold motion-safe:transition-transform motion-safe:active:scale-95";
+const tile = "min-h-11 max-w-full break-words rounded-xl border px-3 py-1 font-semibold motion-safe:transition-transform motion-safe:active:scale-95";
 
 /** Tiles are tracked by index into view.tiles so duplicate words stay distinct. */
 export function WordBankCard({ view, disabled, onChange }: CardProps<"word_bank">) {

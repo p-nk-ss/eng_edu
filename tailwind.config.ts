@@ -25,9 +25,10 @@ const config: Config = {
       },
       borderRadius: { card: "16px" },
       keyframes: {
+        rise: { "0%": { transform: "translateY(4px)", opacity: "0" }, "100%": { transform: "translateY(0)", opacity: "1" } },
         pop: { "0%": { transform: "scale(0.6)", opacity: "0" }, "70%": { transform: "scale(1.15)", opacity: "1" }, "100%": { transform: "scale(1)" } },
       },
-      animation: { pop: "pop 300ms ease-out" },
+      animation: { pop: "pop 300ms ease-out", rise: "rise 200ms ease-out" },
     },
   },
   plugins: [],

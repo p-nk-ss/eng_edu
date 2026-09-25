@@ -14,7 +14,7 @@ export function DialogueCard({ view, disabled, result, onChange }: CardProps<"di
           return (
             <li
               key={i}
-              className={`max-w-[85%] rounded-2xl px-4 py-2 ${i % 2 === 0 ? "self-start bg-surface-2" : "self-end border border-primary bg-surface"} ${isGap ? "font-semibold" : ""}`}
+              className={`max-w-[85%] break-words rounded-2xl px-4 py-2 ${i % 2 === 0 ? "self-start bg-surface-2" : "self-end border border-primary bg-surface"} ${isGap ? "font-semibold" : ""}`}
             >
               {t}
             </li>

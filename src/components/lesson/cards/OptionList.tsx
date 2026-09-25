@@ -61,7 +61,7 @@ export function OptionList({ options, selected, disabled, correctText, onSelect,
             >
               {i + 1}
             </span>
-            <span className="flex-1">{opt}</span>
+            <span className="min-w-0 flex-1 break-words">{opt}</span>
             {isKey && <Check data-testid={isChosen ? "selected-mark" : undefined} size={18} className="text-success" aria-hidden />}
             {showCircleDot && <CircleDot data-testid="selected-mark" size={18} className="text-primary" aria-hidden />}
           </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import type { CardProps } from "./types";
 
@@ -56,8 +57,10 @@ export function WritingCard({ view, disabled, onChange, onSubmit }: CardProps<"o
         <span className="text-sm text-muted-foreground">Your text</span>
         <textarea value={t.text} disabled={disabled} onChange={(e) => t.onTextChange(e.target.value)} onKeyDown={t.onKeyDown} className={`${boxClass} min-h-48`} />
       </label>
-      <p className={`self-end text-sm tabular-nums ${words >= view.minWords ? "text-success" : "text-muted-foreground"}`}>
+      <p className={`flex items-center gap-1 self-end text-sm tabular-nums ${words >= view.minWords ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+        {words >= view.minWords && <Check size={16} className="text-success" aria-hidden />}
         {words} / {view.minWords} words
+        {words >= view.minWords && <span className="sr-only"> - minimum reached</span>}
       </p>
     </div>
   );

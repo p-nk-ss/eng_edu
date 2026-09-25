@@ -40,14 +40,14 @@ export function MatchCard({ view, disabled, onChange }: CardProps<"match">) {
           {view.left.map((l, i) => (
             <button key={i} type="button" disabled={disabled} aria-pressed={active === i} onClick={() => clickLeft(i)}
               className={`${btn} ${active === i ? "border-primary bg-surface-2" : pairs[i] !== null ? "border-primary bg-surface" : "border-border bg-surface"}`}>
-              <span>{l}</span>
+              <span className="min-w-0 break-words">{l}</span>
               {active === i ? (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                   <MousePointerClick size={14} aria-hidden />
                   <span className="sr-only">selected</span>
                 </span>
               ) : pairs[i] !== null ? (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                   <Link2 size={14} aria-hidden /> {pairs[i]! + 1}
                 </span>
               ) : null}
@@ -61,8 +61,8 @@ export function MatchCard({ view, disabled, onChange }: CardProps<"match">) {
             return (
               <button key={k} type="button" disabled={disabled || active === null} onClick={() => clickRight(k)}
                 className={`${btn} ${isTaken ? "border-primary bg-surface" : "border-border bg-surface"} disabled:opacity-60`}>
-                <span>{r}</span>
-                <span className="flex items-center gap-1 text-xs tabular-nums text-muted-foreground">
+                <span className="min-w-0 break-words">{r}</span>
+                <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-muted-foreground">
                   {isTaken && <Link2 size={14} aria-hidden />}
                   {isTaken ? owner + 1 : k + 1}
                   {isTaken && <span className="sr-only"> paired with {view.left[owner]}</span>}

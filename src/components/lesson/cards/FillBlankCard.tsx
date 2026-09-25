@@ -29,7 +29,7 @@ export function FillBlankCard({ view, disabled, onChange }: CardProps<"open_cloz
               value={values[i]}
               disabled={disabled}
               onChange={(e) => set(i, e.target.value)}
-              className="mx-1 min-h-11 w-40 border-b-2 border-primary bg-transparent px-1 text-center font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="mx-1 min-h-11 w-36 max-w-full border-b-2 border-primary bg-transparent px-1 text-center font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           )}
         </Fragment>
