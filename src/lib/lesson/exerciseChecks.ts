@@ -6,8 +6,8 @@ import type { ExerciseContent } from "./exerciseSchemas";
  */
 export function normalizeAnswer(s: string): string {
   return s
-    .replace(/[‘’ʼ]/g, "'")
-    .replace(/[“”]/g, '"')
+    .replace(/[\u2018\u2019\u02BC]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
     .trim()
     .replace(/\s+/g, " ")
     .toLowerCase()

@@ -46,6 +46,12 @@ describe("lessonGenerationPrompt", () => {
     expect(system).toMatch(/no other grammar/i);
   });
 
+  it("allows a distractor that is the natural malformed form the grammar focus itself produces (e.g. over-regularised comparatives), not just real-word misuse", () => {
+    const { system } = lessonGenerationPrompt(input) as { system: string };
+    expect(system).toContain("plausible learner errors");
+    expect(system).toContain("unrelated to the grammar being taught");
+  });
+
   it("builds the stated limits from LESSON_LIMITS", () => {
     const { system } = lessonGenerationPrompt(input) as { system: string };
     expect(system).toContain(`${LESSON_LIMITS.warmupIntro.min}-${LESSON_LIMITS.warmupIntro.max}`);

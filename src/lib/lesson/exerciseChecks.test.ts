@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { EXERCISE_TYPES, type ExerciseContent } from "./exerciseSchemas";
 import { FIXTURE_VOCAB, VALID_EXERCISES } from "./fixtures";
 import { checkExercise, headwordOccurs, normalizeAnswer, normalizeLoose, pruneVocab } from "./exerciseChecks";
@@ -10,7 +12,7 @@ const broken = (base: ExerciseContent, patch: Record<string, unknown>) => ({ ...
 describe("normalizeAnswer", () => {
   it("trims, collapses whitespace, lowercases, strips edge punctuation, straightens quotes", () => {
     expect(normalizeAnswer("  Doesn't   LIKE  ")).toBe("doesn't like");
-    expect(normalizeAnswer("“Hello, world!”")).toBe("hello, world");
+    expect(normalizeAnswer("\u201CHello, world!\u201D")).toBe("hello, world");
     expect(normalizeAnswer("...")).toBe("");
   });
   it("loose form also drops inner punctuation but keeps apostrophes", () => {
@@ -20,18 +22,24 @@ describe("normalizeAnswer", () => {
     // Regression for the character class that was accidentally written with ASCII lookalikes
     // (', ") instead of the typographic code points - so it never matched real
     // smart-punctuation input such as iOS/macOS autocorrect produces.
-    expect(normalizeAnswer("Doesn’t")).toBe("doesn't");
-    expect(normalizeAnswer("I’d")).toBe("i'd");
+    expect(normalizeAnswer("Doesn\u2019t")).toBe("doesn't");
+    expect(normalizeAnswer("I\u2019d")).toBe("i'd");
   });
   it("straightens typographic double quotes INSIDE the string (U+201C/U+201D), edge punctuation still stripped", () => {
-    // "“Hi”, he said" straightens to '"hi", he said' (after lowercasing), then the
+    // "\u201CHi\u201D, he said" straightens to '"hi", he said' (after lowercasing), then the
     // edge-punctuation strip removes only the LEADING '"' (it is punctuation); the closing
     // quote after "hi" is no longer at the string edge (a comma+space+"he said" follow it) so
     // it survives, and the trailing "d" of "said" is a letter, so nothing is stripped there.
-    expect(normalizeAnswer("“Hi”, he said")).toBe("hi\", he said");
+    expect(normalizeAnswer("\u201CHi\u201D, he said")).toBe("hi\", he said");
   });
   it("normalizeLoose straightens a typographic apostrophe too", () => {
-    expect(normalizeLoose("I’d like it.")).toBe("i'd like it");
+    expect(normalizeLoose("I\u2019d like it.")).toBe("i'd like it");
+  });
+  it("source file has no literal typographic quote glyphs - only \\u escapes, so a straightening tool cannot silently break the regex classes again", () => {
+    const src = readFileSync(path.join(process.cwd(), "src/lib/lesson/exerciseChecks.ts"), "utf8");
+    const forbidden = [0x2018, 0x2019, 0x201c, 0x201d, 0x02bc];
+    const found = [...src].filter((ch) => forbidden.includes(ch.codePointAt(0) as number));
+    expect(found).toEqual([]);
   });
 });
 

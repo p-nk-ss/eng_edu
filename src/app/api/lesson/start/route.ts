@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ProfileMissingError } from "@/lib/curriculum/lessonInputs";
-import { LessonGenerationError } from "@/lib/lesson/generateLesson";
+import { formatDrop, LessonGenerationError } from "@/lib/lesson/generateLesson";
 import { liveGenerationDeps } from "@/lib/lesson/liveDeps";
 import { startLesson } from "@/lib/lesson/startLesson";
 
@@ -21,7 +21,7 @@ export async function POST(): Promise<NextResponse> {
   } catch (e) {
     if (e instanceof ProfileMissingError) return NextResponse.json({ error: e.message }, { status: 409 });
     if (e instanceof LessonGenerationError) {
-      const drops = e.drops.map((d) => `attempt ${d.attempt} #${d.index}: ${d.reason}`);
+      const drops = e.drops.map(formatDrop);
       return NextResponse.json({ error: e.message, drops }, { status: 502 });
     }
     return NextResponse.json({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 });
