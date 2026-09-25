@@ -111,5 +111,6 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
   `next build` only type-checks app files (not tests). Type bugs hide otherwise.
 - Every commit message ends with:
   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
-- Work happens on branch `feature/m1-skeleton` (not `main`).
+- Work happens on a feature branch per milestone, never on `main` — currently `feature/m3c-grading`.
+  `main` holds finished milestones (M1–M3b-2 merged 2026-09-25).
 - `ANTHROPIC_API_KEY` must stay **unset** (or Agent SDK bills pay-per-token instead of the Max credit).
