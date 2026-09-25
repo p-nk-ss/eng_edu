@@ -24,6 +24,10 @@ const config: Config = {
         display: ["var(--font-nunito)", "system-ui", "sans-serif"],
       },
       borderRadius: { card: "16px" },
+      keyframes: {
+        pop: { "0%": { transform: "scale(0.6)", opacity: "0" }, "70%": { transform: "scale(1.15)", opacity: "1" }, "100%": { transform: "scale(1)" } },
+      },
+      animation: { pop: "pop 300ms ease-out" },
     },
   },
   plugins: [],
