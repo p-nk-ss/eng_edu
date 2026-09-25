@@ -38,6 +38,7 @@ npm run vocab:classify    # offline vocab topic classification via TypeSafe Jev
 npm run grammar:enrich    # offline grammar topic enrichment via Claude (title/description/example/teachable/importance)
 npm run curriculum:preview # print the deterministic selection for the next 5 lessons
 npm run lesson:generate    # generate ONE lesson live (Claude + Jev), print it; no DB writes
+npm run answer:check       # grade one answer live (Jev + Claude) against a real/synthetic exercise; no DB writes
 ```
 
 ## Database — portable, inside the project (no system install, no Docker)
@@ -101,7 +102,12 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
     best effort) with one regeneration if fewer than 5 survive; transactional persistence with
     grammar/vocab status transitions; idempotent `POST /api/lesson/start`; `npm run
     lesson:generate`. See `docs/superpowers/specs/2026-09-18-m3b2-lesson-generation-design.md`.
-  - M3c graders/`judge` role · M3d exercise player — not started.
+  - **M3c** ✅ — `POST /api/exercise/check`: local graders for objective types, TypeSafe Jev as a
+    best-effort second chance on typed mismatches (accept ≥ 0.8), `translation_check`/`writing_feedback`
+    (Claude) for `TRANSLATION`/`OPEN_WRITING`; one attempt per exercise, transactional vocab-streak
+    and `ErrorRecord` updates; `npm run answer:check`. See
+    `docs/superpowers/specs/2026-09-25-m3c-answer-checking-design.md`.
+  - M3d exercise player — not started.
 - M4 Spaced repetition · M5 Conversation · M6 Scenarios + wrap-up.
 
 ## Dev guidelines
