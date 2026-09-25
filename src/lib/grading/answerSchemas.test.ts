@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import type { ExerciseContent } from "../lesson/exerciseSchemas";
 import { VALID_EXERCISES as E } from "../lesson/fixtures";
 import { parseAnswer } from "./answerSchemas";
 
@@ -50,6 +51,31 @@ describe("parseAnswer", () => {
     expect(parseAnswer(E.DICTATION, { text: "" }).ok).toBe(false);
     expect(parseAnswer(E.TRANSLATION, { text: "" }).ok).toBe(false);
     expect(parseAnswer(E.OPEN_WRITING, { text: "" }).ok).toBe(false);
+  });
+
+  it("rejects whitespace-only free text for dictation, translation and writing", () => {
+    expect(parseAnswer(E.DICTATION, { text: "   " }).ok).toBe(false);
+    expect(parseAnswer(E.TRANSLATION, { text: "\n\t " }).ok).toBe(false);
+    expect(parseAnswer(E.OPEN_WRITING, { text: "  \n  " }).ok).toBe(false);
+  });
+
+  it("rejects an open_cloze answer where every gap is blank after trim", () => {
+    expect(parseAnswer(E.FILL_BLANK, { text: [" "] }).ok).toBe(false);
+    expect(parseAnswer(E.CLOZE_DROPDOWN, { selected: [0, 1] }).ok).toBe(true); // not open_cloze, unaffected
+  });
+
+  it("accepts a partly blank open_cloze answer as a valid, wrong answer", () => {
+    const fillBlank = E.FILL_BLANK as Extract<ExerciseContent, { type: "open_cloze" }>;
+    const twoGap: ExerciseContent = { ...fillBlank, gaps: [...fillBlank.gaps, { accept: ["x"] }] };
+    const res = parseAnswer(twoGap, { text: ["beautiful", "   "] });
+    expect(res.ok).toBe(true);
+  });
+
+  it("rejects a translation answer over 500 characters but allows dictation/writing up to 2000", () => {
+    expect(parseAnswer(E.TRANSLATION, { text: "a".repeat(501) }).ok).toBe(false);
+    expect(parseAnswer(E.TRANSLATION, { text: "a".repeat(500) }).ok).toBe(true);
+    expect(parseAnswer(E.DICTATION, { text: "a".repeat(2000) }).ok).toBe(true);
+    expect(parseAnswer(E.OPEN_WRITING, { text: "a".repeat(2000) }).ok).toBe(true);
   });
 
   it("rejects non-object input", () => {

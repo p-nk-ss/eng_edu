@@ -4,17 +4,23 @@ import type { Answer } from "./types";
 
 const index = z.number().int().min(0);
 const typed = z.string().max(2000);
-const freeText = typed.min(1);
+const nonBlank = (s: string): boolean => s.trim().length > 0;
+/** Whitespace-only free text is not an answer (a malformed answer is never a learner mistake). */
+const freeText = typed.refine(nonBlank, { message: "must not be blank" });
+/** Translations are LLM-graded: an unbounded ANSWER can otherwise stall the route (F6). */
+const translationText = z.string().max(500).refine(nonBlank, { message: "must not be blank" });
 
 const SHAPES = {
   mcq: z.object({ selected: index }),
   dialogue_gap: z.object({ selected: index }),
   cloze_mc: z.object({ selected: z.array(index) }),
-  open_cloze: z.object({ text: z.array(typed) }),
+  open_cloze: z
+    .object({ text: z.array(typed) })
+    .refine((v) => v.text.some(nonBlank), { message: "at least one gap must be filled" }),
   word_bank: z.object({ tokens: z.array(z.string().max(100)).max(40) }),
   match: z.object({ pairs: z.array(index) }),
   dictation: z.object({ text: freeText }),
-  translation: z.object({ text: freeText }),
+  translation: z.object({ text: translationText }),
   open_writing: z.object({ text: freeText }),
   error_correct: z.object({ index, fix: z.string().max(200) }),
 } as const;
