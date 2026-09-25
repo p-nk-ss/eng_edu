@@ -21,7 +21,8 @@
     "vocab:classify": "tsx scripts/classify-vocab.ts",
     "curriculum:preview": "tsx scripts/curriculum-preview.ts",
     "grammar:enrich": "tsx scripts/enrich-grammar.ts",
-    "lesson:generate": "tsx scripts/lesson-preview.ts"
+    "lesson:generate": "tsx scripts/lesson-preview.ts",
+    "answer:check": "tsx scripts/answer-preview.ts"
   },
   "dependencies": {
     "next": "15.5.20",
