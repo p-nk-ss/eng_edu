@@ -63,6 +63,31 @@ describe("MatchCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /^frankly/ }));
     expect(onChange).toHaveBeenLastCalledWith(null);
   });
+
+  it("marks the active left item as selected in its accessible name (not by colour alone)", () => {
+    render(<MatchCard view={match} disabled={false} result={null} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /^frankly/ }));
+    expect(screen.getByRole("button", { name: /^frankly.*selected/i })).toBeInTheDocument();
+  });
+
+  it("exposes which left item a taken right item is paired with", () => {
+    render(<MatchCard view={match} disabled={false} result={null} onChange={vi.fn()} />);
+    pickPair("frankly", "to be honest");
+    expect(screen.getByRole("button", { name: /^to be honest.*paired with frankly/i })).toBeInTheDocument();
+  });
+
+  it("labels both columns as groups for assistive tech", () => {
+    render(<MatchCard view={match} disabled={false} result={null} onChange={vi.fn()} />);
+    expect(screen.getByRole("group", { name: "Words" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Meanings" })).toBeInTheDocument();
+  });
+
+  it("shows an instruction that updates once a word is picked", () => {
+    render(<MatchCard view={match} disabled={false} result={null} onChange={vi.fn()} />);
+    expect(screen.getByText("Pick a word, then its meaning.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^frankly/ }));
+    expect(screen.getByText('Now pick the meaning for "frankly"')).toBeInTheDocument();
+  });
 });
 
 describe("ExerciseBody", () => {

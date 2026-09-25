@@ -1,6 +1,6 @@
 "use client";
 
-import { Link2 } from "lucide-react";
+import { Link2, MousePointerClick } from "lucide-react";
 import { useState } from "react";
 import type { CardProps } from "./types";
 
@@ -31,31 +31,46 @@ export function MatchCard({ view, disabled, onChange }: CardProps<"match">) {
 
   const btn = "flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left";
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <div className="flex flex-col gap-2" aria-label="Words">
-        {view.left.map((l, i) => (
-          <button key={i} type="button" disabled={disabled} aria-pressed={active === i} onClick={() => clickLeft(i)}
-            className={`${btn} ${active === i ? "border-primary bg-surface-2" : pairs[i] !== null ? "border-primary bg-surface" : "border-border bg-surface"}`}>
-            <span>{l}</span>
-            {pairs[i] !== null && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Link2 size={14} aria-hidden /> {pairs[i]! + 1}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-      <div className="flex flex-col gap-2" aria-label="Meanings">
-        {view.right.map((r, k) => {
-          const owner = pairs.indexOf(k);
-          return (
-            <button key={k} type="button" disabled={disabled || active === null} onClick={() => clickRight(k)}
-              className={`${btn} ${owner >= 0 ? "border-primary bg-surface" : "border-border bg-surface"} disabled:opacity-100`}>
-              <span>{r}</span>
-              <span className="text-xs tabular-nums text-muted-foreground">{k + 1}</span>
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-muted-foreground">
+        {active === null ? "Pick a word, then its meaning." : `Now pick the meaning for "${view.left[active]}"`}
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <div role="group" className="flex flex-col gap-2" aria-label="Words">
+          {view.left.map((l, i) => (
+            <button key={i} type="button" disabled={disabled} aria-pressed={active === i} onClick={() => clickLeft(i)}
+              className={`${btn} ${active === i ? "border-primary bg-surface-2" : pairs[i] !== null ? "border-primary bg-surface" : "border-border bg-surface"}`}>
+              <span>{l}</span>
+              {active === i ? (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <MousePointerClick size={14} aria-hidden />
+                  <span className="sr-only">selected</span>
+                </span>
+              ) : pairs[i] !== null ? (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Link2 size={14} aria-hidden /> {pairs[i]! + 1}
+                </span>
+              ) : null}
             </button>
-          );
-        })}
+          ))}
+        </div>
+        <div role="group" className="flex flex-col gap-2" aria-label="Meanings">
+          {view.right.map((r, k) => {
+            const owner = pairs.indexOf(k);
+            const isTaken = owner >= 0;
+            return (
+              <button key={k} type="button" disabled={disabled || active === null} onClick={() => clickRight(k)}
+                className={`${btn} ${isTaken ? "border-primary bg-surface" : "border-border bg-surface"} disabled:opacity-60`}>
+                <span>{r}</span>
+                <span className="flex items-center gap-1 text-xs tabular-nums text-muted-foreground">
+                  {isTaken && <Link2 size={14} aria-hidden />}
+                  {isTaken ? owner + 1 : k + 1}
+                  {isTaken && <span className="sr-only"> paired with {view.left[owner]}</span>}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
