@@ -32,6 +32,13 @@ describe("liveJudgeDeps", () => {
     expect(createTypeSafeClient).toHaveBeenCalledTimes(1);
   });
 
+  it("configures the interactive client to fail fast: short timeout, at most one retry", () => {
+    const client = { systemOne: vi.fn() };
+    vi.mocked(createTypeSafeClient).mockReturnValue(client as never);
+    liveJudgeDeps().jev();
+    expect(createTypeSafeClient).toHaveBeenCalledWith({ timeoutMs: 8000, maxRetries: 1 });
+  });
+
   it("returns null when the key is missing", () => {
     vi.mocked(createTypeSafeClient).mockImplementation(() => {
       throw new Error("TYPESAFE_API_KEY is not set");

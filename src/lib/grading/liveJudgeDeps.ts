@@ -11,7 +11,8 @@ export function liveJudgeDeps(): JudgeDeps {
     jev: () => {
       if (client === undefined) {
         try {
-          client = createTypeSafeClient();
+          // Interactive (in the request path) must fail fast, unlike the offline scripts' defaults.
+          client = createTypeSafeClient({ timeoutMs: 8000, maxRetries: 1 });
         } catch {
           client = null;
         }
