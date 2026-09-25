@@ -16,6 +16,23 @@ describe("normalizeAnswer", () => {
   it("loose form also drops inner punctuation but keeps apostrophes", () => {
     expect(normalizeLoose("I'd like a coffee, please.")).toBe("i'd like a coffee please");
   });
+  it("straightens a real typographic right single quote/apostrophe (U+2019), not just ASCII input", () => {
+    // Regression for the character class that was accidentally written with ASCII lookalikes
+    // (', ") instead of the typographic code points - so it never matched real
+    // smart-punctuation input such as iOS/macOS autocorrect produces.
+    expect(normalizeAnswer("Doesn’t")).toBe("doesn't");
+    expect(normalizeAnswer("I’d")).toBe("i'd");
+  });
+  it("straightens typographic double quotes INSIDE the string (U+201C/U+201D), edge punctuation still stripped", () => {
+    // "“Hi”, he said" straightens to '"hi", he said' (after lowercasing), then the
+    // edge-punctuation strip removes only the LEADING '"' (it is punctuation); the closing
+    // quote after "hi" is no longer at the string edge (a comma+space+"he said" follow it) so
+    // it survives, and the trailing "d" of "said" is a letter, so nothing is stripped there.
+    expect(normalizeAnswer("“Hi”, he said")).toBe("hi\", he said");
+  });
+  it("normalizeLoose straightens a typographic apostrophe too", () => {
+    expect(normalizeLoose("I’d like it.")).toBe("i'd like it");
+  });
 });
 
 describe("headwordOccurs", () => {
