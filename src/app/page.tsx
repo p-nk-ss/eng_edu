@@ -5,7 +5,7 @@ import { getSyllabusProgress } from "@/lib/curriculum/progress";
 import { getStreak } from "@/lib/stats/streak";
 import { Flame } from "lucide-react";
 
-// Reads the DB at request time — never prerender at build (DB may be absent).
+// Reads the DB at request time - never prerender at build (DB may be absent).
 export const dynamic = "force-dynamic";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
@@ -23,7 +23,7 @@ export default async function DashboardPage() {
   return (
     <div className="md:flex">
       <SideNav />
-      <main className="mx-auto w-full max-w-6xl p-6">
+      <main className="mx-auto w-full max-w-6xl p-6 pb-24 md:pb-6">
         <header className="mb-6 flex items-start justify-between gap-4">
           <h1 className="font-display text-3xl font-extrabold">Today</h1>
           <StartLessonButton />

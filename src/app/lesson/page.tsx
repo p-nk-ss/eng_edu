@@ -13,7 +13,7 @@ export default async function LessonIndexPage() {
   return (
     <div className="md:flex">
       <SideNav />
-      <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-4 p-6">
+      <main className="mx-auto flex w-full max-w-2xl flex-col items-start gap-4 p-6 pb-24 md:pb-6">
         <h1 className="font-display text-2xl font-extrabold">No lesson in progress</h1>
         <StartLessonButton />
       </main>

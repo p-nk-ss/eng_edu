@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 vi.mock("@/lib/lesson/loadLesson", () => ({ loadLessonForPlayer: vi.fn() }));
-vi.mock("next/navigation", () => ({ notFound: vi.fn(() => { throw new Error("NEXT_NOT_FOUND"); }), useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ notFound: vi.fn(() => { throw new Error("NEXT_NOT_FOUND"); }), useRouter: () => ({ push: vi.fn() }), usePathname: () => "/lesson/L1" }));
 
 import { loadLessonForPlayer } from "@/lib/lesson/loadLesson";
 import { toExerciseView } from "@/lib/lesson/lessonView";

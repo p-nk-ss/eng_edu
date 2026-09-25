@@ -12,7 +12,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   return (
     <div className="md:flex">
       <SideNav />
-      <main className="mx-auto w-full max-w-2xl p-4 md:p-6">
+      <main className="mx-auto w-full max-w-2xl p-4 pb-24 md:p-6">
         <LessonPlayer lesson={lesson} />
       </main>
     </div>

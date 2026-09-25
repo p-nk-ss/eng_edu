@@ -7,7 +7,7 @@ vi.mock("@/lib/curriculum/progress", () => ({
   ]),
 }));
 vi.mock("@/lib/stats/streak", () => ({ getStreak: vi.fn().mockResolvedValue({ days: 4, atRisk: true }) }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/" }));
 
 import DashboardPage from "./page";
 
