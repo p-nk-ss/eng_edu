@@ -5,7 +5,7 @@ vi.mock("../db", () => ({ prisma: {} }));
 
 import { VALID_EXERCISES as E } from "../lesson/fixtures";
 import { checkAnswer, ExerciseNotFoundError, InvalidAnswerError, type CheckAnswerDb } from "./checkAnswer";
-import type { JudgeDeps } from "./judge";
+import { GradingUnavailableError, type JudgeDeps } from "./judge";
 
 const now = new Date("2026-09-25T10:00:00Z");
 const judge: JudgeDeps = { jev: () => null, askTranslation: vi.fn(), askWriting: vi.fn() };
@@ -77,6 +77,32 @@ describe("checkAnswer", () => {
     const out = await checkAnswer("e-dry", { selected: 1 }, { db: f.db, judge, now, dryRun: true });
     expect(out).toMatchObject({ isCorrect: true, alreadyAnswered: false });
     expect(f.raw.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("rejects with GradingUnavailableError when Claude fails, without recording anything", async () => {
+    const f = fakeDb([row("e-claude-fail", E.TRANSLATION)]);
+    const badJudge: JudgeDeps = { jev: () => null, askTranslation: vi.fn().mockRejectedValue(new Error("LLM down")), askWriting: vi.fn() };
+    await expect(
+      checkAnswer("e-claude-fail", { text: "I finished the report before the deadline." }, { db: f.db, judge: badJudge, now }),
+    ).rejects.toBeInstanceOf(GradingUnavailableError);
+    expect(f.raw.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("grades fresh on a second submit after a rejected run for the same exercise id", async () => {
+    const f = fakeDb([row("e-retry", E.TRANSLATION), row("e-retry", E.TRANSLATION)]);
+    const badJudge: JudgeDeps = { jev: () => null, askTranslation: vi.fn().mockRejectedValue(new Error("LLM down")), askWriting: vi.fn() };
+    await expect(
+      checkAnswer("e-retry", { text: "I finished the report before the deadline." }, { db: f.db, judge: badJudge, now }),
+    ).rejects.toBeInstanceOf(GradingUnavailableError);
+
+    const goodJudge: JudgeDeps = {
+      jev: () => null,
+      askTranslation: vi.fn().mockResolvedValue({ isCorrect: true, corrected: "I finished the report before the deadline.", explanation: "Good.", category: "none", relatesToFocus: false }),
+      askWriting: vi.fn(),
+    };
+    const out = await checkAnswer("e-retry", { text: "I finished the report before the deadline." }, { db: f.db, judge: goodJudge, now });
+    expect(out).toMatchObject({ isCorrect: true, alreadyAnswered: false });
+    expect(f.raw.exercise.findUnique).toHaveBeenCalledTimes(2);
   });
 
   it("single-flights concurrent submits of the same exercise", async () => {
