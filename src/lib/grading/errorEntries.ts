@@ -3,7 +3,11 @@ import { vocabOutcomes } from "./answerZone";
 import type { ErrorEntry, JudgeOutcome, LessonGrammar } from "./types";
 
 export const EXAMPLE_MAX = 200;
-const clip = (s: string): string => (s.length > EXAMPLE_MAX ? s.slice(0, EXAMPLE_MAX - 3) + "..." : s);
+/** Collapse whitespace runs (incl. newlines) to one space and trim BEFORE the length cut - ErrorRecord examples are single-line. */
+const clip = (s: string): string => {
+  const oneLine = s.replace(/\s+/g, " ").trim();
+  return oneLine.length > EXAMPLE_MAX ? oneLine.slice(0, EXAMPLE_MAX - 3) + "..." : oneLine;
+};
 const pretty = (category: string): string => category.replace(/_/g, " ");
 
 /** Types whose mistakes are attributed to the lesson's grammar focus (SPEC: lesson-grained attribution). */

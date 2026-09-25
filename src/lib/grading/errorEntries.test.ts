@@ -72,4 +72,14 @@ describe("errorEntries", () => {
     const e = errorEntries(E.MULTIPLE_CHOICE, wrong("x".repeat(300), "y"), grammar, FIXTURE_VOCAB)[0];
     expect(e.example.length).toBeLessThanOrEqual(200);
   });
+
+  it("collapses multi-line learner text to a single line before clipping", () => {
+    const multiline = "I went\nto the store\n\nand bought   milk".repeat(6);
+    const e = errorEntries(E.TRANSLATION, {
+      ...wrong(multiline, "I finished the report."), gradedBy: "claude",
+      translation: { isCorrect: false, corrected: "I finished the report.", explanation: "x", category: "grammar", relatesToFocus: false },
+    }, grammar, FIXTURE_VOCAB)[0];
+    expect(e.example).not.toContain("\n");
+    expect(e.example.length).toBeLessThanOrEqual(200);
+  });
 });
