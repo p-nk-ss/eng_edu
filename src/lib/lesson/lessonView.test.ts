@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { VALID_EXERCISES as E } from "./fixtures";
-import { TYPE_LABELS, toExerciseView } from "./lessonView";
+import { TYPE_LABELS, toExerciseView, viewExcerpt } from "./lessonView";
 
 describe("toExerciseView", () => {
   it("keeps exactly the fields the player needs, per type", () => {
@@ -57,5 +57,59 @@ describe("toExerciseView", () => {
 
   it("has a label for every type", () => {
     for (const content of Object.values(E)) expect(TYPE_LABELS[toExerciseView("x", content).type]).toMatch(/\w/);
+  });
+});
+
+describe("viewExcerpt", () => {
+  it("uses the prompt for mcq", () => {
+    expect(viewExcerpt(toExerciseView("ex1", E.MULTIPLE_CHOICE))).toBe("She ___ the report before the deadline yesterday.");
+  });
+
+  it("uses the gap turn (not the whole dialogue) for dialogue_gap", () => {
+    expect(viewExcerpt(toExerciseView("ex1", E.DIALOGUE_GAP))).toBe("B: ___");
+  });
+
+  it("uses the last turn when no turn has a gap", () => {
+    const view = toExerciseView("ex1", { ...E.DIALOGUE_GAP, turns: ["A: Hi.", "B: Hello."] } as never);
+    expect(viewExcerpt(view)).toBe("B: Hello.");
+  });
+
+  it("uses the text for cloze_mc and open_cloze", () => {
+    expect(viewExcerpt(toExerciseView("ex1", E.CLOZE_DROPDOWN))).toBe("I have worked here ___ 2019, ___ five years.");
+    expect(viewExcerpt(toExerciseView("ex1", E.FILL_BLANK))).toBe("It was a ___ (BEAUTY) day.");
+  });
+
+  it("gives a tile count (never the words) for word_bank", () => {
+    expect(viewExcerpt(toExerciseView("ex1", E.WORD_BANK))).toBe("5 words");
+  });
+
+  it("joins the left column for match", () => {
+    expect(viewExcerpt(toExerciseView("ex1", E.MATCH))).toBe("frankly, broke, colleague");
+  });
+
+  it("never reveals the spoken sentence for dictation", () => {
+    const excerpt = viewExcerpt(toExerciseView("ex1", E.DICTATION));
+    expect(excerpt).toBe("Listening");
+    expect(excerpt).not.toContain("coffee");
+  });
+
+  it("joins the tokens for error_correct", () => {
+    expect(viewExcerpt(toExerciseView("ex1", E.ERROR_CORRECTION))).toBe("She don't like tea");
+  });
+
+  it("uses the source for translation and the prompt for open_writing", () => {
+    expect(viewExcerpt(toExerciseView("ex1", E.TRANSLATION))).toBe("Я закончил отчёт до дедлайна.");
+    expect(viewExcerpt(toExerciseView("ex1", E.OPEN_WRITING))).toBe("Describe a time you missed a deadline at work and what you learned from it.");
+  });
+
+  it("collapses whitespace and cuts at max with an ASCII ellipsis", () => {
+    const view = toExerciseView("ex1", { ...E.MULTIPLE_CHOICE, prompt: "word ".repeat(30) } as never);
+    const excerpt = viewExcerpt(view, 20);
+    expect(excerpt.length).toBeLessThanOrEqual(20);
+    expect(excerpt.endsWith("...")).toBe(true);
+    expect(excerpt).not.toContain(String.fromCharCode(0x2026));
+
+    const collapsed = viewExcerpt(toExerciseView("ex1", { ...E.MULTIPLE_CHOICE, prompt: "a   b\n\tc" } as never));
+    expect(collapsed).toBe("a b c");
   });
 });

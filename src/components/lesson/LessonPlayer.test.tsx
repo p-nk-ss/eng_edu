@@ -47,6 +47,60 @@ describe("LessonPlayer", () => {
     await screen.findByText("Correct");
     fireEvent.click(screen.getByRole("button", { name: /see results/i }));
     expect(screen.getByText("1 of 2 correct")).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: /written block done/i }));
+  });
+
+  it("checks on Enter (window or the card heading), not just click, once an answer is chosen", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(ok({ ...grade("e1", true), alreadyAnswered: false }))
+      .mockResolvedValueOnce(ok({ ...grade("e2", true), alreadyAnswered: false }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<LessonPlayer lesson={lesson([null, null])} />);
+    fireEvent.click(screen.getByRole("radio", { name: /finishing/ }));
+    fireEvent.keyDown(window, { key: "Enter" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await screen.findByText("Correct");
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.click(screen.getByRole("radio", { name: /no worries/i }));
+    fireEvent.keyDown(screen.getByRole("heading", { name: /complete the dialogue/i }), { key: "Enter" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await screen.findByText("Correct");
+  });
+
+  it("does not check on Enter while focus is on a word-bank tile", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const wordBankLesson: PlayerLesson = {
+      lessonId: "L2", themeLabel: null, grammarTitle: null,
+      items: [{ view: toExerciseView("e3", E.WORD_BANK), result: null }],
+    };
+    render(<LessonPlayer lesson={wordBankLesson} />);
+    const tile = screen.getByRole("button", { name: "work" });
+    fireEvent.click(tile);
+    fireEvent.keyDown(tile, { key: "Enter" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("ignores a repeated Enter (key held down)", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<LessonPlayer lesson={lesson([null, null])} />);
+    fireEvent.click(screen.getByRole("radio", { name: /finishing/ }));
+    fireEvent.keyDown(window, { key: "Enter", repeat: true });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("treats a 200 with invalid or incomplete JSON as an error, not a stored result", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response("not json", { status: 200 }))
+      .mockResolvedValueOnce(ok({ ...grade("e1", true), alreadyAnswered: false }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<LessonPlayer lesson={lesson([null, null])} />);
+    fireEvent.click(screen.getByRole("radio", { name: /had finished/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Check" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/couldn't check right now/i);
+    fireEvent.click(screen.getByRole("button", { name: /try again/i }));
+    await screen.findByText("Correct");
   });
 
   it("sends one request when Check is clicked twice", async () => {
@@ -82,6 +136,7 @@ describe("LessonPlayer", () => {
     render(<LessonPlayer lesson={lesson([grade("e1", true), grade("e2", true)])} />);
     expect(screen.getByText("2 of 2 correct")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /back to dashboard/i })).toHaveAttribute("href", "/");
+    expect(screen.getByText("She ___ the report before the deadline yesterday.")).toBeInTheDocument();
   });
 
   it("says so when the lesson has no exercises", () => {

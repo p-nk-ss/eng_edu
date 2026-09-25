@@ -42,13 +42,18 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ exerciseId: current.view.id, answer }),
       });
-      const body = (await res.json().catch(() => ({}))) as GradeResult & { error?: string };
+      const body = (await res.json().catch(() => ({}))) as Partial<GradeResult> & { error?: string };
       if (!res.ok) {
         setError(res.status === 502 ? "Couldn't check right now - your answer is kept." : body.error ?? `Request failed (${res.status})`);
         setPhase("error");
         return;
       }
-      setItems((prev) => prev.map((it, i) => (i === index ? { ...it, result: body } : it)));
+      if (typeof body.isCorrect !== "boolean") {
+        setError("Couldn't check right now - your answer is kept.");
+        setPhase("error");
+        return;
+      }
+      setItems((prev) => prev.map((it, i) => (i === index ? { ...it, result: body as GradeResult } : it)));
       setPhase("graded");
     } catch {
       setError("Couldn't check right now - your answer is kept.");
@@ -57,6 +62,25 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
       checking.current = false;
     }
   }, [answer, current, index, phase]);
+
+  // Enter = Check when the answer is complete. Single-line inputs already submit the <form> on
+  // Enter, so INPUT (and TEXTAREA, which wants a literal newline) are left to that default / their
+  // own Ctrl+Enter handling. Non-radio buttons (tiles, pairs, tokens) keep Enter=click; radio
+  // option buttons, SELECTs and anywhere else (body/heading) fall through to Check.
+  useEffect(() => {
+    if ((phase !== "answering" && phase !== "error") || answer === null) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.repeat) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "TEXTAREA" || tag === "INPUT") return;
+      if ((tag === "BUTTON" || tag === "A") && target?.getAttribute("role") !== "radio") return;
+      e.preventDefault();
+      void check();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [phase, answer, check]);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -82,7 +106,8 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
       </p>
       <div role="progressbar" aria-label="Lesson progress" aria-valuemin={0} aria-valuemax={items.length} aria-valuenow={answered}
         className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
-        <div className="h-full rounded-full bg-success motion-safe:transition-transform" style={{ width: `${(answered / items.length) * 100}%` }} />
+        <div className="h-full w-full origin-left rounded-full bg-success motion-safe:transition-transform"
+          style={{ transform: `scaleX(${answered / items.length})` }} />
       </div>
     </header>
   );

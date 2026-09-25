@@ -29,6 +29,36 @@ export const TYPE_LABELS: Record<ExerciseView["type"], string> = {
   open_writing: "Write",
 };
 
+/** A short, secret-free description of an exercise for the results list (never a dictation's spoken sentence). */
+export function viewExcerpt(view: ExerciseView, max = 80): string {
+  const raw = ((): string => {
+    switch (view.type) {
+      case "mcq":
+        return view.prompt;
+      case "dialogue_gap":
+        return view.turns.find((t) => t.includes("___")) ?? view.turns[view.turns.length - 1] ?? "";
+      case "cloze_mc":
+      case "open_cloze":
+        return view.text;
+      case "word_bank":
+        return `${view.tiles.length} words`;
+      case "match":
+        return view.left.join(", ");
+      case "dictation":
+        return "Listening";
+      case "error_correct":
+        return view.tokens.join(" ");
+      case "translation":
+        return view.source;
+      case "open_writing":
+        return view.prompt;
+    }
+  })();
+  const collapsed = raw.replace(/\s+/g, " ").trim();
+  if (collapsed.length <= max) return collapsed;
+  return `${collapsed.slice(0, Math.max(0, max - 3)).trimEnd()}...`;
+}
+
 export function toExerciseView(id: string, c: ExerciseContent): ExerciseView {
   switch (c.type) {
     case "mcq":
