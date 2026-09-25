@@ -6,6 +6,7 @@ import { createLesson, type CreateLessonDb } from "./createLesson";
 import { planExerciseMix } from "./exerciseMix";
 import type { ExerciseTypeName } from "./exerciseSchemas";
 import { generateLesson, type GenerationDeps } from "./generateLesson";
+import { findResumableLessonId } from "./resumable";
 
 export type StartLessonDb = LessonInputsDb & CreateLessonDb & Pick<PrismaClient, "lesson">;
 
@@ -42,7 +43,7 @@ export interface StartLessonResult {
 // cleared in `finally` so the next call (after success OR failure) starts fresh.
 let inFlight: Promise<StartLessonResult> | null = null;
 
-/** POST /api/lesson/start. Idempotent per local calendar day. Single-flighted. Sequential queries only. */
+/** POST /api/lesson/start. Resumes an unfinished lesson (any date) or today's; otherwise generates one. Single-flighted. Sequential queries only. */
 export function startLesson(deps: { db?: StartLessonDb; generation: GenerationDeps; now?: Date }): Promise<StartLessonResult> {
   if (inFlight) return inFlight;
   const p = runStartLesson(deps).finally(() => {
@@ -55,15 +56,9 @@ export function startLesson(deps: { db?: StartLessonDb; generation: GenerationDe
 async function runStartLesson(deps: { db?: StartLessonDb; generation: GenerationDeps; now?: Date }): Promise<StartLessonResult> {
   const db = deps.db ?? (prisma as unknown as StartLessonDb);
   const now = deps.now ?? new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
-  const existing = await db.lesson.findFirst({
-    where: { status: { in: ["PLANNED", "IN_PROGRESS"] }, date: { gte: dayStart, lt: dayEnd } },
-    orderBy: [{ date: "desc" }, { id: "desc" }],
-    select: { id: true },
-  });
-  if (existing) return { lessonId: existing.id, reused: true };
+  const existingId = await findResumableLessonId(db, now);
+  if (existingId) return { lessonId: existingId, reused: true };
 
   const inputs = await selectLessonInputs(db, now);
   const lessonNumber = (await db.lesson.count()) + 1;

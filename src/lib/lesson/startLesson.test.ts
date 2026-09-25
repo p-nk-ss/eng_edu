@@ -46,14 +46,16 @@ describe("toGenerationInputs", () => {
 });
 
 describe("startLesson", () => {
-  it("reuses today's PLANNED/IN_PROGRESS lesson without generating", async () => {
+  it("reuses a resumable lesson (today's, or an older one with unanswered exercises) without generating", async () => {
     const f = fakeDb({ id: "L1" });
     expect(await startLesson({ db: f.db, generation, now })).toEqual({ lessonId: "L1", reused: true });
     expect(generateLesson).not.toHaveBeenCalled();
     const where = f.findFirst.mock.calls[0][0].where;
     expect(where.status).toEqual({ in: ["PLANNED", "IN_PROGRESS"] });
-    expect(where.date.gte).toEqual(new Date(2026, 8, 18));
-    expect(where.date.lt).toEqual(new Date(2026, 8, 19));
+    expect(where.OR).toEqual([
+      { date: { gte: new Date(2026, 8, 18), lt: new Date(2026, 8, 19) } },
+      { exercises: { some: { answeredAt: null } } },
+    ]);
   });
 
   it("selects, plans the mix from the lesson number, generates and persists", async () => {
