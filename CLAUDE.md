@@ -107,7 +107,10 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
     (Claude) for `TRANSLATION`/`OPEN_WRITING`; one attempt per exercise, transactional vocab-streak
     and `ErrorRecord` updates; `npm run answer:check`. See
     `docs/superpowers/specs/2026-09-25-m3c-answer-checking-design.md`.
-  - M3d exercise player — not started.
+  - **M3d** ✅ — lesson player (`/lesson/[id]`, `/lesson`): one written exercise card at a time,
+    progress bar, Check → result panel → Next, results screen; key-free `ExerciseView` sent to the
+    browser; reload resumes at the first unanswered exercise; dashboard streak widget. See
+    `docs/superpowers/specs/2026-09-25-m3d-lesson-player-design.md`.
 - M4 Spaced repetition · M5 Conversation · M6 Scenarios + wrap-up.
 
 ## Dev guidelines
@@ -117,6 +120,6 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
   `next build` only type-checks app files (not tests). Type bugs hide otherwise.
 - Every commit message ends with:
   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
-- Work happens on a feature branch per milestone, never on `main` — currently `feature/m3c-grading`.
+- Work happens on a feature branch per milestone, never on `main` — currently `feature/m3d-player`.
   `main` holds finished milestones (M1–M3b-2 merged 2026-09-25).
 - `ANTHROPIC_API_KEY` must stay **unset** (or Agent SDK bills pay-per-token instead of the Max credit).
