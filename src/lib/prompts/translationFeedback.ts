@@ -3,7 +3,7 @@ import type { TranslationFeedback } from "../grading/types";
 import type { CompleteArgs } from "../llm/types";
 
 export const TRANSLATION_FEEDBACK_LIMITS = {
-  corrected: { min: 1, max: 300 },
+  corrected: { min: 1, max: 600 },
   explanation: { min: 10, max: 400 },
 } as const;
 const L = TRANSLATION_FEEDBACK_LIMITS;
