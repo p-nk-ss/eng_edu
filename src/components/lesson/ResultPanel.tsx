@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, ChevronDown, XCircle } from "lucide-react";
 import type { GradeResult, WritingCorrection } from "@/lib/grading/types";
 import type { ExerciseView } from "@/lib/lesson/lessonView";
 
@@ -78,8 +78,11 @@ export function ResultPanel({ result, type }: { result: GradeResult; type: Exerc
       )}
 
       {result.explain && (
-        <details open={!ok} className="text-sm">
-          <summary className="cursor-pointer font-semibold">Why?</summary>
+        <details open={!ok} className="group text-sm">
+          <summary className="flex min-h-11 list-none items-center gap-1 cursor-pointer font-semibold">
+            Why?
+            <ChevronDown size={16} className="motion-safe:transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
           <p className="mt-1">{result.explain}</p>
         </details>
       )}
