@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { toExerciseView, type ViewOf } from "@/lib/lesson/lessonView";
 import { VALID_EXERCISES as E } from "@/lib/lesson/fixtures";
 import type { GradeResult } from "@/lib/grading/types";
@@ -37,6 +37,18 @@ describe("ChoiceCard", () => {
     fireEvent.keyDown(window, { key: "1" });
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByRole("radio", { name: /had finished/ })).toHaveAccessibleDescription(/correct answer/i);
+  });
+
+  it("marks the chosen option with a non-colour indicator, not any other option", () => {
+    const onChange = vi.fn();
+    render(<ChoiceCard view={mcq} disabled={false} result={null} onChange={onChange} />);
+    const chosen = screen.getByRole("radio", { name: /had finished/ });
+    fireEvent.click(chosen);
+    expect(within(chosen).getByTestId("selected-mark")).toBeInTheDocument();
+    for (const radio of screen.getAllByRole("radio")) {
+      if (radio === chosen) continue;
+      expect(within(radio).queryByTestId("selected-mark")).not.toBeInTheDocument();
+    }
   });
 });
 

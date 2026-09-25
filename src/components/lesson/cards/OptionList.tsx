@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, CircleDot } from "lucide-react";
 import { useEffect, useId } from "react";
 
 interface Props {
@@ -37,6 +37,7 @@ export function OptionList({ options, selected, disabled, correctText, onSelect,
       {options.map((opt, i) => {
         const isKey = correctText !== null && opt === correctText;
         const isChosen = selected === i;
+        const showCircleDot = isChosen && !isKey;
         return (
           <button
             key={i}
@@ -52,9 +53,17 @@ export function OptionList({ options, selected, disabled, correctText, onSelect,
               disabled ? "cursor-default" : "",
             ].join(" ")}
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border text-sm tabular-nums">{i + 1}</span>
+            <span
+              className={[
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-sm tabular-nums",
+                showCircleDot ? "border-primary bg-primary text-on-primary" : "border-border",
+              ].join(" ")}
+            >
+              {i + 1}
+            </span>
             <span className="flex-1">{opt}</span>
-            {isKey && <Check size={18} className="text-success" aria-hidden />}
+            {isKey && <Check data-testid={isChosen ? "selected-mark" : undefined} size={18} className="text-success" aria-hidden />}
+            {showCircleDot && <CircleDot data-testid="selected-mark" size={18} className="text-primary" aria-hidden />}
           </button>
         );
       })}

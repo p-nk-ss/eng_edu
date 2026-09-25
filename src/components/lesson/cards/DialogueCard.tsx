@@ -1,18 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { OptionList } from "./OptionList";
 import type { CardProps } from "./types";
+import { useSingleSelect } from "./useSingleSelect";
 
 export function DialogueCard({ view, disabled, result, onChange }: CardProps<"dialogue_gap">) {
-  const [selected, setSelected] = useState<number | null>(null);
-  const select = useCallback(
-    (i: number) => {
-      setSelected(i);
-      onChange({ selected: i });
-    },
-    [onChange],
-  );
+  const { selected, select } = useSingleSelect(onChange);
   return (
     <div className="flex flex-col gap-4">
       <ol className="flex flex-col gap-2" aria-label="Dialogue">
