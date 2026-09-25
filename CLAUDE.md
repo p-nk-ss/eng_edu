@@ -16,7 +16,8 @@ system: `docs/DESIGN.md`. Local setup: `docs/LOCAL_SETUP.md`. Milestone plan: `d
   `DirectAPIProvider` (`@anthropic-ai/sdk`) as fallback.
 - Tests: **Vitest** + Testing Library. **zod 4** (required — Agent SDK peer).
 - **TypeSafe Jev** (`src/lib/typesafe/`, plain fetch, `TYPESAFE_API_KEY`): structured judgments
-  (Choice/Score/Noul). M3a: offline vocab topic classification only.
+  (Choice/Score/Noul). Used offline for vocab topic classification (M3a) and, at lesson start, as
+  a best-effort answer-key quality gate on generated exercises (M3b-2).
 
 ## Commands
 
@@ -36,6 +37,7 @@ npx prisma generate                    # after schema changes (works without a D
 npm run vocab:classify    # offline vocab topic classification via TypeSafe Jev
 npm run grammar:enrich    # offline grammar topic enrichment via Claude (title/description/example/teachable/importance)
 npm run curriculum:preview # print the deterministic selection for the next 5 lessons
+npm run lesson:generate    # generate ONE lesson live (Claude + Jev), print it; no DB writes
 ```
 
 ## Database — portable, inside the project (no system install, no Docker)
@@ -94,7 +96,12 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
     non-teachable topics and orders by `importance`; syllabus progress widget counts teachable
     topics only; `npm run grammar:enrich`. See
     `docs/superpowers/specs/2026-09-18-m3b1-grammar-enrichment-design.md`.
-  - M3b-2 lesson generation · M3c graders/`judge` role · M3d exercise player — not started.
+  - **M3b-2** ✅ — one Claude call per lesson → 5–8 written exercises + warm-up/scenario framing;
+    each exercise validated individually (zod → `checkExercise` → TypeSafe Jev answer-key gate,
+    best effort) with one regeneration if fewer than 5 survive; transactional persistence with
+    grammar/vocab status transitions; idempotent `POST /api/lesson/start`; `npm run
+    lesson:generate`. See `docs/superpowers/specs/2026-09-18-m3b2-lesson-generation-design.md`.
+  - M3c graders/`judge` role · M3d exercise player — not started.
 - M4 Spaced repetition · M5 Conversation · M6 Scenarios + wrap-up.
 
 ## Dev guidelines
