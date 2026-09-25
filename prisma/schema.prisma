@@ -88,6 +88,8 @@ model Exercise {
   isCorrect     Boolean?
   feedback      String?
   errorRecordId String?
+  result        Json? // GradeResult (M3c) - verdict, key, feedback, vocab credit; null until answered
+  answeredAt    DateTime? // set once; a second submit returns the stored result
   createdAt     DateTime     @default(now())
 }
 
