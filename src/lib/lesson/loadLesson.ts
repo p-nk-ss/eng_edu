@@ -1,11 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
-import { lessonsToMaster } from "../curriculum/advancement";
+import { isBelowLevelCore, lessonsToMaster } from "../curriculum/advancement";
 import { THEMES } from "../curriculum/themes";
 import { prisma } from "../db";
 import type { GradeResult } from "../grading/types";
 import type { LessonPlan } from "./createLesson";
 import { parseExercise } from "./exerciseSchemas";
-import { isBelowLevel } from "./levels";
 import { toExerciseView, type ExerciseView } from "./lessonView";
 
 export type PlayerLessonDb = Pick<PrismaClient, "lesson" | "exercise" | "grammarTopic" | "profile" | "vocabItem">;
@@ -110,7 +109,7 @@ export async function loadLessonForPlayer(id: string, db: PlayerLessonDb = prism
             example: topic.example ?? null,
             status: topic.status,
             goodLessons: topic.goodLessons,
-            lessonsToMaster: lessonsToMaster(topic.importance === 1 && profile !== null && isBelowLevel(topic.cefrLevel, profile.level)),
+            lessonsToMaster: lessonsToMaster(isBelowLevelCore(topic, profile?.level ?? null)),
             lastScore: previous?.writtenScore ?? null,
           }
         : null,

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { isParked, lessonsToMaster, nextTopicState, writtenBlockScore } from "./advancement";
+import { isBelowLevelCore, isParked, lessonsToMaster, nextTopicState, writtenBlockScore } from "./advancement";
 
 const item = (answered: boolean, correct: boolean | null = answered ? true : null) => ({ answered, correct });
 
@@ -42,6 +42,21 @@ describe("nextTopicState", () => {
   });
   it("never reverts MASTERED", () => {
     expect(nextTopicState("MASTERED", [0.1], std)).toEqual({ status: "MASTERED", lessonsCompleted: 1, goodLessons: 0 });
+  });
+});
+
+describe("isBelowLevelCore", () => {
+  it("is true for a core (importance 1) topic strictly below the learner's level", () => {
+    expect(isBelowLevelCore({ importance: 1, cefrLevel: "A2" }, "B1")).toBe(true);
+  });
+  it("is false when the topic is not core (importance !== 1)", () => {
+    expect(isBelowLevelCore({ importance: 2, cefrLevel: "A2" }, "B1")).toBe(false);
+  });
+  it("is false when the learner level is null", () => {
+    expect(isBelowLevelCore({ importance: 1, cefrLevel: "A2" }, null)).toBe(false);
+  });
+  it("is false when the core topic is at the learner's level, not below it", () => {
+    expect(isBelowLevelCore({ importance: 1, cefrLevel: "B1" }, "B1")).toBe(false);
   });
 });
 

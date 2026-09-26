@@ -1,9 +1,16 @@
+import { isBelowLevel } from "../lesson/levels";
+
 export const GOOD_LESSON_SCORE = 0.8;
 export const LESSONS_TO_MASTER = 3;
 export const LESSONS_TO_MASTER_BELOW_LEVEL = 1;
 export const PARK_AFTER_LESSONS = 5;
 
 export type TopicStatusName = "NOT_STARTED" | "INTRODUCED" | "PRACTICING" | "MASTERED";
+
+/** True for a core topic (importance 1) whose CEFR level is strictly below the learner's. */
+export function isBelowLevelCore(topic: { importance: number; cefrLevel: string }, learnerLevel: string | null): boolean {
+  return topic.importance === 1 && learnerLevel !== null && isBelowLevel(topic.cefrLevel, learnerLevel);
+}
 
 /** The written block is complete when every playable written exercise has an answer. */
 export function writtenBlockScore(items: { answered: boolean; correct: boolean | null }[]): { complete: boolean; score: number | null } {

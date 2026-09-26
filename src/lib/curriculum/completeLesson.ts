@@ -1,8 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import type { LessonPlan } from "../lesson/createLesson";
 import { parseExercise } from "../lesson/exerciseSchemas";
-import { isBelowLevel } from "../lesson/levels";
-import { nextTopicState, writtenBlockScore, type TopicStatusName } from "./advancement";
+import { isBelowLevelCore, nextTopicState, writtenBlockScore, type TopicStatusName } from "./advancement";
 
 export type CompletionTx = Pick<Prisma.TransactionClient, "lesson" | "exercise" | "grammarTopic" | "profile">;
 
@@ -55,7 +54,7 @@ export async function recomputeTopic(tx: CompletionTx, topicId: string): Promise
     select: { writtenScore: true },
   });
   const scores = lessons.flatMap((l) => (l.writtenScore === null ? [] : [l.writtenScore]));
-  const belowLevelCore = topic.importance === 1 && profile !== null && isBelowLevel(topic.cefrLevel, profile.level);
+  const belowLevelCore = isBelowLevelCore(topic, profile?.level ?? null);
   const next = nextTopicState(topic.status as TopicStatusName, scores, { belowLevelCore });
   await tx.grammarTopic.update({ where: { id: topicId }, data: next });
 }
