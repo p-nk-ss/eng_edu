@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CardProps } from "./types";
 
 export function ErrorCorrectCard({ view, disabled, onChange }: CardProps<"error_correct">) {
   const [index, setIndex] = useState<number | null>(null);
   const [fix, setFix] = useState("");
+  const fixRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (index !== null) fixRef.current?.focus();
+  }, [index]);
 
   function emit(i: number | null, f: string) {
     onChange(i !== null && f.trim() ? { index: i, fix: f } : null);
@@ -36,6 +41,7 @@ export function ErrorCorrectCard({ view, disabled, onChange }: CardProps<"error_
         <label className="flex flex-col gap-1">
           <span className="text-sm text-muted-foreground">Correction</span>
           <input
+            ref={fixRef}
             type="text"
             autoComplete="off"
             spellCheck={false}

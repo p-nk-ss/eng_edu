@@ -55,6 +55,7 @@ describe("ErrorCorrectCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "don't" }));
     const fix = screen.getByRole("textbox", { name: /correction/i });
     expect(fix).toHaveValue("don't");
+    expect(document.activeElement).toBe(fix);
     expect(onChange).toHaveBeenLastCalledWith({ index: 1, fix: "don't" });
     fireEvent.change(fix, { target: { value: "doesn't" } });
     expect(onChange).toHaveBeenLastCalledWith({ index: 1, fix: "doesn't" });
