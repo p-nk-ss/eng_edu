@@ -37,14 +37,21 @@ export function LessonIntro({ lesson, onStart }: { lesson: PlayerLesson; onStart
       {themeLabel && <p className="text-sm text-muted-foreground">{themeLabel}</p>}
 
       {intro.vocab.length > 0 && (
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          {intro.vocab.map((word) => (
-            <li key={word}>{word}</li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-1">
+          <p id="lesson-intro-words-label" className="text-sm font-semibold">
+            Words in this lesson
+          </p>
+          <ul aria-labelledby="lesson-intro-words-label" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            {intro.vocab.map((word) => (
+              <li key={word}>{word}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
-      <p className="text-sm text-muted-foreground">{items.length} exercises</p>
+      <p className="text-sm text-muted-foreground">
+        {items.length} {items.length === 1 ? "exercise" : "exercises"}
+      </p>
 
       <button
         type="button"

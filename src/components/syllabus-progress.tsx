@@ -1,10 +1,12 @@
 import type { SyllabusLevel } from "@/lib/curriculum/progress";
 
-function Bar({ value, total }: { value: number; total: number }) {
+function Bar({ value, inProgress, total }: { value: number; inProgress: number; total: number }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  const progressPct = total > 0 ? Math.round((inProgress / total) * 100) : 0;
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
-      <div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} />
+    <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-2">
+      <div className="h-full bg-success" style={{ width: `${pct}%` }} />
+      <div className="h-full bg-success/40" style={{ width: `${progressPct}%` }} />
     </div>
   );
 }
@@ -25,11 +27,13 @@ export function SyllabusProgress({ data }: { data: SyllabusLevel[] | null }) {
           <div className="mb-1 flex items-center justify-between text-sm">
             <span className="font-display font-bold">{lvl.level}</span>
             <span className="tabular-nums text-muted-foreground">
-              grammar {lvl.grammarMastered}/{lvl.grammarTotal} · vocab {lvl.vocabKnown}/
-              {lvl.vocabTotal}
+              grammar {lvl.grammarMastered}/{lvl.grammarTotal}
+              {lvl.grammarInProgress > 0 && ` (${lvl.grammarInProgress} in progress)`} · vocab{" "}
+              {lvl.vocabKnown}/{lvl.vocabTotal}
+              {lvl.vocabLearning > 0 && ` (${lvl.vocabLearning} learning)`}
             </span>
           </div>
-          <Bar value={lvl.grammarMastered} total={lvl.grammarTotal} />
+          <Bar value={lvl.grammarMastered} inProgress={lvl.grammarInProgress} total={lvl.grammarTotal} />
         </li>
       ))}
     </ul>

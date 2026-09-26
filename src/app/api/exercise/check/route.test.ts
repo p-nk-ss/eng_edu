@@ -32,11 +32,14 @@ describe("POST /api/exercise/check", () => {
     expect((await POST(req({ exerciseId: "e1", answer: { selected: 9 } }))).status).toBe(400);
   });
 
-  it("maps a missing exercise to 404 and an unavailable judge to 502", async () => {
+  it("maps a missing exercise to 404 and an unavailable judge to 502, logging the reason", async () => {
     vi.mocked(checkAnswer).mockRejectedValueOnce(new ExerciseNotFoundError("e9"));
     expect((await POST(req({ exerciseId: "e9", answer: {} }))).status).toBe(404);
     vi.mocked(checkAnswer).mockRejectedValueOnce(new GradingUnavailableError("Translation feedback failed"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect((await POST(req({ exerciseId: "e1", answer: { text: "x" } }))).status).toBe(502);
+    expect(warn).toHaveBeenCalledWith("exercise/check 502:", "Translation feedback failed");
+    warn.mockRestore();
   });
 
   it("maps anything else to 500 without a stack", async () => {

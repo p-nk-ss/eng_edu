@@ -48,6 +48,7 @@ describe("LessonIntro", () => {
     expect(screen.getByText("apple")).toBeInTheDocument();
     expect(screen.getByText("cherry")).toBeInTheDocument();
     expect(screen.getByText("2 exercises")).toBeInTheDocument();
+    expect(screen.getByText("Words in this lesson")).toBeInTheDocument();
   });
 
   it("says 'First lesson on this topic' when this is the topic's first lesson", () => {
@@ -66,7 +67,7 @@ describe("LessonIntro", () => {
     expect(screen.queryByText(/lesson.*on this topic/i)).not.toBeInTheDocument();
     expect(screen.getByText("Food & drink")).toBeInTheDocument();
     expect(screen.getByText("bread")).toBeInTheDocument();
-    expect(screen.getByText("1 exercises")).toBeInTheDocument();
+    expect(screen.getByText("1 exercise")).toBeInTheDocument();
   });
 
   it("calls onStart when Start is clicked", () => {

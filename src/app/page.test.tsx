@@ -3,7 +3,15 @@ import { render, screen } from "@testing-library/react";
 
 vi.mock("@/lib/curriculum/progress", () => ({
   getSyllabusProgress: vi.fn().mockResolvedValue([
-    { level: "A1", grammarTotal: 84, grammarMastered: 3, vocabTotal: 1164, vocabKnown: 10 },
+    {
+      level: "A1",
+      grammarTotal: 84,
+      grammarMastered: 3,
+      grammarInProgress: 1,
+      vocabTotal: 1164,
+      vocabKnown: 10,
+      vocabLearning: 8,
+    },
   ]),
 }));
 vi.mock("@/lib/stats/streak", () => ({ getStreak: vi.fn().mockResolvedValue({ days: 4, atRisk: true }) }));
@@ -21,7 +29,7 @@ describe("DashboardPage", () => {
     expect(screen.getByRole("button", { name: /start today's lesson/i })).toBeInTheDocument();
     expect(screen.getByText(/streak/i)).toBeInTheDocument();
     expect(screen.getByText(/syllabus progress/i)).toBeInTheDocument();
-    expect(screen.getByText(/grammar 3\/84/i)).toBeInTheDocument();
+    expect(screen.getByText(/grammar 3\/84 \(1 in progress\)/i)).toBeInTheDocument();
     expect(screen.getByText(/4 days/i)).toBeInTheDocument();
     expect(screen.getByText(/answer one exercise today to keep it/i)).toBeInTheDocument();
   });

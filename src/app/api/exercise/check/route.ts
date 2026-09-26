@@ -22,7 +22,10 @@ export async function POST(req: Request): Promise<NextResponse> {
   } catch (e) {
     if (e instanceof InvalidAnswerError) return NextResponse.json({ error: e.message }, { status: 400 });
     if (e instanceof ExerciseNotFoundError) return NextResponse.json({ error: e.message }, { status: 404 });
-    if (e instanceof GradingUnavailableError) return NextResponse.json({ error: e.message }, { status: 502 });
+    if (e instanceof GradingUnavailableError) {
+      console.warn("exercise/check 502:", e.message);
+      return NextResponse.json({ error: e.message }, { status: 502 });
+    }
     return NextResponse.json({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 });
   }
 }

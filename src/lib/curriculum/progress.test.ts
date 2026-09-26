@@ -8,16 +8,35 @@ describe("summarizeSyllabus", () => {
     const grammar = [
       { cefrLevel: "A1", status: "MASTERED" },
       { cefrLevel: "A1", status: "NOT_STARTED" },
+      { cefrLevel: "A1", status: "INTRODUCED" },
       { cefrLevel: "B1", status: "PRACTICING" },
     ];
     const vocab = [
       { cefrLevel: "A1", status: "KNOWN" },
       { cefrLevel: "A1", status: "NEW" },
+      { cefrLevel: "A1", status: "SEEN" },
       { cefrLevel: "B1", status: "KNOWN" },
+      { cefrLevel: "B1", status: "LEARNING" },
     ];
     expect(summarizeSyllabus(grammar, vocab)).toEqual([
-      { level: "A1", grammarTotal: 2, grammarMastered: 1, vocabTotal: 2, vocabKnown: 1 },
-      { level: "B1", grammarTotal: 1, grammarMastered: 0, vocabTotal: 1, vocabKnown: 1 },
+      {
+        level: "A1",
+        grammarTotal: 3,
+        grammarMastered: 1,
+        grammarInProgress: 1,
+        vocabTotal: 3,
+        vocabKnown: 1,
+        vocabLearning: 1,
+      },
+      {
+        level: "B1",
+        grammarTotal: 1,
+        grammarMastered: 0,
+        grammarInProgress: 1,
+        vocabTotal: 2,
+        vocabKnown: 1,
+        vocabLearning: 1,
+      },
     ]);
   });
 
@@ -35,7 +54,9 @@ describe("getSyllabusProgress", () => {
     const out = await getSyllabusProgress(db as unknown as Parameters<typeof getSyllabusProgress>[0]);
 
     expect(grammarFindMany).toHaveBeenCalledWith({ where: { teachable: true }, select: { cefrLevel: true, status: true } });
-    expect(out).toEqual([{ level: "B1", grammarTotal: 1, grammarMastered: 1, vocabTotal: 1, vocabKnown: 0 }]);
+    expect(out).toEqual([
+      { level: "B1", grammarTotal: 1, grammarMastered: 1, grammarInProgress: 0, vocabTotal: 1, vocabKnown: 0, vocabLearning: 0 },
+    ]);
   });
 
   it("returns null when the database is unreachable", async () => {

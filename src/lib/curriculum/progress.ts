@@ -8,8 +8,10 @@ export interface SyllabusLevel {
   level: string;
   grammarTotal: number;
   grammarMastered: number;
+  grammarInProgress: number;
   vocabTotal: number;
   vocabKnown: number;
+  vocabLearning: number;
 }
 
 interface LevelStatus {
@@ -26,7 +28,15 @@ export function summarizeSyllabus(
   const at = (level: string): SyllabusLevel => {
     let e = map.get(level);
     if (!e) {
-      e = { level, grammarTotal: 0, grammarMastered: 0, vocabTotal: 0, vocabKnown: 0 };
+      e = {
+        level,
+        grammarTotal: 0,
+        grammarMastered: 0,
+        grammarInProgress: 0,
+        vocabTotal: 0,
+        vocabKnown: 0,
+        vocabLearning: 0,
+      };
       map.set(level, e);
     }
     return e;
@@ -36,11 +46,13 @@ export function summarizeSyllabus(
     const e = at(g.cefrLevel);
     e.grammarTotal++;
     if (g.status === "MASTERED") e.grammarMastered++;
+    else if (g.status === "INTRODUCED" || g.status === "PRACTICING") e.grammarInProgress++;
   }
   for (const v of vocab) {
     const e = at(v.cefrLevel);
     e.vocabTotal++;
     if (v.status === "KNOWN") e.vocabKnown++;
+    else if (v.status === "SEEN" || v.status === "LEARNING") e.vocabLearning++;
   }
 
   return CEFR_BANDS.filter((l) => map.has(l)).map((l) => map.get(l)!);
