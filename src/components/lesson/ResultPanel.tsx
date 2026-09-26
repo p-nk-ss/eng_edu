@@ -70,11 +70,11 @@ export function ResultPanel({ result, type }: { result: GradeResult; type: Exerc
       )}
 
       {result.rationales && result.rationales.length > 0 && (
-        <ul className="list-disc pl-5 text-sm text-muted-foreground">
+        <ol className="list-decimal pl-5 text-sm text-muted-foreground">
           {result.rationales.map((r, i) => (
             <li key={i}>{r}</li>
           ))}
-        </ul>
+        </ol>
       )}
 
       {result.explain && (

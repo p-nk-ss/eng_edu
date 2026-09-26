@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { GradeResult } from "@/lib/grading/types";
 import { ResultPanel } from "./ResultPanel";
 
@@ -35,9 +35,14 @@ describe("ResultPanel", () => {
     expect(items[1]).toHaveTextContent(/answer: for/i);
   });
 
-  it("shows MCQ rationales", () => {
+  it("shows MCQ rationales as a numbered list aligned with option numbers", () => {
     render(<ResultPanel result={{ ...base, rationales: ["base form", "correct: completed before a past moment"] }} type="mcq" />);
-    expect(screen.getByText("base form")).toBeInTheDocument();
+    const list = screen.getByText("base form").closest("ol");
+    expect(list).toHaveClass("list-decimal");
+    const items = list ? within(list).getAllByRole("listitem") : [];
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("base form");
+    expect(items[1]).toHaveTextContent("correct: completed before a past moment");
   });
 
   it("shows translation feedback", () => {
