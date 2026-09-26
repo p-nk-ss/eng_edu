@@ -1,5 +1,6 @@
 import { CEFR_BANDS, normalizeCefrLevel, type CefrBand } from "./parse";
 import { GENERAL_TOPIC, type Theme } from "./themes";
+import { isParked } from "./advancement";
 
 /** Deterministic "what to teach" selection. Pure: no DB, no clock, no randomness. */
 
@@ -47,10 +48,12 @@ export interface GrammarCandidate {
   teachable: boolean;
   /** 1 core .. 3 peripheral, relative to the topic's own level. */
   importance: number;
+  /** completed lessons with this focus (M4a); a PRACTICING topic with >= PARK_AFTER_LESSONS is parked. */
+  lessonsCompleted: number;
 }
 
 const grammarRank = (t: GrammarCandidate): number =>
-  t.status === "PRACTICING" ? (t.openErrors > 0 ? 0 : 1) : t.status === "INTRODUCED" ? 2 : 3;
+  isParked(t) ? 4 : t.status === "PRACTICING" ? (t.openErrors > 0 ? 0 : 1) : t.status === "INTRODUCED" ? 2 : 3;
 
 // Plain code-unit comparison — avoids locale/ICU-dependent ordering from localeCompare.
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
@@ -72,7 +75,7 @@ export function pickGrammarFocus<T extends GrammarCandidate>(topics: T[], level:
   // (a B1 learner is checked on A2 Present Perfect before B1 Past Perfect).
   if (at > 0) {
     const below = CEFR_BANDS[at - 1];
-    const core = open.filter((t) => t.cefrLevel === below && t.importance === 1);
+    const core = open.filter((t) => t.cefrLevel === below && t.importance === 1 && !isParked(t));
     if (core.length > 0) return byFocusPriority(core)[0];
   }
 

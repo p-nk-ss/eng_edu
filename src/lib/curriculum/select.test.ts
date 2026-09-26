@@ -46,8 +46,8 @@ describe("pickTheme", () => {
 
 const G = (
   name: string, cefrLevel: string, status: string, sortOrder: number, openErrors = 0,
-  extra: Partial<Pick<GrammarCandidate, "teachable" | "importance">> = {},
-): GrammarCandidate => ({ name, cefrLevel, status, sortOrder, openErrors, teachable: true, importance: 2, ...extra });
+  extra: Partial<Pick<GrammarCandidate, "teachable" | "importance" | "lessonsCompleted">> = {},
+): GrammarCandidate => ({ name, cefrLevel, status, sortOrder, openErrors, teachable: true, importance: 2, lessonsCompleted: 0, ...extra });
 
 describe("pickGrammarFocus", () => {
   it("prioritises PRACTICING-with-errors > PRACTICING > INTRODUCED > NOT_STARTED, then sortOrder", () => {
@@ -133,6 +133,26 @@ describe("pickGrammarFocus", () => {
 
   it("has no band below A1", () => {
     expect(pickGrammarFocus([G("a1", "A1", "NOT_STARTED", 1, 0, { importance: 1 })], "A1")?.name).toBe("a1");
+  });
+
+  it("ranks a parked topic after untouched topics", () => {
+    const topics = [
+      G("stuck", "B1", "PRACTICING", 1, 0, { lessonsCompleted: 5 }),
+      G("fresh", "B1", "NOT_STARTED", 9, 0),
+    ];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("fresh");
+  });
+
+  it("still picks a parked topic when nothing else is left in the band", () => {
+    expect(pickGrammarFocus([G("stuck", "B1", "PRACTICING", 1, 0, { lessonsCompleted: 6 })], "B1")?.name).toBe("stuck");
+  });
+
+  it("below-level shortcut skips parked topics", () => {
+    const topics = [
+      G("hard-a2", "A2", "PRACTICING", 1, 0, { importance: 1, lessonsCompleted: 5 }),
+      G("b1-topic", "B1", "NOT_STARTED", 1, 0),
+    ];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("b1-topic");
   });
 });
 
