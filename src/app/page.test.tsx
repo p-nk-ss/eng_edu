@@ -33,4 +33,13 @@ describe("DashboardPage", () => {
     expect(screen.getByText(/4 days/i)).toBeInTheDocument();
     expect(screen.getByText(/answer one exercise today to keep it/i)).toBeInTheDocument();
   });
+
+  it("shows a neutral (not success) colour for a zero-day streak", async () => {
+    const { getStreak } = vi.mocked(await import("@/lib/stats/streak"));
+    getStreak.mockResolvedValueOnce({ days: 0, atRisk: false });
+    render(await DashboardPage());
+    const streakText = screen.getByText(/0 days/i);
+    expect(streakText).toHaveClass("text-muted-foreground");
+    expect(streakText).not.toHaveClass("text-success");
+  });
 });

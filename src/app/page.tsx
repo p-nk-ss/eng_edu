@@ -31,7 +31,7 @@ export default async function DashboardPage() {
 
         <div className="grid gap-4 md:grid-cols-3">
           <Card title="Streak">
-            <p className={`flex items-center gap-2 text-2xl font-bold tabular-nums ${streak?.atRisk ? "text-warning" : "text-success"}`}>
+            <p className={`flex items-center gap-2 text-2xl font-bold tabular-nums ${streak?.atRisk ? "text-warning" : !streak || streak.days === 0 ? "text-muted-foreground" : "text-success"}`}>
               <Flame size={24} aria-hidden /> {streak ? `${streak.days} ${streak.days === 1 ? "day" : "days"}` : "-"}
             </p>
             {streak?.atRisk && <p className="mt-1 text-sm text-muted-foreground">Answer one exercise today to keep it.</p>}
