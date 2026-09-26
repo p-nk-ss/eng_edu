@@ -6,11 +6,20 @@ import type { LessonPlan } from "./createLesson";
 import { parseExercise } from "./exerciseSchemas";
 import { toExerciseView, type ExerciseView } from "./lessonView";
 
-export type PlayerLessonDb = Pick<PrismaClient, "lesson" | "exercise" | "grammarTopic">;
+export type PlayerLessonDb = Pick<PrismaClient, "lesson" | "exercise" | "grammarTopic" | "profile" | "vocabItem">;
 
 export interface PlayerItem {
   view: ExerciseView;
   result: GradeResult | null;
+}
+
+export interface PlayerLessonIntro {
+  learnerLevel: string | null;
+  grammar: { title: string; level: string; description: string | null; example: string | null } | null;
+  /** Lessons with the same plan.meta.grammarTopicId, dated up to and including this lesson. null without a grammar focus. */
+  topicLessonNumber: number | null;
+  /** Headwords of plan.meta.vocabIds, in plan order; unknown ids are skipped. */
+  vocab: string[];
 }
 
 export interface PlayerLesson {
@@ -18,11 +27,12 @@ export interface PlayerLesson {
   themeLabel: string | null;
   grammarTitle: string | null;
   items: PlayerItem[];
+  intro: PlayerLessonIntro;
 }
 
 /** Everything the player page needs, with no answer keys (only stored results of answered items). */
 export async function loadLessonForPlayer(id: string, db: PlayerLessonDb = prisma as unknown as PlayerLessonDb): Promise<PlayerLesson | null> {
-  const lesson = await db.lesson.findUnique({ where: { id }, select: { id: true, theme: true, plan: true } });
+  const lesson = await db.lesson.findUnique({ where: { id }, select: { id: true, theme: true, plan: true, date: true } });
   if (!lesson) return null;
   const plan = lesson.plan as unknown as Partial<LessonPlan> | null;
 
@@ -46,12 +56,33 @@ export async function loadLessonForPlayer(id: string, db: PlayerLessonDb = prism
   }
 
   const topicId = plan?.meta?.grammarTopicId ?? null;
-  const topic = topicId ? await db.grammarTopic.findUnique({ where: { id: topicId }, select: { title: true, name: true } }) : null;
+  const topic = topicId
+    ? await db.grammarTopic.findUnique({ where: { id: topicId }, select: { title: true, name: true, cefrLevel: true, description: true, example: true } })
+    : null;
+
+  const profile = await db.profile.findFirst({ orderBy: { updatedAt: "desc" }, select: { level: true } });
+
+  const vocabIds = plan?.meta?.vocabIds ?? [];
+  const vocabRows = vocabIds.length ? await db.vocabItem.findMany({ where: { id: { in: vocabIds } }, select: { id: true, headword: true } }) : [];
+  const headwordById = new Map(vocabRows.map((v) => [v.id, v.headword]));
+  const vocab = vocabIds.flatMap((vid) => (headwordById.has(vid) ? [headwordById.get(vid)!] : []));
+
+  const topicLessonNumber = topicId
+    ? await db.lesson.count({ where: { plan: { path: ["meta", "grammarTopicId"], equals: topicId }, date: { lte: lesson.date } } })
+    : null;
+
+  const grammarTitle = topic ? (topic.title ?? topic.name) : null;
 
   return {
     lessonId: lesson.id,
     themeLabel: THEMES.find((t) => t.key === lesson.theme)?.label ?? null,
-    grammarTitle: topic ? (topic.title ?? topic.name) : null,
+    grammarTitle,
     items,
+    intro: {
+      learnerLevel: profile?.level ?? null,
+      grammar: topic ? { title: grammarTitle!, level: topic.cefrLevel, description: topic.description ?? null, example: topic.example ?? null } : null,
+      topicLessonNumber,
+      vocab,
+    },
   };
 }

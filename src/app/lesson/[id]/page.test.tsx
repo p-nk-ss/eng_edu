@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 vi.mock("@/lib/lesson/loadLesson", () => ({ loadLessonForPlayer: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: vi.fn(() => { throw new Error("NEXT_NOT_FOUND"); }), useRouter: () => ({ push: vi.fn() }), usePathname: () => "/lesson/L1" }));
@@ -13,10 +13,12 @@ describe("/lesson/[id]", () => {
   it("renders the player for a known lesson", async () => {
     vi.mocked(loadLessonForPlayer).mockResolvedValue({
       lessonId: "L1", themeLabel: "Work & careers", grammarTitle: null,
+      intro: { learnerLevel: "B1", grammar: null, topicLessonNumber: null, vocab: [] },
       items: [{ view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: null }],
     });
     render(await LessonPage({ params: Promise.resolve({ id: "L1" }) }));
     expect(screen.getByRole("navigation")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
     expect(screen.getByText("Exercise 1 of 1")).toBeInTheDocument();
     expect(loadLessonForPlayer).toHaveBeenCalledWith("L1");
   });

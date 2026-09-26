@@ -7,6 +7,7 @@ import type { PlayerItem, PlayerLesson } from "@/lib/lesson/loadLesson";
 import { TYPE_LABELS } from "@/lib/lesson/lessonView";
 import { ExerciseBody } from "./cards/ExerciseBody";
 import type { AnswerPayload } from "./cards/types";
+import { LessonIntro } from "./LessonIntro";
 import { LessonResults } from "./LessonResults";
 import { ResultPanel } from "./ResultPanel";
 
@@ -20,13 +21,14 @@ const firstOpen = (items: PlayerItem[]) => {
 export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
   const [items, setItems] = useState(lesson.items);
   const [index, setIndex] = useState(() => firstOpen(lesson.items));
+  const [started, setStarted] = useState(() => lesson.items.some((it) => it.result !== null));
   const [phase, setPhase] = useState<Phase>("answering");
   const [answer, setAnswer] = useState<AnswerPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const checking = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  useEffect(() => headingRef.current?.focus(), [index]);
+  useEffect(() => headingRef.current?.focus(), [index, started]);
 
   const current = items[index];
   const answered = items.filter((i) => i.result !== null).length;
@@ -97,6 +99,10 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
 
   if (items.length === 0) {
     return <p className="text-muted-foreground">This lesson has no exercises.</p>;
+  }
+
+  if (!started) {
+    return <LessonIntro lesson={lesson} onStart={() => setStarted(true)} />;
   }
 
   const header = (

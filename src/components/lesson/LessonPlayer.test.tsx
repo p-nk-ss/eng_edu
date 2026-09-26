@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { toExerciseView } from "@/lib/lesson/lessonView";
+import { TYPE_LABELS, toExerciseView } from "@/lib/lesson/lessonView";
 import { VALID_EXERCISES as E } from "@/lib/lesson/fixtures";
 import type { PlayerLesson } from "@/lib/lesson/loadLesson";
 import type { GradeResult } from "@/lib/grading/types";
@@ -14,14 +14,36 @@ const grade = (exerciseId: string, isCorrect: boolean): GradeResult => ({
 });
 const lesson = (results: (GradeResult | null)[]): PlayerLesson => ({
   lessonId: "L1", themeLabel: "Work & careers", grammarTitle: "Past Perfect (had done)",
+  intro: {
+    learnerLevel: "B1",
+    grammar: { title: "Past Perfect (had done)", level: "B2", description: "An earlier past action.", example: "She had finished." },
+    topicLessonNumber: 2,
+    vocab: ["apple", "cherry"],
+  },
   items: [
     { view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: results[0] },
     { view: toExerciseView("e2", E.DIALOGUE_GAP), result: results[1] },
   ],
 });
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
+const start = () => fireEvent.click(screen.getByRole("button", { name: "Start" }));
 
 describe("LessonPlayer", () => {
+  it("shows the intro first for a fresh lesson; Start moves to exercise 1 with its heading focused", () => {
+    render(<LessonPlayer lesson={lesson([null, null])} />);
+    expect(screen.getByText("Today's lesson")).toBeInTheDocument();
+    expect(screen.queryByText("Exercise 1 of 2")).not.toBeInTheDocument();
+    start();
+    expect(screen.getByText("Exercise 1 of 2")).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: TYPE_LABELS[toExerciseView("e1", E.MULTIPLE_CHOICE).type] }));
+  });
+
+  it("resumes directly (no intro) when at least one exercise is answered", () => {
+    render(<LessonPlayer lesson={lesson([grade("e1", true), null])} />);
+    expect(screen.queryByText("Today's lesson")).not.toBeInTheDocument();
+    expect(screen.getByText("Exercise 2 of 2")).toBeInTheDocument();
+  });
+
   it("starts at the first unanswered exercise and shows progress", () => {
     render(<LessonPlayer lesson={lesson([grade("e1", true), null])} />);
     expect(screen.getByText("Exercise 2 of 2")).toBeInTheDocument();
@@ -35,6 +57,7 @@ describe("LessonPlayer", () => {
       .mockResolvedValueOnce(ok({ ...grade("e2", true), alreadyAnswered: false }));
     vi.stubGlobal("fetch", fetchMock);
     render(<LessonPlayer lesson={lesson([null, null])} />);
+    start();
     const check = screen.getByRole("button", { name: "Check" });
     expect(check).toBeDisabled();
     fireEvent.click(screen.getByRole("radio", { name: /finishing/ }));
@@ -56,6 +79,7 @@ describe("LessonPlayer", () => {
       .mockResolvedValueOnce(ok({ ...grade("e2", true), alreadyAnswered: false }));
     vi.stubGlobal("fetch", fetchMock);
     render(<LessonPlayer lesson={lesson([null, null])} />);
+    start();
     fireEvent.click(screen.getByRole("radio", { name: /finishing/ }));
     fireEvent.keyDown(window, { key: "Enter" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -72,9 +96,11 @@ describe("LessonPlayer", () => {
     vi.stubGlobal("fetch", fetchMock);
     const wordBankLesson: PlayerLesson = {
       lessonId: "L2", themeLabel: null, grammarTitle: null,
+      intro: { learnerLevel: null, grammar: null, topicLessonNumber: null, vocab: [] },
       items: [{ view: toExerciseView("e3", E.WORD_BANK), result: null }],
     };
     render(<LessonPlayer lesson={wordBankLesson} />);
+    start();
     const tile = screen.getByRole("button", { name: "work" });
     fireEvent.click(tile);
     fireEvent.keyDown(tile, { key: "Enter" });
@@ -85,6 +111,7 @@ describe("LessonPlayer", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     render(<LessonPlayer lesson={lesson([null, null])} />);
+    start();
     fireEvent.click(screen.getByRole("radio", { name: /finishing/ }));
     fireEvent.keyDown(window, { key: "Enter", repeat: true });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -96,6 +123,7 @@ describe("LessonPlayer", () => {
       .mockResolvedValueOnce(ok({ ...grade("e1", true), alreadyAnswered: false }));
     vi.stubGlobal("fetch", fetchMock);
     render(<LessonPlayer lesson={lesson([null, null])} />);
+    start();
     fireEvent.click(screen.getByRole("radio", { name: /had finished/ }));
     fireEvent.click(screen.getByRole("button", { name: "Check" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/couldn't check right now/i);
@@ -108,6 +136,7 @@ describe("LessonPlayer", () => {
     const fetchMock = vi.fn(() => new Promise<Response>((r) => (resolve = r)));
     vi.stubGlobal("fetch", fetchMock);
     render(<LessonPlayer lesson={lesson([null, null])} />);
+    start();
     fireEvent.click(screen.getByRole("radio", { name: /had finished/ }));
     fireEvent.click(screen.getByRole("button", { name: "Check" }));
     fireEvent.click(screen.getByRole("button", { name: /checking/i }));
@@ -123,6 +152,7 @@ describe("LessonPlayer", () => {
       .mockResolvedValueOnce(ok({ ...grade("e1", true), alreadyAnswered: false }));
     vi.stubGlobal("fetch", fetchMock);
     render(<LessonPlayer lesson={lesson([null, null])} />);
+    start();
     fireEvent.click(screen.getByRole("radio", { name: /had finished/ }));
     fireEvent.click(screen.getByRole("button", { name: "Check" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/couldn't check right now/i);
