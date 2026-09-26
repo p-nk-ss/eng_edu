@@ -12,6 +12,7 @@ const judge: JudgeDeps = { jev: () => null, askTranslation: vi.fn(), askWriting:
 
 function fakeDb(exerciseRows: unknown[], txCount = 1) {
   const tx = {
+    $queryRaw: vi.fn(async () => []),
     exercise: { findMany: vi.fn(async () => []), updateMany: vi.fn(async () => ({ count: txCount })) },
     lesson: { updateMany: vi.fn(async () => ({ count: 1 })), findUnique: vi.fn(async () => null) },
     vocabItem: { findUnique: vi.fn(async () => ({ status: "SEEN", correctStreak: 0 })), update: vi.fn(async () => ({})) },

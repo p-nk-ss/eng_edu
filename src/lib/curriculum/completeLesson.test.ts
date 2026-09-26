@@ -19,6 +19,11 @@ function fakeTx(o: {
       return value;
     });
   const tx = {
+    $queryRaw: vi.fn(async (..._args: unknown[]) => {
+      log.push("$queryRaw");
+      (calls["$queryRaw"] ??= []).push(_args);
+      return [];
+    }),
     lesson: {
       findUnique: rec("lesson.findUnique", o.lesson === undefined ? { plan: plan(["e1", "e2"]), writtenCompletedAt: null } : o.lesson),
       updateMany: rec("lesson.updateMany", { count: o.updated ?? 1 }),
@@ -35,6 +40,13 @@ function fakeTx(o: {
 }
 
 describe("completeWrittenBlockIfDone", () => {
+  it("locks the lesson row before reading it, to serialise concurrent last-answer races", async () => {
+    const f = fakeTx();
+    await completeWrittenBlockIfDone(f.tx, "L1", now);
+    expect(f.log[0]).toBe("$queryRaw");
+    expect(f.log[1]).toBe("lesson.findUnique");
+  });
+
   it("does nothing while an exercise is unanswered", async () => {
     const f = fakeTx({ exercises: [ex(true, true), ex(false, null)] });
     expect(await completeWrittenBlockIfDone(f.tx, "L1", now)).toEqual({ completed: false, score: null });

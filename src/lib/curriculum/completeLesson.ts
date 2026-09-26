@@ -3,7 +3,7 @@ import type { LessonPlan } from "../lesson/createLesson";
 import { parseExercise } from "../lesson/exerciseSchemas";
 import { isBelowLevelCore, nextTopicState, writtenBlockScore, type TopicStatusName } from "./advancement";
 
-export type CompletionTx = Pick<Prisma.TransactionClient, "lesson" | "exercise" | "grammarTopic" | "profile">;
+export type CompletionTx = Pick<Prisma.TransactionClient, "lesson" | "exercise" | "grammarTopic" | "profile" | "$queryRaw">;
 
 const NOT_DONE = { completed: false, score: null } as const;
 
@@ -16,6 +16,9 @@ export async function completeWrittenBlockIfDone(
   lessonId: string,
   completedAt: Date,
 ): Promise<{ completed: boolean; score: number | null }> {
+  // Lock the lesson row first so a second, concurrent last-answer transaction re-reads
+  // writtenCompletedAt only after this one has committed (or rolled back).
+  await tx.$queryRaw`SELECT id FROM "Lesson" WHERE id = ${lessonId} FOR UPDATE`;
   const lesson = await tx.lesson.findUnique({ where: { id: lessonId }, select: { plan: true, writtenCompletedAt: true } });
   if (!lesson || lesson.writtenCompletedAt) return NOT_DONE;
   const plan = lesson.plan as unknown as Partial<LessonPlan> | null;

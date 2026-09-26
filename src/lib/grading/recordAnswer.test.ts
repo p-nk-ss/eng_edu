@@ -25,6 +25,11 @@ function fakeDb(over: { others?: unknown[]; count?: number; vocabRow?: unknown; 
       return value;
     });
   const tx = {
+    $queryRaw: vi.fn(async (..._args: unknown[]) => {
+      log.push("$queryRaw");
+      (calls["$queryRaw"] ??= []).push(_args);
+      return [];
+    }),
     exercise: { findMany: rec("exercise.findMany", over.others ?? []), updateMany: rec("exercise.updateMany", { count: over.count ?? 1 }) },
     lesson: { updateMany: rec("lesson.updateMany", { count: 1 }), findUnique: rec("lesson.findUnique", null) },
     vocabItem: { findUnique: rec("vocabItem.findUnique", over.vocabRow ?? { status: "KNOWN", correctStreak: 4 }), update: rec("vocabItem.update", {}) },
@@ -42,7 +47,7 @@ describe("recordAnswer", () => {
     expect(f.log).toEqual([
       "exercise.findMany", "exercise.updateMany", "lesson.updateMany",
       "vocabItem.findUnique", "vocabItem.update", "errorRecord.findFirst", "errorRecord.create",
-      "lesson.findUnique",
+      "$queryRaw", "lesson.findUnique",
     ]);
     expect(f.calls["exercise.updateMany"][0]).toMatchObject({
       where: { id: "e1", answeredAt: null },
@@ -78,10 +83,10 @@ describe("recordAnswer", () => {
     expect(f.log).toEqual(["exercise.findMany", "exercise.updateMany"]);
   });
 
-  it("checks the written block after recording, inside the transaction", async () => {
+  it("checks the written block after recording, inside the transaction (lock, then read)", async () => {
     const f = fakeDb();
     await recordAnswer(f.db, input());
-    expect(f.log[f.log.length - 1]).toBe("lesson.findUnique");
+    expect(f.log.slice(-2)).toEqual(["$queryRaw", "lesson.findUnique"]);
     expect(f.calls["lesson.findUnique"][0]).toMatchObject({ where: { id: "L1" } });
   });
 
