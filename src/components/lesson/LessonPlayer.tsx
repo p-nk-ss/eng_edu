@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { GradeResult } from "@/lib/grading/types";
 import type { PlayerItem, PlayerLesson } from "@/lib/lesson/loadLesson";
@@ -67,16 +68,22 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
 
   // Enter = Check when the answer is complete. Single-line inputs already submit the <form> on
   // Enter, so INPUT (and TEXTAREA, which wants a literal newline) are left to that default / their
-  // own Ctrl+Enter handling. Non-radio buttons (tiles, pairs, tokens) keep Enter=click; radio
-  // option buttons, SELECTs and anywhere else (body/heading) fall through to Check.
+  // own Ctrl+Enter handling; SELECT also uses Enter itself (opens/confirms the native picker).
+  // Non-radio buttons (tiles, pairs, tokens) keep Enter=click. An unselected radio option is left
+  // to its own native click-on-Enter activation (no preventDefault - calling it here would swallow
+  // that click and Check would fire against the stale, previous answer instead of selecting this
+  // option). Only the already-chosen radio, or focus elsewhere (body/heading), falls through to Check.
   useEffect(() => {
     if ((phase !== "answering" && phase !== "error") || answer === null) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Enter" || e.repeat) return;
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
-      if (tag === "TEXTAREA" || tag === "INPUT") return;
-      if ((tag === "BUTTON" || tag === "A") && target?.getAttribute("role") !== "radio") return;
+      if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
+      if (tag === "BUTTON" || tag === "A") {
+        const isCheckedRadio = target?.getAttribute("role") === "radio" && target?.getAttribute("aria-checked") === "true";
+        if (!isCheckedRadio) return;
+      }
       e.preventDefault();
       void check();
     };
@@ -98,7 +105,14 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
   }
 
   if (items.length === 0) {
-    return <p className="text-muted-foreground">This lesson has no exercises.</p>;
+    return (
+      <div className="flex flex-col items-start gap-4">
+        <p className="text-muted-foreground">This lesson has no exercises.</p>
+        <Link href="/" className="flex min-h-11 items-center justify-center rounded-xl bg-primary px-5 py-3 font-display font-bold text-on-primary hover:opacity-90">
+          Back to dashboard
+        </Link>
+      </div>
+    );
   }
 
   if (!started) {

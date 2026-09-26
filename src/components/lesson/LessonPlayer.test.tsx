@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { TYPE_LABELS, toExerciseView } from "@/lib/lesson/lessonView";
 import { VALID_EXERCISES as E } from "@/lib/lesson/fixtures";
 import type { PlayerLesson } from "@/lib/lesson/loadLesson";
@@ -91,6 +91,49 @@ describe("LessonPlayer", () => {
     await screen.findByText("Correct");
   });
 
+  it("Enter on an unselected option does not check the previous choice (the native click selects it instead)", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<LessonPlayer lesson={lesson([null, null])} />);
+    start();
+    fireEvent.click(screen.getByRole("radio", { name: /had finished/ }));
+    const option3 = screen.getByRole("radio", { name: /finishing/ });
+    fireEvent.keyDown(option3, { key: "Enter" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    // the browser's own Enter-activation of the focused button fires this click; the handler must
+    // not have called preventDefault, or that click would never happen
+    fireEvent.click(option3);
+    expect(option3).toBeChecked();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("Enter on the already-checked radio checks", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(ok({ ...grade("e1", true), alreadyAnswered: false }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<LessonPlayer lesson={lesson([null, null])} />);
+    start();
+    const option = screen.getByRole("radio", { name: /had finished/ });
+    fireEvent.click(option);
+    fireEvent.keyDown(option, { key: "Enter" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await screen.findByText("Correct");
+  });
+
+  it("does not check on Enter while focus is on a select gap", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const clozeLesson: PlayerLesson = {
+      lessonId: "L4", themeLabel: null, grammarTitle: null,
+      intro: { learnerLevel: null, grammar: null, topicLessonNumber: null, vocab: [] },
+      items: [{ view: toExerciseView("e4", E.CLOZE_DROPDOWN), result: null }],
+    };
+    render(<LessonPlayer lesson={clozeLesson} />);
+    start();
+    const select = screen.getAllByRole("combobox")[0];
+    fireEvent.keyDown(select, { key: "Enter" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("does not check on Enter while focus is on a word-bank tile", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
@@ -169,8 +212,9 @@ describe("LessonPlayer", () => {
     expect(screen.getByText("She ___ the report before the deadline yesterday.")).toBeInTheDocument();
   });
 
-  it("says so when the lesson has no exercises", () => {
+  it("says so when the lesson has no exercises, with a link back to the dashboard", () => {
     render(<LessonPlayer lesson={{ ...lesson([]), items: [] }} />);
     expect(screen.getByText(/this lesson has no exercises/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /back to dashboard/i })).toHaveAttribute("href", "/");
   });
 });
