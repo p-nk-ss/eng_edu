@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import { completeWrittenBlockIfDone } from "../curriculum/completeLesson";
 import { nextVocabState, withoutCredited, type VocabStatusName } from "./answerZone";
 import type { Answer, ErrorEntry, GradeResult, VocabOutcome } from "./types";
 
@@ -80,6 +81,7 @@ export async function recordAnswer(db: RecordAnswerDb, input: RecordInput): Prom
         });
       }
     }
+    await completeWrittenBlockIfDone(tx, input.lessonId, input.now);
     return { recorded: true, result } as const;
   });
 }

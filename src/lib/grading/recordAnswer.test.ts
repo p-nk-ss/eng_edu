@@ -26,7 +26,7 @@ function fakeDb(over: { others?: unknown[]; count?: number; vocabRow?: unknown; 
     });
   const tx = {
     exercise: { findMany: rec("exercise.findMany", over.others ?? []), updateMany: rec("exercise.updateMany", { count: over.count ?? 1 }) },
-    lesson: { updateMany: rec("lesson.updateMany", { count: 1 }) },
+    lesson: { updateMany: rec("lesson.updateMany", { count: 1 }), findUnique: rec("lesson.findUnique", null) },
     vocabItem: { findUnique: rec("vocabItem.findUnique", over.vocabRow ?? { status: "KNOWN", correctStreak: 4 }), update: rec("vocabItem.update", {}) },
     errorRecord: { findFirst: rec("errorRecord.findFirst", over.existingError ?? null), create: rec("errorRecord.create", {}), update: rec("errorRecord.update", {}) },
   };
@@ -42,6 +42,7 @@ describe("recordAnswer", () => {
     expect(f.log).toEqual([
       "exercise.findMany", "exercise.updateMany", "lesson.updateMany",
       "vocabItem.findUnique", "vocabItem.update", "errorRecord.findFirst", "errorRecord.create",
+      "lesson.findUnique",
     ]);
     expect(f.calls["exercise.updateMany"][0]).toMatchObject({
       where: { id: "e1", answeredAt: null },
@@ -75,6 +76,19 @@ describe("recordAnswer", () => {
     const f = fakeDb({ count: 0 });
     expect(await recordAnswer(f.db, input())).toEqual({ recorded: false });
     expect(f.log).toEqual(["exercise.findMany", "exercise.updateMany"]);
+  });
+
+  it("checks the written block after recording, inside the transaction", async () => {
+    const f = fakeDb();
+    await recordAnswer(f.db, input());
+    expect(f.log[f.log.length - 1]).toBe("lesson.findUnique");
+    expect(f.calls["lesson.findUnique"][0]).toMatchObject({ where: { id: "L1" } });
+  });
+
+  it("does not check the written block when the answer was not recorded", async () => {
+    const f = fakeDb({ count: 0 });
+    await recordAnswer(f.db, input());
+    expect(f.log).not.toContain("lesson.findUnique");
   });
 });
 
