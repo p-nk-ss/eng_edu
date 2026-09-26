@@ -6,7 +6,7 @@ function Bar({ value, inProgress, total }: { value: number; inProgress: number; 
   return (
     <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-2">
       <div className="h-full bg-success" style={{ width: `${pct}%` }} />
-      <div className="h-full bg-success/40" style={{ width: `${progressPct}%` }} />
+      <div className="h-full bg-success opacity-40" style={{ width: `${progressPct}%` }} />
     </div>
   );
 }
