@@ -62,6 +62,9 @@ const byFocusPriority = <T extends GrammarCandidate>(pool: T[]): T[] =>
   [...pool].sort(
     (a, b) =>
       grammarRank(a) - grammarRank(b) ||
+      // Round-robin among parked topics: the least-practised one comes next, so parked topics
+      // don't starve each other forever (its count grows after its lesson and the next one wins).
+      (isParked(a) && isParked(b) ? a.lessonsCompleted - b.lessonsCompleted : 0) ||
       a.importance - b.importance ||
       a.sortOrder - b.sortOrder ||
       cmp(a.name, b.name),

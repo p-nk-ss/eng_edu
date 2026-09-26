@@ -154,6 +154,22 @@ describe("pickGrammarFocus", () => {
     ];
     expect(pickGrammarFocus(topics, "B1")?.name).toBe("b1-topic");
   });
+
+  it("round-robins parked topics: fewer lessonsCompleted wins over importance/sortOrder", () => {
+    const topics = [
+      G("parked-a", "B1", "PRACTICING", 1, 0, { importance: 1, lessonsCompleted: 8 }),
+      G("parked-b", "B1", "PRACTICING", 9, 0, { importance: 3, lessonsCompleted: 5 }),
+    ];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("parked-b");
+  });
+
+  it("falls back to the existing tie-breaks when parked topics have equal lessonsCompleted", () => {
+    const topics = [
+      G("parked-a", "B1", "PRACTICING", 1, 0, { importance: 2, lessonsCompleted: 5 }),
+      G("parked-b", "B1", "PRACTICING", 9, 0, { importance: 1, lessonsCompleted: 5 }),
+    ];
+    expect(pickGrammarFocus(topics, "B1")?.name).toBe("parked-b");
+  });
 });
 
 const V = (
