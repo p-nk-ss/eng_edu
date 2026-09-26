@@ -124,7 +124,7 @@ lesson. Idempotent; prints a summary. Expected on the owner's DB: the 2026-09-26
 | lesson without grammar focus | score stored, no topic touched |
 | focus topic deleted / missing | score stored, recompute skipped |
 | profile missing | `belowLevelCore = false` (3 good lessons needed) |
-| repeated submit / concurrent last answers | M3c single-flight + the `writtenCompletedAt IS NULL` guard (conditional update) keep it once |
+| repeated submit / concurrent last answers | M3c single-flight (per exercise) + `completeWrittenBlockIfDone` takes a `SELECT ... FOR UPDATE` lock on the `Lesson` row before reading it, serialising two different last-exercise answers; the `writtenCompletedAt IS NULL` guard (conditional update) then keeps the block completed exactly once |
 
 ## Testing (TDD)
 
