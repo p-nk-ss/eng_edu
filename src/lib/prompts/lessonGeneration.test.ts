@@ -52,6 +52,12 @@ describe("lessonGenerationPrompt", () => {
     expect(system).toContain("unrelated to the grammar being taught");
   });
 
+  it("asks for varied exercises around the grammar focus (frames, sentence types, subjects)", () => {
+    const { system } = lessonGenerationPrompt(input) as { system: string };
+    expect(system).toContain("same sentence frame");
+    expect(system).toMatch(/questions/i);
+  });
+
   it("builds the stated limits from LESSON_LIMITS", () => {
     const { system } = lessonGenerationPrompt(input) as { system: string };
     expect(system).toContain(`${LESSON_LIMITS.warmupIntro.min}-${LESSON_LIMITS.warmupIntro.max}`);

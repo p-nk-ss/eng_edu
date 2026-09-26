@@ -76,6 +76,7 @@ function systemPrompt(input: GenerationInputs): string {
     "Use natural, level-appropriate English for the learner's CEFR level. Use the target words where they fit naturally; every exercise that practises a target word must list that word's id in \"vocab\" and must contain the word itself. Use only the given vocab ids.",
     "Choice exercises must have exactly one correct option - no second option may be acceptable English in the gap. Typed exercises must list every reasonable variant in \"accept\" (contractions and full forms, both spellings).",
     "Wrong options must be plausible learner errors: either real words used wrongly or, when the grammar focus itself produces the error (e.g. adding \"-er\" to a long adjective when the focus is comparatives with \"more\"), the natural malformed form a learner would produce. Never use a nonsense form unrelated to the grammar being taught. Every wrong option must still be unambiguously wrong.",
+    "Exercises must be varied around the one focus: mix statements, questions and negatives; use different subjects, people and situations within the theme; practise the focus's related forms where they exist (e.g. for comparatives: much/far + comparative, less + adjective, not as ... as); never reuse the same sentence frame in two exercises.",
     `Every exercise has "explain": a short English explanation (${L.explain.min}-${L.explain.max} characters) shown after grading.`,
     "Write everything in English. Russian is allowed ONLY in the \"source\" field of a translation exercise.",
     "",
