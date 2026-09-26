@@ -72,6 +72,18 @@ describe("LessonIntro", () => {
     expect(screen.getByText("One good lesson (80%+) masters this topic")).toBeInTheDocument();
   });
 
+  it("shows 'Mastered - review lesson' instead of the good-lessons line when the topic is mastered, and keeps 'Last time'", () => {
+    render(
+      <LessonIntro
+        lesson={{ ...grammarLesson, intro: { ...grammarLesson.intro, grammar: { ...grammarLesson.intro.grammar!, status: "MASTERED" } } }}
+        onStart={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Mastered - review lesson")).toBeInTheDocument();
+    expect(screen.queryByText(/good lessons/)).not.toBeInTheDocument();
+    expect(screen.getByText("Last time: 71%")).toBeInTheDocument();
+  });
+
   it("omits the 'Last time' line when there is no previous score", () => {
     render(
       <LessonIntro
