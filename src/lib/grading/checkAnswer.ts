@@ -34,7 +34,13 @@ export interface CheckDeps {
   dryRun?: boolean;
 }
 
-export type CheckResult = GradeResult & { alreadyAnswered: boolean };
+export type CheckResult = GradeResult & {
+  alreadyAnswered: boolean;
+  /** dryRun (acceptance tool) only - never set for a real /api/exercise/check call: the internal
+   *  relatesToFocus signal that recordAnswer's errorEntries() uses to file the mistake under the
+   *  grammar-focus topic vs. a generic category - not otherwise observable without persisting. */
+  debugRelatesToFocus?: boolean;
+};
 
 const inFlight = new Map<string, Promise<CheckResult>>();
 
@@ -100,7 +106,10 @@ async function runCheck(exerciseId: string, raw: unknown, deps: CheckDeps): Prom
     exerciseId, content.explain, local.correctAnswer, judged, vocabOutcomes(content, judged, vocab),
     content.type === "mcq" ? content.rationales : undefined,
   );
-  if (deps.dryRun) return { ...result, alreadyAnswered: false };
+  if (deps.dryRun) {
+    const relatesToFocus = judged.translation?.relatesToFocus ?? judged.writing?.corrections.find((k) => k.severity === "major")?.relatesToFocus;
+    return { ...result, alreadyAnswered: false, ...(relatesToFocus !== undefined ? { debugRelatesToFocus: relatesToFocus } : {}) };
+  }
 
   const outcome = await recordAnswer(db, {
     exerciseId, lessonId: ex.lessonId, answer: ans.answer, result, vocab: result.vocabCredit,
