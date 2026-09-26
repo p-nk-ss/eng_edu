@@ -11,6 +11,7 @@ import {
   OPEN_WRITING_WORDS,
   type ExerciseTypeName,
 } from "../lesson/exerciseSchemas";
+import { MAX_REVIEW, type ReviewItem } from "../review/planReview";
 
 /** Limits are stated in the prompt AND enforced by the schema from these same constants. */
 export const LESSON_LIMITS = {
@@ -29,6 +30,8 @@ const scenarioText = z.string().min(L.scenarioText.min).max(L.scenarioText.max);
 export const lessonEnvelopeSchema = z.object({
   /** Validated one by one afterwards (parseExercise) so a single bad exercise is dropped, not the lesson. */
   exercises: z.array(z.unknown()).min(L.exercises.min).max(L.exercises.max),
+  /** One raw exercise per requested review item (Task 1's ReviewItem); validated like `exercises` but never triggers regeneration. */
+  review: z.array(z.unknown()).max(MAX_REVIEW).default([]),
   warmup: z.object({
     intro: z.string().min(L.warmupIntro.min).max(L.warmupIntro.max),
     questions: z.array(z.string().min(L.question.min).max(L.question.max)).min(L.questions.min).max(L.questions.max),
@@ -49,6 +52,8 @@ export interface GenerationInputs {
   vocab: { id: string; headword: string; pos: string | null; cefrLevel: string }[];
   mix: ExerciseTypeName[];
   summaries: string[];
+  /** Past mistakes to practise this lesson (Task 1's planReview), up to MAX_REVIEW; [] when none are due. */
+  review: ReviewItem[];
 }
 
 /** Literal JSON shape per exercise type (SPEC.md §Exercise Types). Only requested shapes are sent. */
@@ -69,6 +74,8 @@ function systemPrompt(input: GenerationInputs): string {
   const focus = input.grammar
     ? "Build EVERY section around the given grammar focus and the given theme. Introduce no other grammar focus."
     : "There is no grammar focus in this lesson: make it a vocabulary lesson built around the given theme and target words.";
+  const hasReview = input.review.length > 0;
+  const shapeTypes = hasReview ? [...new Set([...input.mix, ...input.review.map((r) => r.type)])] : input.mix;
   return [
     "You write one English lesson for a single adult learner. Code has already decided WHAT the lesson teaches (theme, grammar focus, target vocabulary, exercise types); you write only the content.",
     "",
@@ -77,17 +84,25 @@ function systemPrompt(input: GenerationInputs): string {
     "Choice exercises must have exactly one correct option - no second option may be acceptable English in the gap. Typed exercises must list every reasonable variant in \"accept\" (contractions and full forms, both spellings).",
     "Wrong options must be plausible learner errors: either real words used wrongly or, when the grammar focus itself produces the error (e.g. adding \"-er\" to a long adjective when the focus is comparatives with \"more\"), the natural malformed form a learner would produce. Never use a nonsense form unrelated to the grammar being taught. Every wrong option must still be unambiguously wrong.",
     "Exercises must be varied around the one focus: mix statements, questions and negatives; use different subjects, people and situations within the theme; practise the focus's related forms where they exist (e.g. for comparatives: much/far + comparative, less + adjective, not as ... as); never reuse the same sentence frame in two exercises.",
+    ...(hasReview
+      ? [
+          "Review: the learner made the mistakes listed in \"review\". For each review item write exactly one exercise of its requested type that practises that mistake with NEW sentences on the lesson theme - never repeat the example sentences. A review item may practise its own grammar: it is the one exception to \"introduce no other grammar focus\". Review exercises have \"vocab\": [].",
+        ]
+      : []),
     `Every exercise has "explain": a short English explanation (${L.explain.min}-${L.explain.max} characters) shown after grading.`,
     "Write everything in English. Russian is allowed ONLY in the \"source\" field of a translation exercise.",
     "",
     "Return ONLY a JSON object, no prose, no markdown fences:",
-    '{"exercises":[...],"warmup":{"intro":"...","questions":["..."]},"scenario":{"title":"...","role":"...","goal":"...","opening":"..."}}',
+    hasReview
+      ? '{"exercises":[...],"review":[...],"warmup":{"intro":"...","questions":["..."]},"scenario":{"title":"...","role":"...","goal":"...","opening":"..."}}'
+      : '{"exercises":[...],"warmup":{"intro":"...","questions":["..."]},"scenario":{"title":"...","role":"...","goal":"...","opening":"..."}}',
     '- "exercises": exactly one exercise per requested type, in the requested order, each in the exact shape below.',
+    ...(hasReview ? ['- "review": exactly one exercise per review item, in the given order, each in the exact shape below.'] : []),
     `- "warmup": a friendly spoken-style intro (${L.warmupIntro.min}-${L.warmupIntro.max} characters) and ${L.questions.min}-${L.questions.max} open questions (${L.question.min}-${L.question.max} characters each) on the theme that invite the grammar focus.`,
     `- "scenario": a role-play for a later speaking section: "title" (${L.scenarioTitle.min}-${L.scenarioTitle.max} characters); "role" (who the learner is and who they talk to), "goal" (what the learner must achieve) and "opening" (the partner's first line) - ${L.scenarioText.min}-${L.scenarioText.max} characters each.`,
     "",
     "Exercise shapes:",
-    ...input.mix.map((t) => `- ${SHAPES[t]}`),
+    ...shapeTypes.map((t) => `- ${SHAPES[t]}`),
   ].join("\n");
 }
 
@@ -100,6 +115,17 @@ export function lessonGenerationPrompt(input: GenerationInputs): CompleteArgs {
     vocab: input.vocab,
     exercises: input.mix.map((t) => EXERCISE_TYPE_TAGS[t]),
     recentSummaries: input.summaries,
+    ...(input.review.length > 0
+      ? {
+          review: input.review.map((r, index) => ({
+            index,
+            type: EXERCISE_TYPE_TAGS[r.type],
+            category: r.category,
+            grammar: r.grammarTitle,
+            examples: r.examples,
+          })),
+        }
+      : {}),
   };
   return {
     system: systemPrompt(input),

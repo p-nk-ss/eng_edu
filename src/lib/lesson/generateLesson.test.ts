@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 import type { GenerationInputs, LessonEnvelope } from "../prompts/lessonGeneration";
+import type { ReviewItem } from "../review/planReview";
 import type { ExerciseContent, ExerciseTypeName } from "./exerciseSchemas";
+import { formatDrop, generateLesson, LessonGenerationError, type GenerationDeps } from "./generateLesson";
 import { FIXTURE_VOCAB, VALID_EXERCISES as E } from "./fixtures";
-import { generateLesson, LessonGenerationError, type GenerationDeps } from "./generateLesson";
 import type { GateResult } from "./qualityGate";
 
 const MIX: ExerciseTypeName[] = ["MULTIPLE_CHOICE", "CLOZE_DROPDOWN", "FILL_BLANK", "ERROR_CORRECTION", "MATCH", "DIALOGUE_GAP", "TRANSLATION"];
@@ -14,9 +15,16 @@ const inputs: GenerationInputs = {
   vocab: FIXTURE_VOCAB.map((v) => ({ ...v, pos: "noun", cefrLevel: "B1" })),
   mix: MIX,
   summaries: [],
+  review: [],
 };
-const envelope = (exercises: unknown[]): LessonEnvelope => ({
+const REVIEW_ITEMS: ReviewItem[] = [
+  { errorId: "r1", type: "FILL_BLANK", category: "Comparative with more", grammarTitle: "Comparative with more", examples: ["as -> than"] },
+  { errorId: "r2", type: "TRANSLATION", category: "translation: meaning", grammarTitle: null, examples: ["then -> than"] },
+];
+const withReview: GenerationInputs = { ...inputs, review: REVIEW_ITEMS };
+const envelope = (exercises: unknown[], review: unknown[] = []): LessonEnvelope => ({
   exercises,
+  review,
   warmup: { intro: "Let us talk about your working day.", questions: ["What do you do?", "Who with?", "What is hard?"] },
   scenario: { title: "A missed deadline", role: "You are a QA engineer.", goal: "Agree on a new date.", opening: "Do you have a minute?" },
 });
@@ -115,5 +123,63 @@ describe("generateLesson", () => {
     const gate = vi.fn<GenerationDeps["gate"]>(async (exs) => keepAll(exs));
     await generateLesson({ ...inputs, grammar: null }, deps(vi.fn<GenerationDeps["ask"]>().mockResolvedValue(envelope(all)), gate));
     expect(gate.mock.calls[0][1]).toBeNull();
+  });
+});
+
+describe("generateLesson - review", () => {
+  it("keeps valid review exercises in order with their errorId, vocab forced to []", async () => {
+    const ask = vi.fn<GenerationDeps["ask"]>().mockResolvedValue(envelope(all, [E.FILL_BLANK, E.TRANSLATION]));
+    const draft = await generateLesson(withReview, deps(ask));
+    expect(draft.review).toEqual([
+      { errorId: "r1", type: "FILL_BLANK", content: { ...E.FILL_BLANK, vocab: [] } },
+      { errorId: "r2", type: "TRANSLATION", content: { ...E.TRANSLATION, vocab: [] } },
+    ]);
+  });
+
+  it("drops a review exercise of the wrong type and an invalid raw review item, without triggering regeneration", async () => {
+    const ask = vi.fn<GenerationDeps["ask"]>().mockResolvedValue(envelope(all, [E.MULTIPLE_CHOICE, { junk: 1 }]));
+    const draft = await generateLesson(withReview, deps(ask));
+    expect(ask).toHaveBeenCalledTimes(1);
+    expect(draft.review).toEqual([]);
+    expect(draft.exercises).toHaveLength(7);
+    expect(draft.attempts).toBe(1);
+    const reviewDrops = draft.drops.filter((d) => d.section === "review");
+    expect(reviewDrops).toHaveLength(2);
+    expect(reviewDrops[0]).toMatchObject({ index: 0, type: "MULTIPLE_CHOICE" });
+    expect(reviewDrops[0].reason).toMatch(/not requested/);
+    expect(reviewDrops[1]).toMatchObject({ index: 1 });
+  });
+
+  it("drops missing review entries without failing the lesson", async () => {
+    const ask = vi.fn<GenerationDeps["ask"]>().mockResolvedValue(envelope(all));
+    const draft = await generateLesson(withReview, deps(ask));
+    expect(draft.review).toEqual([]);
+    expect(draft.exercises).toHaveLength(7);
+    const reviewDrops = draft.drops.filter((d) => d.section === "review");
+    expect(reviewDrops).toHaveLength(2);
+    expect(reviewDrops.map((d) => d.reason)).toEqual(["review item missing", "review item missing"]);
+    expect(reviewDrops.map((d) => d.index)).toEqual([0, 1]);
+  });
+
+  it("gates review exercises separately from the written gate call", async () => {
+    const ask = vi.fn<GenerationDeps["ask"]>().mockResolvedValue(envelope(all, [E.FILL_BLANK, E.TRANSLATION]));
+    const gate = vi
+      .fn<GenerationDeps["gate"]>()
+      .mockImplementationOnce(async (exs) => keepAll(exs))
+      .mockImplementationOnce(async (exs) => ({
+        status: "partial",
+        verdicts: exs.map((_, index) => ({ index, gated: true, drop: index === 0, ...(index === 0 ? { reason: "gate: dropped" } : {}) })),
+      }));
+    const draft = await generateLesson(withReview, deps(ask, gate));
+    expect(gate).toHaveBeenCalledTimes(2);
+    expect(gate.mock.calls[0][0]).toHaveLength(7);
+    expect(gate.mock.calls[1][0]).toHaveLength(2);
+    expect(draft.exercises).toHaveLength(7);
+    expect(draft.review).toEqual([{ errorId: "r2", type: "TRANSLATION", content: { ...E.TRANSLATION, vocab: [] } }]);
+    expect(draft.drops.some((d) => d.section === "review" && /gate/.test(d.reason))).toBe(true);
+  });
+
+  it("prefixes a review drop's formatted line with 'review '", () => {
+    expect(formatDrop({ attempt: 1, index: 0, section: "review", reason: "x" })).toMatch(/^review /);
   });
 });

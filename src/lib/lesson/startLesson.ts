@@ -7,12 +7,20 @@ import { planExerciseMix } from "./exerciseMix";
 import type { ExerciseTypeName } from "./exerciseSchemas";
 import { generateLesson, type GenerationDeps } from "./generateLesson";
 import { findResumableLessonId } from "./resumable";
+import type { ReviewItem } from "../review/planReview";
 
 export type StartLessonDb = LessonInputsDb & CreateLessonDb & Pick<PrismaClient, "lesson">;
 
 const SUMMARY_HISTORY = 3;
 
-export function toGenerationInputs(inputs: LessonInputs, mix: ExerciseTypeName[], summaries: string[]): GenerationInputs {
+// `review` defaults to [] so existing callers (and scripts/lesson-preview.ts) keep compiling
+// unchanged; a real review plan is threaded in from Task 3.
+export function toGenerationInputs(
+  inputs: LessonInputs,
+  mix: ExerciseTypeName[],
+  summaries: string[],
+  review: ReviewItem[] = [],
+): GenerationInputs {
   const t = inputs.grammarTopic;
   return {
     profile: {
@@ -27,6 +35,7 @@ export function toGenerationInputs(inputs: LessonInputs, mix: ExerciseTypeName[]
     vocab: inputs.vocab.map((v) => ({ id: v.id, headword: v.headword, pos: v.pos, cefrLevel: v.cefrLevel })),
     mix,
     summaries,
+    review,
   };
 }
 

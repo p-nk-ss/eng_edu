@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { LESSON_LIMITS, lessonEnvelopeSchema, lessonGenerationPrompt, type GenerationInputs } from "./lessonGeneration";
 import { CHOICE_OPTIONS, CLOZE_GAPS, MATCH_PAIRS, MCQ_OPTIONS, OPEN_CLOZE_GAPS, OPEN_WRITING_WORDS } from "../lesson/exerciseSchemas";
+import { MAX_REVIEW, type ReviewItem } from "../review/planReview";
 
 const input: GenerationInputs = {
   profile: { level: "B1", goals: "conversational fluency", interests: "IT, QA", nativeLang: "ru" },
@@ -13,7 +14,13 @@ const input: GenerationInputs = {
   ],
   mix: ["MULTIPLE_CHOICE", "MATCH", "TRANSLATION"],
   summaries: ["Lesson 1: struggled with articles."],
+  review: [],
 };
+
+const reviewItems: ReviewItem[] = [
+  { errorId: "r1", type: "FILL_BLANK", category: "Comparative with more", grammarTitle: "Comparative with more", examples: ["as -> than"] },
+  { errorId: "r2", type: "TRANSLATION", category: "translation: meaning", grammarTitle: null, examples: ["then -> than"] },
+];
 
 describe("lessonGenerationPrompt", () => {
   it("returns CompleteArgs with one user message carrying the inputs as JSON", () => {
@@ -83,6 +90,30 @@ describe("lessonGenerationPrompt", () => {
     expect(system).toContain(`${OPEN_WRITING_WORDS.max}`);
   });
 
+  it("has no review section without review items", () => {
+    const args = lessonGenerationPrompt(input);
+    const payload = JSON.parse(args.messages[0].content.slice(args.messages[0].content.indexOf("{")));
+    expect(payload.review).toBeUndefined();
+    expect(args.system).not.toContain("review");
+  });
+
+  it("adds a review section to the payload and prompt when review items are given", () => {
+    const args = lessonGenerationPrompt({ ...input, review: reviewItems });
+    const payload = JSON.parse(args.messages[0].content.slice(args.messages[0].content.indexOf("{")));
+    expect(payload.review).toEqual([
+      { index: 0, type: "open_cloze", category: "Comparative with more", grammar: "Comparative with more", examples: ["as -> than"] },
+      { index: 1, type: "translation", category: "translation: meaning", grammar: null, examples: ["then -> than"] },
+    ]);
+    expect(payload).not.toHaveProperty("errorId");
+    expect(JSON.stringify(payload)).not.toContain("errorId");
+    const { system } = args;
+    expect(system).toContain("review");
+    expect(system).toContain("never repeat the example sentences");
+    expect(system).toContain("the one exception");
+    expect(system).toContain('"type":"open_cloze"');
+    expect(system).toContain('"type":"translation"');
+  });
+
   it("states each shared bound in the prompt only when that exercise type is requested", () => {
     const mixWithBounds = ["MULTIPLE_CHOICE", "CLOZE_DROPDOWN", "FILL_BLANK", "MATCH", "DIALOGUE_GAP"];
     const { system } = lessonGenerationPrompt({ ...input, mix: mixWithBounds as any }) as { system: string };
@@ -108,5 +139,12 @@ describe("lessonEnvelopeSchema", () => {
   it("rejects too few warm-up questions and an empty exercise list", () => {
     expect(lessonEnvelopeSchema.safeParse({ ...ok, warmup: { ...ok.warmup, questions: ["Only one question here?"] } }).success).toBe(false);
     expect(lessonEnvelopeSchema.safeParse({ ...ok, exercises: [] }).success).toBe(false);
+  });
+  it("defaults review to [] when absent, and rejects more than MAX_REVIEW items", () => {
+    expect(lessonEnvelopeSchema.parse(ok).review).toEqual([]);
+    const tooMany = { ...ok, review: Array.from({ length: MAX_REVIEW + 1 }, () => ({})) };
+    expect(lessonEnvelopeSchema.safeParse(tooMany).success).toBe(false);
+    const justRight = { ...ok, review: Array.from({ length: MAX_REVIEW }, () => ({})) };
+    expect(lessonEnvelopeSchema.safeParse(justRight).success).toBe(true);
   });
 });

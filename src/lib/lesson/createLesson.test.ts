@@ -8,6 +8,7 @@ import type { LessonDraft } from "./generateLesson";
 const now = new Date("2026-09-18T10:00:00Z");
 const draft: LessonDraft = {
   exercises: [{ type: "MULTIPLE_CHOICE", content: E.MULTIPLE_CHOICE }, { type: "TRANSLATION", content: E.TRANSLATION }],
+  review: [],
   warmup: { intro: "Let us talk about work.", questions: ["q1?", "q2?", "q3?"] },
   scenario: { title: "A missed deadline", role: "You are a QA engineer.", goal: "Agree on a new date.", opening: "Got a minute?" },
   qualityGate: "partial",

@@ -10,13 +10,16 @@ export interface LessonDrop {
   attempt: 1 | 2;
   index: number;
   type?: ExerciseTypeName;
+  /** Set for a review exercise drop; a written drop leaves this unset. Review drops never trigger regeneration. */
+  section?: "review";
   reason: string;
 }
 
-/** "attempt N #i TYPE: reason" for the persisted plan and the API error payload; TYPE is omitted when unknown. */
+/** "[review ]attempt N #i TYPE: reason" for the persisted plan and the API error payload; TYPE is omitted when unknown. */
 export function formatDrop(d: LessonDrop): string {
+  const prefix = d.section ? `${d.section} ` : "";
   const type = d.type ? ` ${d.type}` : "";
-  return `attempt ${d.attempt} #${d.index}${type}: ${d.reason}`;
+  return `${prefix}attempt ${d.attempt} #${d.index}${type}: ${d.reason}`;
 }
 
 export interface GateScoreEntry {
@@ -27,6 +30,8 @@ export interface GateScoreEntry {
 
 export interface LessonDraft {
   exercises: { type: ExerciseTypeName; content: ExerciseContent }[];
+  /** Survivors of the second, separate gate call; validated like `exercises` but never trigger regeneration. */
+  review: { errorId: string; type: ExerciseTypeName; content: ExerciseContent }[];
   warmup: LessonEnvelope["warmup"];
   scenario: LessonEnvelope["scenario"];
   qualityGate: GateResult["status"];
@@ -113,8 +118,51 @@ export async function generateLesson(inputs: GenerationInputs, deps: GenerationD
       const gateScores: GateScoreEntry[] = sorted
         .map((v, exerciseIndex) => (v.scores ? { exerciseIndex, scores: v.scores } : null))
         .filter((e): e is GateScoreEntry => e !== null);
+
+      // Review is validated the same way as written exercises, but a bad review item is only ever
+      // dropped - it NEVER causes regeneration (the learner still gets the written lesson).
+      const validReview: { errorId: string; type: ExerciseTypeName; content: ExerciseContent }[] = [];
+      inputs.review.forEach((item, index) => {
+        const raw = envelope.review[index];
+        if (raw === undefined) {
+          drops.push({ attempt, index, section: "review", reason: "review item missing" });
+          return;
+        }
+        const parsed = parseExercise(raw);
+        if (!parsed.ok) {
+          drops.push({ attempt, index, section: "review", reason: parsed.reason });
+          return;
+        }
+        if (parsed.type !== item.type) {
+          drops.push({ attempt, index, type: parsed.type, section: "review", reason: "type was not requested for this review item" });
+          return;
+        }
+        const content = { ...parsed.content, vocab: [] };
+        const problems = checkExercise(content, ctx);
+        if (problems.length > 0) {
+          drops.push({ attempt, index, type: parsed.type, section: "review", reason: problems.join("; ") });
+          return;
+        }
+        validReview.push({ errorId: item.errorId, type: item.type, content });
+      });
+
+      let review = validReview;
+      if (validReview.length > 0) {
+        const reviewGate = await deps.gate(validReview.map((v) => v.content), grammar);
+        review = [];
+        validReview.forEach((v, index) => {
+          const verdict = reviewGate.verdicts[index];
+          if (verdict?.drop) {
+            drops.push({ attempt, index, type: v.type, section: "review", reason: verdict.reason ?? "gate: dropped" });
+            return;
+          }
+          review.push(v);
+        });
+      }
+
       return {
         exercises: sorted.map(({ type, content }) => ({ type, content })),
+        review,
         warmup: envelope.warmup,
         scenario: envelope.scenario,
         qualityGate: gate.status,
