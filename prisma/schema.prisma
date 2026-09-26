@@ -65,17 +65,19 @@ model Profile {
 }
 
 model Lesson {
-  id             String             @id @default(cuid())
-  date           DateTime           @default(now())
-  status         LessonStatus       @default(PLANNED)
-  currentSection Int                @default(0)
-  theme          String? // theme key of this lesson; drives least-recently-used theme rotation
-  plan           Json
-  summary        String?
-  nextPlan       String?
-  exercises      Exercise[]
-  turns          ConversationTurn[]
-  errors         ErrorRecord[]
+  id                 String             @id @default(cuid())
+  date               DateTime           @default(now())
+  status             LessonStatus       @default(PLANNED)
+  currentSection     Int                @default(0)
+  theme              String? // theme key of this lesson; drives least-recently-used theme rotation
+  plan               Json
+  summary            String?
+  nextPlan           String?
+  writtenScore       Float? // share of correct written answers 0..1 (M4a); null until the written block is complete
+  writtenCompletedAt DateTime? // set once, when the last written exercise is answered
+  exercises          Exercise[]
+  turns              ConversationTurn[]
+  errors             ErrorRecord[]
 }
 
 model Exercise {
@@ -119,20 +121,22 @@ model ConversationTurn {
 }
 
 model GrammarTopic {
-  id          String        @id @default(cuid())
-  name        String        @unique
-  cefrLevel   String
-  category    String?
-  status      TopicStatus   @default(NOT_STARTED)
-  timesUsed   Int           @default(0)
-  lastUsedAt  DateTime?
-  sortOrder   Int
-  title       String? // learner-facing title from data/grammar-topics.json (M3b-1); NULL until enriched
-  description String?
-  example     String?
-  teachable   Boolean       @default(true) // false = never selected as a lesson focus, not counted in progress
-  importance  Int           @default(2) // 1 core .. 3 peripheral; orders topics inside a level
-  errors      ErrorRecord[]
+  id               String        @id @default(cuid())
+  name             String        @unique
+  cefrLevel        String
+  category         String?
+  status           TopicStatus   @default(NOT_STARTED)
+  timesUsed        Int           @default(0)
+  lastUsedAt       DateTime?
+  sortOrder        Int
+  title            String? // learner-facing title from data/grammar-topics.json (M3b-1); NULL until enriched
+  description      String?
+  example          String?
+  teachable        Boolean       @default(true) // false = never selected as a lesson focus, not counted in progress
+  importance       Int           @default(2) // 1 core .. 3 peripheral; orders topics inside a level
+  lessonsCompleted Int           @default(0) // cache (M4a): completed lessons with this focus, derived from Lesson history
+  goodLessons      Int           @default(0) // cache (M4a): of those, writtenScore >= 0.8
+  errors           ErrorRecord[]
 }
 
 model VocabItem {
