@@ -16,7 +16,16 @@ const lesson = (results: (GradeResult | null)[]): PlayerLesson => ({
   lessonId: "L1", themeLabel: "Work & careers", grammarTitle: "Past Perfect (had done)",
   intro: {
     learnerLevel: "B1",
-    grammar: { title: "Past Perfect (had done)", level: "B2", description: "An earlier past action.", example: "She had finished." },
+    grammar: {
+      title: "Past Perfect (had done)",
+      level: "B2",
+      description: "An earlier past action.",
+      example: "She had finished.",
+      status: "PRACTICING",
+      goodLessons: 1,
+      lessonsToMaster: 3,
+      lastScore: 0.5,
+    },
     topicLessonNumber: 2,
     vocab: ["apple", "cherry"],
   },

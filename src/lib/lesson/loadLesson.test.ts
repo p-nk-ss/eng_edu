@@ -8,7 +8,16 @@ import { loadLessonForPlayer, type PlayerLessonDb } from "./loadLesson";
 
 const stored = { version: 1, exerciseId: "e2", isCorrect: true };
 const lessonDate = new Date("2026-09-20T00:00:00.000Z");
-const grammarTopic = { title: "Past Perfect (had done)", name: "RAW", cefrLevel: "B2", description: "An earlier past action.", example: "She had finished." };
+const grammarTopic = {
+  title: "Past Perfect (had done)",
+  name: "RAW",
+  cefrLevel: "B2",
+  description: "An earlier past action.",
+  example: "She had finished.",
+  status: "PRACTICING",
+  goodLessons: 1,
+  importance: 2,
+};
 
 function fakeDb(opts: {
   lesson?: unknown;
@@ -17,12 +26,14 @@ function fakeDb(opts: {
   profile?: unknown;
   vocab?: unknown[];
   count?: number;
+  previous?: unknown;
 } = {}) {
-  const { lesson = null, exercises = [], topic = grammarTopic, profile = { level: "B1" }, vocab = [], count = 1 } = opts;
+  const { lesson = null, exercises = [], topic = grammarTopic, profile = { level: "B1" }, vocab = [], count = 1, previous = null } = opts;
   return {
     lesson: {
       findUnique: vi.fn().mockResolvedValue(lesson),
       count: vi.fn().mockResolvedValue(count),
+      findFirst: vi.fn().mockResolvedValue(previous),
     },
     exercise: { findMany: vi.fn().mockResolvedValue(exercises) },
     grammarTopic: { findUnique: vi.fn().mockResolvedValue(topic) },
@@ -88,7 +99,16 @@ describe("loadLessonForPlayer", () => {
     const out = await loadLessonForPlayer("L1", db);
     expect(out?.intro).toEqual({
       learnerLevel: "B1",
-      grammar: { title: "Past Perfect (had done)", level: "B2", description: "An earlier past action.", example: "She had finished." },
+      grammar: {
+        title: "Past Perfect (had done)",
+        level: "B2",
+        description: "An earlier past action.",
+        example: "She had finished.",
+        status: "PRACTICING",
+        goodLessons: 1,
+        lessonsToMaster: 3,
+        lastScore: null,
+      },
       topicLessonNumber: 3,
       vocab: ["apple", "cherry"],
     });
@@ -114,5 +134,37 @@ describe("loadLessonForPlayer", () => {
     expect(db.lesson.count).toHaveBeenCalledWith({
       where: { plan: { path: ["meta", "grammarTopicId"], equals: "g1" }, date: { lte: lessonDate } },
     });
+  });
+
+  it("computes status, goodLessons, lessonsToMaster (below-level core: 1) and lastScore from the previous completed lesson", async () => {
+    const db = fakeDb({
+      lesson: { id: "L1", theme: null, plan: plan([], "g1"), date: lessonDate },
+      topic: { title: "Present Simple", name: "RAW", cefrLevel: "A2", description: null, example: null, status: "PRACTICING", goodLessons: 0, importance: 1 },
+      profile: { level: "B1" },
+      previous: { writtenScore: 0.714 },
+    });
+    const out = await loadLessonForPlayer("L1", db);
+    expect(out?.intro.grammar).toMatchObject({ status: "PRACTICING", goodLessons: 0, lessonsToMaster: 1, lastScore: 0.714 });
+    expect(db.lesson.findFirst).toHaveBeenCalledWith({
+      where: { id: { not: "L1" }, writtenCompletedAt: { not: null }, plan: { path: ["meta", "grammarTopicId"], equals: "g1" } },
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+      select: { writtenScore: true },
+    });
+  });
+
+  it("gives lessonsToMaster: 3 for a B1 topic with importance 2 (not a below-level core topic)", async () => {
+    const db = fakeDb({
+      lesson: { id: "L1", theme: null, plan: plan([], "g1"), date: lessonDate },
+      topic: { title: "Present Perfect", name: "RAW", cefrLevel: "B1", description: null, example: null, status: "INTRODUCED", goodLessons: 0, importance: 2 },
+      profile: { level: "B1" },
+    });
+    const out = await loadLessonForPlayer("L1", db);
+    expect(out?.intro.grammar).toMatchObject({ lessonsToMaster: 3 });
+  });
+
+  it("gives lastScore: null when there is no previous completed lesson for this topic", async () => {
+    const db = fakeDb({ lesson: { id: "L1", theme: null, plan: plan([], "g1"), date: lessonDate } });
+    const out = await loadLessonForPlayer("L1", db);
+    expect(out?.intro.grammar?.lastScore).toBeNull();
   });
 });

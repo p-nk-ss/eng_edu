@@ -20,6 +20,10 @@ const grammarLesson: PlayerLesson = {
       level: "A2",
       description: "Use more + adjective to compare two things.",
       example: "This book is more interesting than that one.",
+      status: "PRACTICING",
+      goodLessons: 0,
+      lessonsToMaster: 3,
+      lastScore: 0.714,
     },
     topicLessonNumber: 3,
     vocab: ["apple", "cherry"],
@@ -44,6 +48,8 @@ describe("LessonIntro", () => {
     expect(screen.getByText("Use more + adjective to compare two things.")).toBeInTheDocument();
     expect(screen.getByText("This book is more interesting than that one.")).toBeInTheDocument();
     expect(screen.getByText("Lesson 3 on this topic")).toBeInTheDocument();
+    expect(screen.getByText("0 of 3 good lessons (80%+)")).toBeInTheDocument();
+    expect(screen.getByText("Last time: 71%")).toBeInTheDocument();
     expect(screen.getByText("Theme: Work & careers")).toBeInTheDocument();
     expect(screen.getByText("apple")).toBeInTheDocument();
     expect(screen.getByText("cherry")).toBeInTheDocument();
@@ -54,6 +60,26 @@ describe("LessonIntro", () => {
   it("says 'First lesson on this topic' when this is the topic's first lesson", () => {
     render(<LessonIntro lesson={{ ...grammarLesson, intro: { ...grammarLesson.intro, topicLessonNumber: 1 } }} onStart={vi.fn()} />);
     expect(screen.getByText("First lesson on this topic")).toBeInTheDocument();
+  });
+
+  it("says 'One good lesson (80%+) masters this topic' when lessonsToMaster is 1", () => {
+    render(
+      <LessonIntro
+        lesson={{ ...grammarLesson, intro: { ...grammarLesson.intro, grammar: { ...grammarLesson.intro.grammar!, lessonsToMaster: 1 } } }}
+        onStart={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("One good lesson (80%+) masters this topic")).toBeInTheDocument();
+  });
+
+  it("omits the 'Last time' line when there is no previous score", () => {
+    render(
+      <LessonIntro
+        lesson={{ ...grammarLesson, intro: { ...grammarLesson.intro, grammar: { ...grammarLesson.intro.grammar!, lastScore: null } } }}
+        onStart={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/Last time/)).not.toBeInTheDocument();
   });
 
   it("omits the below-level note when the topic is at or above the learner's level", () => {

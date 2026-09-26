@@ -1,9 +1,11 @@
 import type { PrismaClient } from "@prisma/client";
+import { lessonsToMaster } from "../curriculum/advancement";
 import { THEMES } from "../curriculum/themes";
 import { prisma } from "../db";
 import type { GradeResult } from "../grading/types";
 import type { LessonPlan } from "./createLesson";
 import { parseExercise } from "./exerciseSchemas";
+import { isBelowLevel } from "./levels";
 import { toExerciseView, type ExerciseView } from "./lessonView";
 
 export type PlayerLessonDb = Pick<PrismaClient, "lesson" | "exercise" | "grammarTopic" | "profile" | "vocabItem">;
@@ -15,7 +17,16 @@ export interface PlayerItem {
 
 export interface PlayerLessonIntro {
   learnerLevel: string | null;
-  grammar: { title: string; level: string; description: string | null; example: string | null } | null;
+  grammar: {
+    title: string;
+    level: string;
+    description: string | null;
+    example: string | null;
+    status: string;
+    goodLessons: number;
+    lessonsToMaster: number;
+    lastScore: number | null;
+  } | null;
   /** Lessons with the same plan.meta.grammarTopicId, dated up to and including this lesson. null without a grammar focus. */
   topicLessonNumber: number | null;
   /** Headwords of plan.meta.vocabIds, in plan order; unknown ids are skipped. */
@@ -57,7 +68,10 @@ export async function loadLessonForPlayer(id: string, db: PlayerLessonDb = prism
 
   const topicId = plan?.meta?.grammarTopicId ?? null;
   const topic = topicId
-    ? await db.grammarTopic.findUnique({ where: { id: topicId }, select: { title: true, name: true, cefrLevel: true, description: true, example: true } })
+    ? await db.grammarTopic.findUnique({
+        where: { id: topicId },
+        select: { title: true, name: true, cefrLevel: true, description: true, example: true, status: true, goodLessons: true, importance: true },
+      })
     : null;
 
   const profile = await db.profile.findFirst({ orderBy: { updatedAt: "desc" }, select: { level: true } });
@@ -71,6 +85,14 @@ export async function loadLessonForPlayer(id: string, db: PlayerLessonDb = prism
     ? await db.lesson.count({ where: { plan: { path: ["meta", "grammarTopicId"], equals: topicId }, date: { lte: lesson.date } } })
     : null;
 
+  const previous = topicId
+    ? await db.lesson.findFirst({
+        where: { id: { not: lesson.id }, writtenCompletedAt: { not: null }, plan: { path: ["meta", "grammarTopicId"], equals: topicId } },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
+        select: { writtenScore: true },
+      })
+    : null;
+
   const grammarTitle = topic ? (topic.title ?? topic.name) : null;
 
   return {
@@ -80,7 +102,18 @@ export async function loadLessonForPlayer(id: string, db: PlayerLessonDb = prism
     items,
     intro: {
       learnerLevel: profile?.level ?? null,
-      grammar: topic ? { title: grammarTitle!, level: topic.cefrLevel, description: topic.description ?? null, example: topic.example ?? null } : null,
+      grammar: topic
+        ? {
+            title: grammarTitle!,
+            level: topic.cefrLevel,
+            description: topic.description ?? null,
+            example: topic.example ?? null,
+            status: topic.status,
+            goodLessons: topic.goodLessons,
+            lessonsToMaster: lessonsToMaster(topic.importance === 1 && profile !== null && isBelowLevel(topic.cefrLevel, profile.level)),
+            lastScore: previous?.writtenScore ?? null,
+          }
+        : null,
       topicLessonNumber,
       vocab,
     },

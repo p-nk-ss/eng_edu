@@ -31,6 +31,14 @@ export function LessonIntro({ lesson, onStart }: { lesson: PlayerLesson; onStart
           <p className="text-sm text-muted-foreground">
             {intro.topicLessonNumber === 1 ? "First lesson on this topic" : `Lesson ${intro.topicLessonNumber} on this topic`}
           </p>
+          <p className="text-sm text-muted-foreground">
+            {grammar.lessonsToMaster === 1
+              ? "One good lesson (80%+) masters this topic"
+              : `${grammar.goodLessons} of ${grammar.lessonsToMaster} good lessons (80%+)`}
+          </p>
+          {grammar.lastScore !== null && (
+            <p className="text-sm text-muted-foreground">Last time: {Math.round(grammar.lastScore * 100)}%</p>
+          )}
         </div>
       )}
 
