@@ -38,6 +38,7 @@ npm run vocab:classify    # offline vocab topic classification via TypeSafe Jev
 npm run grammar:enrich    # offline grammar topic enrichment via Claude (title/description/example/teachable/importance)
 npm run curriculum:preview # print the deterministic selection for the next 5 lessons
 npm run lesson:generate    # generate ONE lesson live (Claude + Jev), print it; no DB writes
+npm run lesson:generate -- --days-ahead N   # pretend "now" is N days ahead (due errors -> review block)
 npm run answer:check       # grade one answer live (Jev + Claude) against a real/synthetic exercise; no DB writes
 npm run lessons:backfill   # M4a one-off: score lessons completed before M4a and advance their topics
 ```
@@ -117,7 +118,15 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
     advancement (`INTRODUCED -> PRACTICING -> MASTERED`, below-level fast track, parking after 5
     lessons), resume rule updated, lesson-intro topic progress, `npm run lessons:backfill`. See
     `docs/superpowers/specs/2026-09-26-m4a-topic-advancement-design.md`.
-  - M4b review block + error intervals, M4c errors page + dashboard stats: next.
+  - **M4b** ✅ - review block: at most 3 reinforcement exercises per lesson (one per most-overdue due
+    `ErrorRecord`), written by Claude in the same generation call as the written exercises and
+    validated the same way, but a dropped review exercise never triggers regeneration
+    (`src/lib/review/planReview.ts`); error intervals 1 -> 3 -> 7 -> 14 days, `MASTERED` at streak 3
+    (`src/lib/review/schedule.ts`); a review answer updates its own `ErrorRecord` in place (no new
+    one) and never counts towards `writtenScore`; review block shown first in the lesson player, with
+    a section label and an intro review count. See
+    `docs/superpowers/specs/2026-09-26-m4b-review-block-design.md`.
+  - M4c errors page + dashboard stats: next.
 - M5 Conversation · M6 Scenarios + wrap-up.
 
 ## Dev guidelines
@@ -127,6 +136,6 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
   `next build` only type-checks app files (not tests). Type bugs hide otherwise.
 - Every commit message ends with:
   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
-- Work happens on a feature branch per milestone, never on `main` - currently `feature/m4-spaced-repetition`.
+- Work happens on a feature branch per milestone, never on `main` - currently `feature/m4b-review`.
   `main` holds finished milestones.
 - `ANTHROPIC_API_KEY` must stay **unset** (or Agent SDK bills pay-per-token instead of the Max credit).

@@ -33,7 +33,7 @@ const SYSTEM = [
   "If it is correct: isCorrect true, corrected = the learner answer unchanged, category \"none\", explanation = one sentence on what was done well.",
   `If it is wrong: isCorrect false; corrected = the learner's own sentence with the MINIMAL edits that make it correct (not the reference; ${L.corrected.min}-${L.corrected.max} characters); explanation = what was wrong and why, in simple English for the learner's CEFR level (${L.explanation.min}-${L.explanation.max} characters); category = the most important problem.`,
   `Categories: ${TRANSLATION_CATEGORIES.map((c) => `"${c}"`).join(", ")}.`,
-  "relatesToFocus: true only when the main problem is about `grammar_focus` (false when grammar_focus is null).",
+  'relatesToFocus: true when ANY mistake in the learner\'s answer concerns `grammar_focus` - the target structure, its form or its signal words (e.g. then/than or a missing "more" in a comparatives lesson) - even if there are other mistakes; false only when none does or `grammar_focus` is null.',
   "`jev_category` is a hint from an automatic classifier and may be wrong.",
   'Return ONLY a JSON object: {"isCorrect":true|false,"corrected":"...","explanation":"...","category":"...","relatesToFocus":true|false}. No prose, no markdown fences.',
 ].join("\n");

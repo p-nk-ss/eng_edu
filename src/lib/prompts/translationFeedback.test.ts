@@ -27,6 +27,12 @@ describe("translationFeedbackPrompt", () => {
     expect(system).toContain(`${L.corrected.min}-${L.corrected.max}`);
     for (const c of ["none", "grammar", "vocabulary", "word_order", "spelling", "meaning"]) expect(system).toContain(`"${c}"`);
   });
+
+  it("files ANY mistake on the grammar focus (incl. signal words like then/than) under relatesToFocus", () => {
+    const system = translationFeedbackPrompt(input).system ?? "";
+    expect(system).toMatch(/ANY mistake/);
+    expect(system).toMatch(/then\/than/);
+  });
 });
 
 describe("translationFeedbackSchema", () => {
