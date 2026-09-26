@@ -54,7 +54,7 @@ describe("startLesson", () => {
     expect(where.status).toEqual({ in: ["PLANNED", "IN_PROGRESS"] });
     expect(where.OR).toEqual([
       { date: { gte: new Date(2026, 8, 18), lt: new Date(2026, 8, 19) } },
-      { exercises: { some: { answeredAt: null } } },
+      { writtenCompletedAt: null, exercises: { some: { answeredAt: null } } },
     ]);
   });
 

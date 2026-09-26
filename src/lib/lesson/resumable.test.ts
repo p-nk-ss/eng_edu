@@ -13,7 +13,7 @@ describe("findResumableLessonId", () => {
         status: { in: ["PLANNED", "IN_PROGRESS"] },
         OR: [
           { date: { gte: new Date(2026, 8, 25), lt: new Date(2026, 8, 26) } },
-          { exercises: { some: { answeredAt: null } } },
+          { writtenCompletedAt: null, exercises: { some: { answeredAt: null } } },
         ],
       },
       orderBy: [{ date: "desc" }, { id: "desc" }],
@@ -23,5 +23,12 @@ describe("findResumableLessonId", () => {
 
   it("returns null when nothing is resumable", async () => {
     expect(await findResumableLessonId({ lesson: { findFirst: vi.fn().mockResolvedValue(null) } } as never, now)).toBeNull();
+  });
+
+  it("a completed written block is not resumable", async () => {
+    const findFirst = vi.fn().mockResolvedValue(null);
+    await findResumableLessonId({ lesson: { findFirst } } as never, now);
+    const unfinished = findFirst.mock.calls[0][0].where.OR[1];
+    expect(unfinished.writtenCompletedAt).toBeNull();
   });
 });
