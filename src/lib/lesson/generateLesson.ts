@@ -121,7 +121,7 @@ export async function generateLesson(inputs: GenerationInputs, deps: GenerationD
 
       // Review is validated the same way as written exercises, but a bad review item is only ever
       // dropped - it NEVER causes regeneration (the learner still gets the written lesson).
-      const validReview: { errorId: string; type: ExerciseTypeName; content: ExerciseContent }[] = [];
+      const validReview: { index: number; errorId: string; type: ExerciseTypeName; content: ExerciseContent }[] = [];
       inputs.review.forEach((item, index) => {
         const raw = envelope.review[index];
         if (raw === undefined) {
@@ -143,17 +143,17 @@ export async function generateLesson(inputs: GenerationInputs, deps: GenerationD
           drops.push({ attempt, index, type: parsed.type, section: "review", reason: problems.join("; ") });
           return;
         }
-        validReview.push({ errorId: item.errorId, type: item.type, content });
+        validReview.push({ index, errorId: item.errorId, type: item.type, content });
       });
 
       let review = validReview;
       if (validReview.length > 0) {
         const reviewGate = await deps.gate(validReview.map((v) => v.content), grammar);
         review = [];
-        validReview.forEach((v, index) => {
-          const verdict = reviewGate.verdicts[index];
+        validReview.forEach((v, gateIndex) => {
+          const verdict = reviewGate.verdicts[gateIndex];
           if (verdict?.drop) {
-            drops.push({ attempt, index, type: v.type, section: "review", reason: verdict.reason ?? "gate: dropped" });
+            drops.push({ attempt, index: v.index, type: v.type, section: "review", reason: verdict.reason ?? "gate: dropped" });
             return;
           }
           review.push(v);
@@ -162,7 +162,7 @@ export async function generateLesson(inputs: GenerationInputs, deps: GenerationD
 
       return {
         exercises: sorted.map(({ type, content }) => ({ type, content })),
-        review,
+        review: review.map(({ errorId, type, content }) => ({ errorId, type, content })),
         warmup: envelope.warmup,
         scenario: envelope.scenario,
         qualityGate: gate.status,

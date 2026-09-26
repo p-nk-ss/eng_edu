@@ -179,6 +179,27 @@ describe("generateLesson - review", () => {
     expect(draft.drops.some((d) => d.section === "review" && /gate/.test(d.reason))).toBe(true);
   });
 
+  it("logs the review item's own index on a gate drop, not its position among valid review items", async () => {
+    // item 0 is invalid (dropped before the gate ever runs); item 1 is valid and reaches the gate
+    // as the ONLY entry (position 0 there) - the drop must still be logged against index 1.
+    const ask = vi.fn<GenerationDeps["ask"]>().mockResolvedValue(envelope(all, [{ junk: 1 }, E.TRANSLATION]));
+    const gate = vi
+      .fn<GenerationDeps["gate"]>()
+      .mockImplementationOnce(async (exs) => keepAll(exs))
+      .mockImplementationOnce(async (exs) => ({
+        status: "partial",
+        verdicts: exs.map((_, index) => ({ index, gated: true, drop: true, reason: "gate: dropped" })),
+      }));
+    const draft = await generateLesson(withReview, deps(ask, gate));
+    expect(draft.review).toEqual([]);
+    const reviewDrops = draft.drops.filter((d) => d.section === "review");
+    expect(reviewDrops).toHaveLength(2);
+    expect(reviewDrops.find((d) => d.index === 0)).toBeDefined();
+    const gateDrop = reviewDrops.find((d) => d.index === 1);
+    expect(gateDrop).toBeDefined();
+    expect(gateDrop?.reason).toMatch(/gate/);
+  });
+
   it("prefixes a review drop's formatted line with 'review '", () => {
     expect(formatDrop({ attempt: 1, index: 0, section: "review", reason: "x" })).toMatch(/^review /);
   });

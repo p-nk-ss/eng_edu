@@ -97,8 +97,9 @@ describe("lessonGenerationPrompt", () => {
     expect(args.system).not.toContain("review");
   });
 
-  it("adds a review section to the payload and prompt when review items are given", () => {
-    const args = lessonGenerationPrompt({ ...input, review: reviewItems });
+  it("adds a review section to the payload and prompt when review items are given, with each review type's shape included exactly once even when outside the written mix", () => {
+    const mixWithoutReviewTypes: GenerationInputs["mix"] = ["MULTIPLE_CHOICE", "MATCH"];
+    const args = lessonGenerationPrompt({ ...input, mix: mixWithoutReviewTypes, review: reviewItems });
     const payload = JSON.parse(args.messages[0].content.slice(args.messages[0].content.indexOf("{")));
     expect(payload.review).toEqual([
       { index: 0, type: "open_cloze", category: "Comparative with more", grammar: "Comparative with more", examples: ["as -> than"] },
@@ -106,12 +107,23 @@ describe("lessonGenerationPrompt", () => {
     ]);
     expect(payload).not.toHaveProperty("errorId");
     expect(JSON.stringify(payload)).not.toContain("errorId");
-    const { system } = args;
+    const { system } = args as { system: string };
     expect(system).toContain("review");
     expect(system).toContain("never repeat the example sentences");
     expect(system).toContain("the one exception");
-    expect(system).toContain('"type":"open_cloze"');
-    expect(system).toContain('"type":"translation"');
+    // FILL_BLANK ("open_cloze") and TRANSLATION are review-only types here (neither is in mix) -
+    // their shapes must still be sent, and de-duplicated exactly once each.
+    const clozeCount = (system.match(/"type":"open_cloze"/g) ?? []).length;
+    const translationCount = (system.match(/"type":"translation"/g) ?? []).length;
+    expect(clozeCount).toBe(1);
+    expect(translationCount).toBe(1);
+  });
+
+  it("drops the grammar-focus exception clause from the review paragraph in a vocab-only lesson", () => {
+    const { system } = lessonGenerationPrompt({ ...input, grammar: null, review: reviewItems });
+    expect(system).toContain("review");
+    expect(system).toContain("never repeat the example sentences");
+    expect(system).not.toContain("the one exception");
   });
 
   it("states each shared bound in the prompt only when that exercise type is requested", () => {

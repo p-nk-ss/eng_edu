@@ -86,7 +86,11 @@ function systemPrompt(input: GenerationInputs): string {
     "Exercises must be varied around the one focus: mix statements, questions and negatives; use different subjects, people and situations within the theme; practise the focus's related forms where they exist (e.g. for comparatives: much/far + comparative, less + adjective, not as ... as); never reuse the same sentence frame in two exercises.",
     ...(hasReview
       ? [
-          "Review: the learner made the mistakes listed in \"review\". For each review item write exactly one exercise of its requested type that practises that mistake with NEW sentences on the lesson theme - never repeat the example sentences. A review item may practise its own grammar: it is the one exception to \"introduce no other grammar focus\". Review exercises have \"vocab\": [].",
+          "Review: the learner made the mistakes listed in \"review\". For each review item write exactly one exercise of its requested type that practises that mistake with NEW sentences on the lesson theme - never repeat the example sentences." +
+            (input.grammar
+              ? " A review item may practise its own grammar: it is the one exception to \"introduce no other grammar focus\"."
+              : "") +
+            " Review exercises have \"vocab\": [].",
         ]
       : []),
     `Every exercise has "explain": a short English explanation (${L.explain.min}-${L.explain.max} characters) shown after grading.`,
