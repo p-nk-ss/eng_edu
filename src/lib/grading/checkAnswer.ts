@@ -4,7 +4,7 @@ import type { LessonPlan } from "../lesson/createLesson";
 import { parseExercise } from "../lesson/exerciseSchemas";
 import { parseAnswer } from "./answerSchemas";
 import { vocabOutcomes } from "./answerZone";
-import { errorEntries } from "./errorEntries";
+import { answerExample, errorEntries } from "./errorEntries";
 import { gradeLocally } from "./graders";
 import { runJudge, type JudgeDeps } from "./judge";
 import { recordAnswer } from "./recordAnswer";
@@ -76,7 +76,7 @@ async function runCheck(exerciseId: string, raw: unknown, deps: CheckDeps): Prom
 
   const ex = await db.exercise.findUnique({
     where: { id: exerciseId },
-    select: { id: true, lessonId: true, content: true, answeredAt: true, result: true, lesson: { select: { plan: true } } },
+    select: { id: true, lessonId: true, content: true, answeredAt: true, result: true, errorRecordId: true, lesson: { select: { plan: true } } },
   });
   if (!ex) throw new ExerciseNotFoundError(exerciseId);
   if (ex.answeredAt && !deps.dryRun) return { ...(ex.result as unknown as GradeResult), alreadyAnswered: true };
@@ -104,7 +104,9 @@ async function runCheck(exerciseId: string, raw: unknown, deps: CheckDeps): Prom
 
   const outcome = await recordAnswer(db, {
     exerciseId, lessonId: ex.lessonId, answer: ans.answer, result, vocab: result.vocabCredit,
-    errors: errorEntries(content, judged, grammar, vocab), now,
+    errors: ex.errorRecordId ? [] : errorEntries(content, judged, grammar, vocab),
+    review: ex.errorRecordId ? { errorId: ex.errorRecordId, correct: judged.isCorrect, example: answerExample(judged) } : undefined,
+    now,
   });
   if (!outcome.recorded) {
     const stored = await db.exercise.findUnique({ where: { id: exerciseId }, select: { result: true } });

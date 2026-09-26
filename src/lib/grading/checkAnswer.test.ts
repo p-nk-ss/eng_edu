@@ -16,7 +16,12 @@ function fakeDb(exerciseRows: unknown[], txCount = 1) {
     exercise: { findMany: vi.fn(async () => []), updateMany: vi.fn(async () => ({ count: txCount })) },
     lesson: { updateMany: vi.fn(async () => ({ count: 1 })), findUnique: vi.fn(async () => null) },
     vocabItem: { findUnique: vi.fn(async () => ({ status: "SEEN", correctStreak: 0 })), update: vi.fn(async () => ({})) },
-    errorRecord: { findFirst: vi.fn(async () => null), create: vi.fn(async (_args: unknown) => ({})), update: vi.fn(async () => ({})) },
+    errorRecord: {
+      findFirst: vi.fn(async () => null),
+      findUnique: vi.fn(async () => ({ correctStreak: 0, description: "" })),
+      create: vi.fn(async (_args: unknown) => ({})),
+      update: vi.fn(async (_args: unknown) => ({})),
+    },
   };
   const findUnique = vi.fn();
   for (const r of exerciseRows) findUnique.mockResolvedValueOnce(r);
@@ -58,6 +63,14 @@ describe("checkAnswer", () => {
     const f = fakeDb([row("e-wrong", E.MULTIPLE_CHOICE)]);
     await checkAnswer("e-wrong", { selected: 2 }, { db: f.db, judge, now });
     expect(f.tx.errorRecord.create.mock.calls[0][0]).toMatchObject({ data: { grammarTopicId: "g1", category: "Past Perfect (had done)" } });
+    expect(f.tx.errorRecord.update).not.toHaveBeenCalled();
+  });
+
+  it("reschedules the reviewed error instead of logging a new one, for a review exercise answered wrongly", async () => {
+    const f = fakeDb([row("e-review", E.MULTIPLE_CHOICE, { errorRecordId: "r1" })]);
+    await checkAnswer("e-review", { selected: 2 }, { db: f.db, judge, now });
+    expect(f.tx.errorRecord.create).not.toHaveBeenCalled();
+    expect(f.tx.errorRecord.update.mock.calls[0][0]).toMatchObject({ where: { id: "r1" } });
   });
 
   it("returns the stored result for an answered exercise without grading again", async () => {

@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { completeWrittenBlockIfDone } from "../curriculum/completeLesson";
+import { nextErrorState } from "../review/schedule";
 import { nextVocabState, withoutCredited, type VocabStatusName } from "./answerZone";
 import type { Answer, ErrorEntry, GradeResult, VocabOutcome } from "./types";
 
@@ -24,6 +25,7 @@ export interface RecordInput {
   result: GradeResult;
   vocab: VocabOutcome[];
   errors: ErrorEntry[];
+  review?: { errorId: string; correct: boolean; example: string };
   now: Date;
 }
 
@@ -62,6 +64,20 @@ export async function recordAnswer(db: RecordAnswerDb, input: RecordInput): Prom
       if (!row) continue;
       const next = nextVocabState({ status: row.status as VocabStatusName, correctStreak: row.correctStreak }, v.correct);
       await tx.vocabItem.update({ where: { id: v.id }, data: { ...next, lastSeenAt: input.now } });
+    }
+
+    if (input.review) {
+      const reviewed = await tx.errorRecord.findUnique({ where: { id: input.review.errorId }, select: { correctStreak: true, description: true } });
+      if (reviewed) {
+        const next = nextErrorState(reviewed, input.review.correct, input.now);
+        await tx.errorRecord.update({
+          where: { id: input.review.errorId },
+          data: {
+            ...next,
+            ...(!input.review.correct && input.review.example ? { description: appendExample(reviewed.description, input.review.example) } : {}),
+          },
+        });
+      }
     }
 
     for (const e of input.errors) {

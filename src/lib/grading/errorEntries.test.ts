@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import type { ExerciseContent } from "../lesson/exerciseSchemas";
 import { FIXTURE_VOCAB, VALID_EXERCISES as E } from "../lesson/fixtures";
-import { errorEntries } from "./errorEntries";
+import { answerExample, EXAMPLE_MAX, errorEntries } from "./errorEntries";
 import type { JudgeOutcome, WritingCorrection } from "./types";
 
 const grammar = { id: "g1", title: "Past Perfect (had done)", description: "had + past participle" };
@@ -81,5 +81,20 @@ describe("errorEntries", () => {
     }, grammar, FIXTURE_VOCAB)[0];
     expect(e.example).not.toContain("\n");
     expect(e.example.length).toBeLessThanOrEqual(200);
+  });
+});
+
+describe("answerExample", () => {
+  it("returns the first wrong part as given -> expected", () => {
+    expect(answerExample(wrong("finishing", "had finished"))).toBe("finishing -> had finished");
+  });
+
+  it("returns an empty string when all parts are correct", () => {
+    expect(answerExample({ parts: [{ correct: true, given: "a", expected: "a" }] })).toBe("");
+  });
+
+  it("clips long text to EXAMPLE_MAX", () => {
+    const e = answerExample(wrong("x".repeat(300), "y"));
+    expect(e.length).toBeLessThanOrEqual(EXAMPLE_MAX);
   });
 });

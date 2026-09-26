@@ -4,6 +4,7 @@ import { appendExample, feedbackText, recordAnswer, type RecordAnswerDb, type Re
 import type { GradeResult } from "./types";
 
 const now = new Date("2026-09-25T10:00:00Z");
+const DAY_MS = 86_400_000;
 const result: GradeResult = {
   version: 1, exerciseId: "e1", isCorrect: false, parts: [{ correct: false, given: "finishing", expected: "had finished" }],
   correctAnswer: "had finished", explain: "Past perfect for an earlier past action.", feedback: null, gradedBy: "local", vocabCredit: [],
@@ -15,7 +16,7 @@ const input = (over: Partial<RecordInput> = {}): RecordInput => ({
   now, ...over,
 });
 
-function fakeDb(over: { others?: unknown[]; count?: number; vocabRow?: unknown; existingError?: unknown } = {}) {
+function fakeDb(over: { others?: unknown[]; count?: number; vocabRow?: unknown; existingError?: unknown; reviewedError?: unknown } = {}) {
   const log: string[] = [];
   const calls: Record<string, unknown[]> = {};
   const rec = (name: string, value: unknown) =>
@@ -33,7 +34,12 @@ function fakeDb(over: { others?: unknown[]; count?: number; vocabRow?: unknown; 
     exercise: { findMany: rec("exercise.findMany", over.others ?? []), updateMany: rec("exercise.updateMany", { count: over.count ?? 1 }) },
     lesson: { updateMany: rec("lesson.updateMany", { count: 1 }), findUnique: rec("lesson.findUnique", null) },
     vocabItem: { findUnique: rec("vocabItem.findUnique", over.vocabRow ?? { status: "KNOWN", correctStreak: 4 }), update: rec("vocabItem.update", {}) },
-    errorRecord: { findFirst: rec("errorRecord.findFirst", over.existingError ?? null), create: rec("errorRecord.create", {}), update: rec("errorRecord.update", {}) },
+    errorRecord: {
+      findFirst: rec("errorRecord.findFirst", over.existingError ?? null),
+      findUnique: rec("errorRecord.findUnique", over.reviewedError ?? null),
+      create: rec("errorRecord.create", {}),
+      update: rec("errorRecord.update", {}),
+    },
   };
   const db = { $transaction: vi.fn(async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx)) } as unknown as RecordAnswerDb;
   return { db, log, calls };
@@ -94,6 +100,46 @@ describe("recordAnswer", () => {
     const f = fakeDb({ count: 0 });
     await recordAnswer(f.db, input());
     expect(f.log).not.toContain("lesson.findUnique");
+  });
+});
+
+describe("recordAnswer / review", () => {
+  it("correct review answer schedules its error", async () => {
+    const f = fakeDb({ reviewedError: { correctStreak: 0, description: "- as -> than" } });
+    const out = await recordAnswer(f.db, input({ errors: [], review: { errorId: "r1", correct: true, example: "" } }));
+    expect(out).toMatchObject({ recorded: true });
+    expect(f.calls["errorRecord.findUnique"][0]).toEqual({ where: { id: "r1" }, select: { correctStreak: true, description: true } });
+    expect(f.calls["errorRecord.update"][0]).toEqual({
+      where: { id: "r1" },
+      data: { status: "REVIEWING", correctStreak: 1, nextReviewAt: new Date(now.getTime() + 3 * DAY_MS) },
+    });
+    expect(f.calls["errorRecord.create"]).toBeUndefined();
+  });
+
+  it("wrong review answer resets and appends the example", async () => {
+    const f = fakeDb({ reviewedError: { correctStreak: 0, description: "- as -> than" } });
+    await recordAnswer(f.db, input({ errors: [], review: { errorId: "r1", correct: false, example: "as -> than" } }));
+    expect(f.calls["errorRecord.update"][0]).toEqual({
+      where: { id: "r1" },
+      data: { status: "REVIEWING", correctStreak: 0, nextReviewAt: new Date(now.getTime() + 1 * DAY_MS), description: "- as -> than\n- as -> than" },
+    });
+    expect(f.calls["errorRecord.create"]).toBeUndefined();
+  });
+
+  it("missing reviewed error: no update, the answer is still recorded", async () => {
+    const f = fakeDb({ reviewedError: null });
+    const out = await recordAnswer(f.db, input({ errors: [], review: { errorId: "r-gone", correct: true, example: "" } }));
+    expect(out).toMatchObject({ recorded: true });
+    expect(f.calls["errorRecord.update"]).toBeUndefined();
+  });
+
+  it("review answer does not touch completion: answer write, review update, then completion lock/read", async () => {
+    const f = fakeDb({ reviewedError: { correctStreak: 0, description: "- as -> than" } });
+    await recordAnswer(f.db, input({ errors: [], review: { errorId: "r1", correct: true, example: "" } }));
+    const idx = (name: string) => f.log.indexOf(name);
+    expect(idx("exercise.updateMany")).toBeLessThan(idx("errorRecord.update"));
+    expect(idx("errorRecord.update")).toBeLessThan(idx("$queryRaw"));
+    expect(idx("$queryRaw")).toBeLessThan(idx("lesson.findUnique"));
   });
 });
 
