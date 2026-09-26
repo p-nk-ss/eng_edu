@@ -204,3 +204,27 @@ review block (M4) · Kokoro TTS (M5) · errors and history pages (M4/M6) · drag
 
 `SPEC.md` (§API lesson/start resume rule, §API check `rationales`, §Pages player behaviour,
 streak rule), `CLAUDE.md` (M3d status, current branch `feature/m3d-player`).
+
+## Addendum (2026-09-26, after the owner's first live lesson)
+
+Owner feedback: the lesson "just starts" (no level, no topic context), the syllabus widget does not
+move after a lesson, the first exercises are near-identical. Style polish is postponed. Decided:
+
+- **A. Lesson intro screen.** When a lesson has no answered exercise yet, the player first shows an
+  intro card: the grammar focus title with its CEFR level and a note when it is below the learner's
+  level ("Review of <level> basics - closing gaps below your <learner level> level"), the topic's
+  description and example, the vocabulary theme, the target words (headwords only), "Lesson N on
+  this topic" (count of lessons with the same `plan.meta.grammarTopicId` up to this one), the
+  number of exercises, and a **Start** button. A lesson with at least one answer resumes directly
+  (no intro). Data comes from `loadLessonForPlayer` (extended; still no keys). Vocab-only lessons
+  (no grammar focus) show the theme and words only.
+- **B. Exercise variety.** The generation prompt requires varied exercises around the one focus:
+  statements, questions and negatives; different subjects and situations within the theme; the
+  focus's related forms (e.g. for comparatives: much/far + comparative, less, not as ... as); no
+  two exercises share the same sentence frame. Verified on a live `npm run lesson:generate` run.
+- **C. Syllabus progress shows movement.** Per level, besides mastered/known: grammar topics in
+  progress (`INTRODUCED`/`PRACTICING`) and vocab being learned (`SEEN`/`LEARNING`), as text and a
+  second bar segment.
+- **Also:** `POST /api/exercise/check` logs the reason of a 502 (`console.warn`, error message
+  only) so a failed Claude leg can be diagnosed.
+- Topic progress (accuracy per topic, mastery, advancing to the next topic) stays in **M4**.
