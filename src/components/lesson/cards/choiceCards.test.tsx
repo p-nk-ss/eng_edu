@@ -30,6 +30,15 @@ describe("ChoiceCard", () => {
     expect(onChange).toHaveBeenLastCalledWith({ selected: 2 });
   });
 
+  it("ignores number keys held with Ctrl/Alt/Meta (browser shortcuts, tab switching)", () => {
+    const onChange = vi.fn();
+    render(<ChoiceCard view={mcq} disabled={false} result={null} onChange={onChange} />);
+    fireEvent.keyDown(window, { key: "3", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "3", altKey: true });
+    fireEvent.keyDown(window, { key: "3", metaKey: true });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("ignores clicks and keys when disabled, and marks the chosen and the correct option after grading", () => {
     const onChange = vi.fn();
     render(<ChoiceCard view={mcq} disabled result={graded("finishing", "had finished")} onChange={onChange} />);

@@ -20,6 +20,7 @@ export function OptionList({ options, selected, disabled, correctText, onSelect,
   useEffect(() => {
     if (disabled) return;
     const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
       const t = e.target as HTMLElement | null;
       if (t && ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName)) return;
       const n = Number(e.key);
