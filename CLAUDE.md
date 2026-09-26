@@ -39,6 +39,7 @@ npm run grammar:enrich    # offline grammar topic enrichment via Claude (title/d
 npm run curriculum:preview # print the deterministic selection for the next 5 lessons
 npm run lesson:generate    # generate ONE lesson live (Claude + Jev), print it; no DB writes
 npm run answer:check       # grade one answer live (Jev + Claude) against a real/synthetic exercise; no DB writes
+npm run lessons:backfill   # M4a one-off: score lessons completed before M4a and advance their topics
 ```
 
 ## Database — portable, inside the project (no system install, no Docker)
@@ -111,7 +112,13 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
     progress bar, Check → result panel → Next, results screen; key-free `ExerciseView` sent to the
     browser; reload resumes at the first unanswered exercise; dashboard streak widget. See
     `docs/superpowers/specs/2026-09-25-m3d-lesson-player-design.md`.
-- M4 Spaced repetition · M5 Conversation · M6 Scenarios + wrap-up.
+- **M4 Spaced repetition** - split into M4a-M4c:
+  - **M4a** ✅ - written-block score (`Lesson.writtenScore`/`writtenCompletedAt`), topic status
+    advancement (`INTRODUCED -> PRACTICING -> MASTERED`, below-level fast track, parking after 5
+    lessons), resume rule updated, lesson-intro topic progress, `npm run lessons:backfill`. See
+    `docs/superpowers/specs/2026-09-26-m4a-topic-advancement-design.md`.
+  - M4b review block + error intervals, M4c errors page + dashboard stats: next.
+- M5 Conversation · M6 Scenarios + wrap-up.
 
 ## Dev guidelines
 
@@ -120,6 +127,6 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
   `next build` only type-checks app files (not tests). Type bugs hide otherwise.
 - Every commit message ends with:
   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
-- Work happens on a feature branch per milestone, never on `main` — currently `feature/m3d-player`.
-  `main` holds finished milestones (M1–M3b-2 merged 2026-09-25).
+- Work happens on a feature branch per milestone, never on `main` - currently `feature/m4-spaced-repetition`.
+  `main` holds finished milestones.
 - `ANTHROPIC_API_KEY` must stay **unset** (or Agent SDK bills pay-per-token instead of the Max credit).

@@ -22,7 +22,8 @@
     "curriculum:preview": "tsx scripts/curriculum-preview.ts",
     "grammar:enrich": "tsx scripts/enrich-grammar.ts",
     "lesson:generate": "tsx scripts/lesson-preview.ts",
-    "answer:check": "tsx scripts/answer-preview.ts"
+    "answer:check": "tsx scripts/answer-preview.ts",
+    "lessons:backfill": "tsx scripts/backfill-lessons.ts"
   },
   "dependencies": {
     "next": "15.5.20",
