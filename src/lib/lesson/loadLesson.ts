@@ -86,7 +86,10 @@ export async function loadLessonForPlayer(id: string, db: PlayerLessonDb = prism
 
   const previous = topicId
     ? await db.lesson.findFirst({
-        where: { id: { not: lesson.id }, writtenCompletedAt: { not: null }, plan: { path: ["meta", "grammarTopicId"], equals: topicId } },
+        where: {
+          id: { not: lesson.id }, writtenCompletedAt: { not: null }, plan: { path: ["meta", "grammarTopicId"], equals: topicId },
+          date: { lte: lesson.date },
+        },
         orderBy: [{ date: "desc" }, { id: "desc" }],
         select: { writtenScore: true },
       })

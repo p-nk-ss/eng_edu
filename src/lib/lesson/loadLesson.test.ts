@@ -146,7 +146,10 @@ describe("loadLessonForPlayer", () => {
     const out = await loadLessonForPlayer("L1", db);
     expect(out?.intro.grammar).toMatchObject({ status: "PRACTICING", goodLessons: 0, lessonsToMaster: 1, lastScore: 0.714 });
     expect(db.lesson.findFirst).toHaveBeenCalledWith({
-      where: { id: { not: "L1" }, writtenCompletedAt: { not: null }, plan: { path: ["meta", "grammarTopicId"], equals: "g1" } },
+      where: {
+        id: { not: "L1" }, writtenCompletedAt: { not: null }, plan: { path: ["meta", "grammarTopicId"], equals: "g1" },
+        date: { lte: lessonDate },
+      },
       orderBy: [{ date: "desc" }, { id: "desc" }],
       select: { writtenScore: true },
     });
