@@ -14,7 +14,7 @@ describe("/lesson/[id]", () => {
     vi.mocked(loadLessonForPlayer).mockResolvedValue({
       lessonId: "L1", themeLabel: "Work & careers", grammarTitle: null,
       intro: { learnerLevel: "B1", grammar: null, topicLessonNumber: null, vocab: [] },
-      items: [{ view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: null }],
+      items: [{ view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: null, section: "written" }],
     });
     render(await LessonPage({ params: Promise.resolve({ id: "L1" }) }));
     expect(screen.getByRole("navigation")).toBeInTheDocument();

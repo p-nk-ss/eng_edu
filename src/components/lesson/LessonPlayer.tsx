@@ -143,10 +143,16 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
 
   const graded = phase === "graded" && current.result;
   const isLast = items.findIndex((it, i) => i > index && it.result === null) === -1;
+  const hasReview = items.some((it) => it.section === "review");
 
   return (
     <div className="flex flex-col gap-6">
       {header}
+      {hasReview && (
+        <p className="text-sm font-semibold text-muted-foreground">
+          {current.section === "review" ? "Review - a mistake from an earlier lesson" : "New material"}
+        </p>
+      )}
       <form onSubmit={onSubmit} className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm tabular-nums text-muted-foreground">Exercise {index + 1} of {items.length}</p>
         <h2 ref={headingRef} tabIndex={-1} className="font-display text-xl font-bold outline-none">{TYPE_LABELS[current.view.type]}</h2>

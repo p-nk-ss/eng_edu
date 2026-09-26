@@ -66,6 +66,26 @@ describe("loadLessonForPlayer", () => {
     expect(out).toMatchObject({ lessonId: "L1", themeLabel: "Work & careers", grammarTitle: "Past Perfect (had done)" });
   });
 
+  it("orders review items first, then written, tags sections, and appends unplanned rows as written", async () => {
+    const db = fakeDb({
+      lesson: {
+        id: "L1",
+        theme: null,
+        plan: { sections: { review: { exerciseIds: ["r1"] }, written: { exerciseIds: ["e1", "e2"] } }, meta: { grammarTopicId: null, vocabIds: [] } },
+        date: lessonDate,
+      },
+      exercises: [
+        { id: "e1", content: E.MULTIPLE_CHOICE, result: null, answeredAt: null },
+        { id: "e2", content: E.DICTATION, result: null, answeredAt: null },
+        { id: "r1", content: E.TRANSLATION, result: null, answeredAt: null },
+        { id: "e3", content: E.CLOZE_DROPDOWN, result: null, answeredAt: null },
+      ],
+    });
+    const out = await loadLessonForPlayer("L1", db);
+    expect(out?.items.map((i) => i.view.id)).toEqual(["r1", "e1", "e2", "e3"]);
+    expect(out?.items.map((i) => i.section)).toEqual(["review", "written", "written", "written"]);
+  });
+
   it("skips exercises whose content does not parse", async () => {
     const db = fakeDb({
       lesson: { id: "L1", theme: null, plan: plan(["e1", "bad"], null), date: lessonDate },

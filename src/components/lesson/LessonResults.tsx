@@ -34,14 +34,14 @@ export function LessonResults({ items }: { items: PlayerItem[] }) {
         </div>
       </div>
       <ol className="flex flex-col gap-2">
-        {items.map(({ view, result }) => (
+        {items.map(({ view, result, section }) => (
           <li key={view.id} className="rounded-card border border-border bg-surface p-3">
             <details>
               <summary className="flex min-h-11 cursor-pointer items-start gap-2">
                 {result?.isCorrect ? <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-success" aria-hidden /> : <XCircle size={18} className="mt-0.5 shrink-0 text-danger" aria-hidden />}
                 <span className="sr-only">{result?.isCorrect ? "Correct:" : "Wrong:"}</span>
                 <span className="flex min-w-0 flex-col">
-                  <span className="font-semibold">{TYPE_LABELS[view.type]}</span>
+                  <span className="font-semibold">{TYPE_LABELS[view.type]}{section === "review" ? " (review)" : ""}</span>
                   <span className="truncate text-sm font-normal text-muted-foreground">{viewExcerpt(view)}</span>
                 </span>
               </summary>

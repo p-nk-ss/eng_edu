@@ -10,8 +10,8 @@ const grammarLesson: PlayerLesson = {
   themeLabel: "Work & careers",
   grammarTitle: "Comparative with more",
   items: [
-    { view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: null },
-    { view: toExerciseView("e2", E.DIALOGUE_GAP), result: null },
+    { view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: null, section: "written" },
+    { view: toExerciseView("e2", E.DIALOGUE_GAP), result: null, section: "written" },
   ],
   intro: {
     learnerLevel: "B1",
@@ -34,7 +34,7 @@ const vocabOnlyLesson: PlayerLesson = {
   lessonId: "L2",
   themeLabel: "Food & drink",
   grammarTitle: null,
-  items: [{ view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: null }],
+  items: [{ view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: null, section: "written" }],
   intro: { learnerLevel: "B1", grammar: null, topicLessonNumber: null, vocab: ["bread", "milk"] },
 };
 
@@ -106,6 +106,37 @@ describe("LessonIntro", () => {
     expect(screen.getByText("Theme: Food & drink")).toBeInTheDocument();
     expect(screen.getByText("bread")).toBeInTheDocument();
     expect(screen.getByText("1 exercise")).toBeInTheDocument();
+  });
+
+  it("shows '2 review exercises' when there are 2 review items, and counts only written items in the exercise count", () => {
+    const withReview: PlayerLesson = {
+      ...grammarLesson,
+      items: [
+        { view: toExerciseView("r1", E.MULTIPLE_CHOICE), result: null, section: "review" },
+        { view: toExerciseView("r2", E.DIALOGUE_GAP), result: null, section: "review" },
+        { view: toExerciseView("e1", E.CLOZE_DROPDOWN), result: null, section: "written" },
+      ],
+    };
+    render(<LessonIntro lesson={withReview} onStart={vi.fn()} />);
+    expect(screen.getByText("2 review exercises")).toBeInTheDocument();
+    expect(screen.getByText("1 exercise")).toBeInTheDocument();
+  });
+
+  it("shows '1 review exercise' (singular) for a single review item", () => {
+    const oneReview: PlayerLesson = {
+      ...grammarLesson,
+      items: [
+        { view: toExerciseView("r1", E.MULTIPLE_CHOICE), result: null, section: "review" },
+        { view: toExerciseView("e1", E.CLOZE_DROPDOWN), result: null, section: "written" },
+      ],
+    };
+    render(<LessonIntro lesson={oneReview} onStart={vi.fn()} />);
+    expect(screen.getByText("1 review exercise")).toBeInTheDocument();
+  });
+
+  it("shows no review line when there are no review items", () => {
+    render(<LessonIntro lesson={grammarLesson} onStart={vi.fn()} />);
+    expect(screen.queryByText(/review exercise/)).not.toBeInTheDocument();
   });
 
   it("calls onStart when Start is clicked", () => {

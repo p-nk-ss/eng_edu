@@ -12,6 +12,7 @@ export type PlayerLessonDb = Pick<PrismaClient, "lesson" | "exercise" | "grammar
 export interface PlayerItem {
   view: ExerciseView;
   result: GradeResult | null;
+  section: "review" | "written";
 }
 
 export interface PlayerLessonIntro {
@@ -51,18 +52,20 @@ export async function loadLessonForPlayer(id: string, db: PlayerLessonDb = prism
     select: { id: true, content: true, result: true, answeredAt: true },
     orderBy: { id: "asc" },
   });
+  const review = plan?.sections?.review?.exerciseIds ?? [];
   const planned = plan?.sections?.written?.exerciseIds ?? [];
   const byId = new Map(rows.map((r) => [r.id, r]));
-  const ordered = [
-    ...planned.flatMap((pid) => (byId.has(pid) ? [byId.get(pid)!] : [])),
-    ...rows.filter((r) => !planned.includes(r.id)),
+  const ordered: { row: (typeof rows)[number]; section: "review" | "written" }[] = [
+    ...review.flatMap((rid) => (byId.has(rid) ? [{ row: byId.get(rid)!, section: "review" as const }] : [])),
+    ...planned.flatMap((pid) => (byId.has(pid) ? [{ row: byId.get(pid)!, section: "written" as const }] : [])),
+    ...rows.filter((r) => !review.includes(r.id) && !planned.includes(r.id)).map((row) => ({ row, section: "written" as const })),
   ];
 
   const items: PlayerItem[] = [];
-  for (const r of ordered) {
+  for (const { row: r, section } of ordered) {
     const parsed = parseExercise(r.content);
     if (!parsed.ok) continue;
-    items.push({ view: toExerciseView(r.id, parsed.content), result: r.answeredAt ? (r.result as unknown as GradeResult) : null });
+    items.push({ view: toExerciseView(r.id, parsed.content), result: r.answeredAt ? (r.result as unknown as GradeResult) : null, section });
   }
 
   const topicId = plan?.meta?.grammarTopicId ?? null;

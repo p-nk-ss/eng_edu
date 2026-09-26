@@ -7,6 +7,8 @@ export function LessonIntro({ lesson, onStart }: { lesson: PlayerLesson; onStart
   const { intro, themeLabel, items } = lesson;
   const grammar = intro.grammar;
   const belowLevel = grammar !== null && intro.learnerLevel !== null && isBelowLevel(grammar.level, intro.learnerLevel);
+  const writtenItems = items.filter((i) => i.section === "written");
+  const reviewCount = items.filter((i) => i.section === "review").length;
 
   return (
     <div className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5 shadow-sm">
@@ -59,8 +61,14 @@ export function LessonIntro({ lesson, onStart }: { lesson: PlayerLesson; onStart
         </div>
       )}
 
+      {reviewCount > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {reviewCount} {reviewCount === 1 ? "review exercise" : "review exercises"}
+        </p>
+      )}
+
       <p className="text-sm text-muted-foreground">
-        {items.length} {items.length === 1 ? "exercise" : "exercises"}
+        {writtenItems.length} {writtenItems.length === 1 ? "exercise" : "exercises"}
       </p>
 
       <button

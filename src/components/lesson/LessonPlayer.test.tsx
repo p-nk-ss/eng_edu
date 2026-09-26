@@ -30,8 +30,8 @@ const lesson = (results: (GradeResult | null)[]): PlayerLesson => ({
     vocab: ["apple", "cherry"],
   },
   items: [
-    { view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: results[0] },
-    { view: toExerciseView("e2", E.DIALOGUE_GAP), result: results[1] },
+    { view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: results[0], section: "written" },
+    { view: toExerciseView("e2", E.DIALOGUE_GAP), result: results[1], section: "written" },
   ],
 });
 const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
@@ -134,7 +134,7 @@ describe("LessonPlayer", () => {
     const clozeLesson: PlayerLesson = {
       lessonId: "L4", themeLabel: null, grammarTitle: null,
       intro: { learnerLevel: null, grammar: null, topicLessonNumber: null, vocab: [] },
-      items: [{ view: toExerciseView("e4", E.CLOZE_DROPDOWN), result: null }],
+      items: [{ view: toExerciseView("e4", E.CLOZE_DROPDOWN), result: null, section: "written" }],
     };
     render(<LessonPlayer lesson={clozeLesson} />);
     start();
@@ -149,7 +149,7 @@ describe("LessonPlayer", () => {
     const wordBankLesson: PlayerLesson = {
       lessonId: "L2", themeLabel: null, grammarTitle: null,
       intro: { learnerLevel: null, grammar: null, topicLessonNumber: null, vocab: [] },
-      items: [{ view: toExerciseView("e3", E.WORD_BANK), result: null }],
+      items: [{ view: toExerciseView("e3", E.WORD_BANK), result: null, section: "written" }],
     };
     render(<LessonPlayer lesson={wordBankLesson} />);
     start();
@@ -219,6 +219,35 @@ describe("LessonPlayer", () => {
     expect(screen.getByText("2 of 2 correct")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /back to dashboard/i })).toHaveAttribute("href", "/");
     expect(screen.getByText("She ___ the report before the deadline yesterday.")).toBeInTheDocument();
+  });
+
+  it("review first, resume at the first unanswered: shows the review label, then New material after the last review item", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(ok({ ...grade("r2", true), alreadyAnswered: false }));
+    vi.stubGlobal("fetch", fetchMock);
+    const reviewFirst: PlayerLesson = {
+      ...lesson([null, null]),
+      items: [
+        { view: toExerciseView("r1", E.MULTIPLE_CHOICE), result: grade("r1", true), section: "review" },
+        { view: toExerciseView("r2", E.DIALOGUE_GAP), result: null, section: "review" },
+        { view: toExerciseView("e1", E.CLOZE_DROPDOWN), result: null, section: "written" },
+        { view: toExerciseView("e2", E.WORD_BANK), result: null, section: "written" },
+      ],
+    };
+    render(<LessonPlayer lesson={reviewFirst} />);
+    expect(screen.getByText("Exercise 2 of 4")).toBeInTheDocument();
+    expect(screen.getByText("Review - a mistake from an earlier lesson")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /no worries/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Check" }));
+    await screen.findByText("Correct");
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("New material")).toBeInTheDocument();
+    expect(screen.queryByText("Review - a mistake from an earlier lesson")).not.toBeInTheDocument();
+  });
+
+  it("shows no section label when the lesson has no review items", () => {
+    render(<LessonPlayer lesson={lesson([null, null])} />);
+    expect(screen.queryByText("Review - a mistake from an earlier lesson")).not.toBeInTheDocument();
+    expect(screen.queryByText("New material")).not.toBeInTheDocument();
   });
 
   it("says so when the lesson has no exercises, with a link back to the dashboard", () => {
