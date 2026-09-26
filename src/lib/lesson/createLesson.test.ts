@@ -16,6 +16,7 @@ const draft: LessonDraft = {
   attempts: 1,
   gateScores: [{ exerciseIndex: 0, scores: { key_correct: 0.95 } }],
 };
+const draftWithReview: LessonDraft = { ...draft, review: [{ errorId: "r1", type: "FILL_BLANK", content: E.FILL_BLANK }] };
 const inputs = {
   profile: { id: "p1" },
   theme: { key: "work", label: "Work & careers", description: "d" },
@@ -41,12 +42,12 @@ function fakeDb() {
 }
 
 describe("buildPlan", () => {
-  it("has the final SPEC shape with an empty review section", () => {
-    const plan = buildPlan(draft, ["E1", "E2"], { grammarTopicId: "g1", vocabIds: ["v1", "v2"], exerciseMix: [...mix] });
+  it("has the final SPEC shape with review exercise ids in the review section", () => {
+    const plan = buildPlan(draft, ["E1", "E2"], ["R1"], { grammarTopicId: "g1", vocabIds: ["v1", "v2"], exerciseMix: [...mix] });
     expect(plan).toEqual({
       version: 1,
       sections: {
-        review: { exerciseIds: [] },
+        review: { exerciseIds: ["R1"] },
         warmup: draft.warmup,
         written: { exerciseIds: ["E1", "E2"] },
         scenario: draft.scenario,
@@ -62,6 +63,11 @@ describe("buildPlan", () => {
         attempts: 1,
       },
     });
+  });
+
+  it("has an empty review section when there are no review ids", () => {
+    const plan = buildPlan(draft, ["E1", "E2"], [], { grammarTopicId: "g1", vocabIds: ["v1", "v2"], exerciseMix: [...mix] });
+    expect(plan.sections.review).toEqual({ exerciseIds: [] });
   });
 });
 
@@ -101,5 +107,28 @@ describe("createLesson", () => {
     await createLesson(b.db, draft, { ...inputs, grammarTopic: null } as unknown as LessonInputs, [...mix], now);
     expect(b.calls["grammarTopic.update"]).toBeUndefined();
     expect(b.calls["lesson.update"][0]).toMatchObject({ data: { plan: { meta: { grammarTopicId: null } } } });
+  });
+
+  it("creates review rows with errorRecordId and lists them in plan.sections.review.exerciseIds", async () => {
+    const { db, log, calls } = fakeDb();
+    const lessonId = await createLesson(db, draftWithReview, inputs, [...mix], now);
+    expect(lessonId).toBe("L1");
+    expect(log).toEqual([
+      "lesson.create", "exercise.create", "exercise.create", "exercise.create", "lesson.update",
+      "grammarTopic.update", "vocabItem.updateMany", "vocabItem.updateMany",
+    ]);
+    expect(calls["exercise.create"]).toHaveLength(3);
+    expect(calls["exercise.create"][2]).toMatchObject({ data: { lessonId: "L1", type: "FILL_BLANK", content: E.FILL_BLANK, errorRecordId: "r1" } });
+    expect((calls["exercise.create"][0] as { data: { errorRecordId?: string } }).data.errorRecordId).toBeUndefined();
+    expect(calls["lesson.update"][0]).toMatchObject({
+      data: { plan: { sections: { review: { exerciseIds: ["E3"] }, written: { exerciseIds: ["E1", "E2"] } } } },
+    });
+  });
+
+  it("creates no review rows and an empty review section when there is nothing due", async () => {
+    const { db, calls } = fakeDb();
+    await createLesson(db, draft, inputs, [...mix], now);
+    expect(calls["exercise.create"]).toHaveLength(2);
+    expect(calls["lesson.update"][0]).toMatchObject({ data: { plan: { sections: { review: { exerciseIds: [] } } } } });
   });
 });

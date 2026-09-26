@@ -7,7 +7,7 @@ import { planExerciseMix } from "./exerciseMix";
 import type { ExerciseTypeName } from "./exerciseSchemas";
 import { generateLesson, type GenerationDeps } from "./generateLesson";
 import { findResumableLessonId } from "./resumable";
-import type { ReviewItem } from "../review/planReview";
+import { planReview, type DueError, type ReviewItem } from "../review/planReview";
 
 export type StartLessonDb = LessonInputsDb & CreateLessonDb & Pick<PrismaClient, "lesson">;
 
@@ -37,6 +37,14 @@ export function toGenerationInputs(
     summaries,
     review,
   };
+}
+
+/** The next lesson's review plan (Task 3): titles are looked up only for due errors tied to a grammar topic. */
+export async function reviewItemsFor(db: Pick<PrismaClient, "grammarTopic">, due: DueError[]): Promise<ReviewItem[]> {
+  if (due.length === 0) return [];
+  const ids = [...new Set(due.flatMap((e) => (e.grammarTopicId ? [e.grammarTopicId] : [])))];
+  const topics = ids.length ? await db.grammarTopic.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, name: true } }) : [];
+  return planReview(due, new Map(topics.map((t) => [t.id, t.title ?? t.name])));
 }
 
 export interface StartLessonResult {
@@ -81,7 +89,8 @@ async function runStartLesson(deps: { db?: StartLessonDb; generation: Generation
   });
   const summaries = recent.map((l) => l.summary).filter((s): s is string => s !== null);
 
-  const draft = await generateLesson(toGenerationInputs(inputs, mix, summaries), deps.generation);
+  const review = await reviewItemsFor(db, inputs.dueErrors);
+  const draft = await generateLesson(toGenerationInputs(inputs, mix, summaries, review), deps.generation);
   const lessonId = await createLesson(db, draft, inputs, mix, now);
   return { lessonId, reused: false, attempts: draft.attempts, drops: draft.drops.length };
 }

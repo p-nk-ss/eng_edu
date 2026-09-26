@@ -12,7 +12,7 @@ vi.mock("../db", () => ({ prisma: {} }));
 import { selectLessonInputs } from "../curriculum/lessonInputs";
 import { createLesson } from "./createLesson";
 import { generateLesson } from "./generateLesson";
-import { startLesson, toGenerationInputs, type StartLessonDb } from "./startLesson";
+import { startLesson, toGenerationInputs, reviewItemsFor, type StartLessonDb } from "./startLesson";
 
 const now = new Date(2026, 8, 18, 15, 30); // local time
 const inputs = {
@@ -23,11 +23,18 @@ const inputs = {
   dueErrors: [],
 };
 
-function fakeDb(existing: unknown) {
+function fakeDb(existing: unknown, opts: { grammarTopics?: unknown[] } = {}) {
   const findFirst = vi.fn().mockResolvedValue(existing);
   const count = vi.fn().mockResolvedValue(2);
   const findMany = vi.fn().mockResolvedValue([{ summary: "s2" }, { summary: "s1" }]);
-  return { db: { lesson: { findFirst, count, findMany } } as unknown as StartLessonDb, findFirst, count, findMany };
+  const grammarTopicFindMany = vi.fn().mockResolvedValue(opts.grammarTopics ?? []);
+  return {
+    db: { lesson: { findFirst, count, findMany }, grammarTopic: { findMany: grammarTopicFindMany } } as unknown as StartLessonDb,
+    findFirst,
+    count,
+    findMany,
+    grammarTopicFindMany,
+  };
 }
 const generation = { ask: vi.fn(), gate: vi.fn() };
 
@@ -117,5 +124,54 @@ describe("startLesson", () => {
     vi.mocked(generateLesson).mockRejectedValue(new Error("generation blew up"));
     await expect(startLesson({ db: f.db, generation, now })).rejects.toThrow("generation blew up");
     expect(createLesson).not.toHaveBeenCalled();
+  });
+
+  it("plans review items from due errors (looking up their grammar titles) and passes them to generation", async () => {
+    const due = {
+      id: "e1",
+      grammarTopicId: "g1",
+      category: "Comparative with more",
+      description: "- as -> than",
+      nextReviewAt: new Date(2026, 8, 17),
+      createdAt: new Date(2026, 8, 10),
+    };
+    vi.mocked(selectLessonInputs).mockResolvedValue({ ...inputs, dueErrors: [due] } as never);
+    const f = fakeDb(null, { grammarTopics: [{ id: "g1", title: "Comparative with more", name: "RAW" }] });
+
+    await startLesson({ db: f.db, generation, now });
+
+    const genInputs = vi.mocked(generateLesson).mock.calls[0][0];
+    expect(genInputs.review).toEqual([
+      { errorId: "e1", type: "FILL_BLANK", category: "Comparative with more", grammarTitle: "Comparative with more", examples: ["as -> than"] },
+    ]);
+    expect(f.grammarTopicFindMany).toHaveBeenCalledWith({ where: { id: { in: ["g1"] } }, select: { id: true, title: true, name: true } });
+  });
+
+  it("plans no review items and skips the grammarTopic lookup when nothing is due", async () => {
+    const f = fakeDb(null);
+
+    await startLesson({ db: f.db, generation, now });
+
+    const genInputs = vi.mocked(generateLesson).mock.calls[0][0];
+    expect(genInputs.review).toEqual([]);
+    expect(f.grammarTopicFindMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("reviewItemsFor", () => {
+  it("returns [] and skips the query when there are no due errors", async () => {
+    const findMany = vi.fn();
+    await expect(reviewItemsFor({ grammarTopic: { findMany } } as never, [])).resolves.toEqual([]);
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it("looks up grammar titles for due errors that have a grammarTopicId and plans them", async () => {
+    const findMany = vi.fn().mockResolvedValue([{ id: "g1", title: null, name: "RAW NAME" }]);
+    const due = [
+      { id: "e1", grammarTopicId: "g1", category: "TENSE", description: "- a -> b", nextReviewAt: new Date(2026, 8, 17), createdAt: new Date(2026, 8, 10) },
+    ];
+    const items = await reviewItemsFor({ grammarTopic: { findMany } } as never, due as never);
+    expect(findMany).toHaveBeenCalledWith({ where: { id: { in: ["g1"] } }, select: { id: true, title: true, name: true } });
+    expect(items).toEqual([{ errorId: "e1", type: "FILL_BLANK", category: "TENSE", grammarTitle: "RAW NAME", examples: ["a -> b"] }]);
   });
 });

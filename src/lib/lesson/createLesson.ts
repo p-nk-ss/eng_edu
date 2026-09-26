@@ -5,7 +5,7 @@ import { formatDrop, type GateScoreEntry, type LessonDraft } from "./generateLes
 
 export type CreateLessonDb = Pick<PrismaClient, "$transaction">;
 
-/** `Lesson.plan` — the final SPEC shape. Review stays empty until M4; the player skips empty sections. */
+/** `Lesson.plan` - the final SPEC shape. `sections.review` lists the persisted review exercises, in order; empty when nothing was due. */
 export interface LessonPlan {
   version: 1;
   sections: {
@@ -31,12 +31,13 @@ export interface LessonPlan {
 export function buildPlan(
   draft: LessonDraft,
   exerciseIds: string[],
+  reviewIds: string[],
   meta: { grammarTopicId: string | null; vocabIds: string[]; exerciseMix: string[] },
 ): LessonPlan {
   return {
     version: 1,
     sections: {
-      review: { exerciseIds: [] },
+      review: { exerciseIds: reviewIds },
       warmup: draft.warmup,
       written: { exerciseIds },
       scenario: draft.scenario,
@@ -79,7 +80,15 @@ export async function createLesson(
       exerciseIds.push(row.id);
     }
 
-    const plan = buildPlan(draft, exerciseIds, { grammarTopicId: topic?.id ?? null, vocabIds, exerciseMix: mix });
+    const reviewIds: string[] = [];
+    for (const r of draft.review) {
+      const row = await tx.exercise.create({
+        data: { lessonId: lesson.id, type: r.type, content: r.content as unknown as Prisma.InputJsonValue, errorRecordId: r.errorId },
+      });
+      reviewIds.push(row.id);
+    }
+
+    const plan = buildPlan(draft, exerciseIds, reviewIds, { grammarTopicId: topic?.id ?? null, vocabIds, exerciseMix: mix });
     await tx.lesson.update({ where: { id: lesson.id }, data: { plan: plan as unknown as Prisma.InputJsonValue } });
 
     if (topic) {

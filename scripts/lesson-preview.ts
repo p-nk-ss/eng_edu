@@ -1,7 +1,8 @@
 /**
- * Acceptance tool for M3b-2: generate ONE lesson live (Claude + Jev) and print it. NO DB WRITES.
- *   npm run lesson:generate            # the lesson the app would generate next
- *   npm run lesson:generate -- --n 3   # pretend it is lesson number 3 (adds OPEN_WRITING)
+ * Acceptance tool for M3b-2/M4b: generate ONE lesson live (Claude + Jev) and print it. NO DB WRITES.
+ *   npm run lesson:generate                        # the lesson the app would generate next
+ *   npm run lesson:generate -- --n 3                # pretend it is lesson number 3 (adds OPEN_WRITING)
+ *   npm run lesson:generate -- --days-ahead 1        # pretend "now" is N days from today (due errors)
  */
 import { config as loadEnv } from "dotenv";
 
@@ -13,26 +14,32 @@ async function main() {
   const { prisma } = await import("../src/lib/db");
   const { selectLessonInputs } = await import("../src/lib/curriculum/lessonInputs");
   const { planExerciseMix } = await import("../src/lib/lesson/exerciseMix");
-  const { toGenerationInputs } = await import("../src/lib/lesson/startLesson");
+  const { toGenerationInputs, reviewItemsFor } = await import("../src/lib/lesson/startLesson");
   const { generateLesson, LessonGenerationError } = await import("../src/lib/lesson/generateLesson");
   const { liveGenerationDeps } = await import("../src/lib/lesson/liveDeps");
 
   try {
     const i = process.argv.indexOf("--n");
-    const inputs = await selectLessonInputs();
+    const daysAheadIdx = process.argv.indexOf("--days-ahead");
+    const daysAhead = daysAheadIdx >= 0 ? Number(process.argv[daysAheadIdx + 1]) : 0;
+    const now = new Date(Date.now() + daysAhead * 86_400_000);
+    const inputs = await selectLessonInputs(prisma, now);
     const lessonNumber = i >= 0 ? Number(process.argv[i + 1]) : (await prisma.lesson.count()) + 1;
     const mix = planExerciseMix(lessonNumber, { hasGrammar: inputs.grammarTopic !== null });
+    const review = await reviewItemsFor(prisma, inputs.dueErrors);
 
     console.log(`Lesson #${lessonNumber}  theme: ${inputs.theme.label}`);
     console.log(`grammar: ${inputs.grammarTopic ? `${inputs.grammarTopic.title ?? inputs.grammarTopic.name} (${inputs.grammarTopic.cefrLevel})` : "- none -"}`);
     console.log(`vocab  : ${inputs.vocab.map((v) => `${v.headword}[${v.id.slice(-4)}]`).join(", ")}`);
-    console.log(`mix    : ${mix.join(", ")}\n`);
+    console.log(`mix    : ${mix.join(", ")}`);
+    console.log(`review : ${review.length ? review.map((r) => `${r.type} for ${r.category}`).join(", ") : "- none due -"}\n`);
 
     const started = Date.now();
     try {
-      const draft = await generateLesson(toGenerationInputs(inputs, mix, []), liveGenerationDeps());
+      const draft = await generateLesson(toGenerationInputs(inputs, mix, [], review), liveGenerationDeps());
       console.log(`generated in ${Math.round((Date.now() - started) / 1000)}s, attempts ${draft.attempts}, gate ${draft.qualityGate}, drops ${draft.drops.length}\n`);
       draft.exercises.forEach((e, n) => console.log(`--- ${n + 1}. ${e.type}\n${JSON.stringify(e.content, null, 2)}\n`));
+      draft.review.forEach((r, n) => console.log(`--- REVIEW ${n + 1}. ${r.type} for ${review.find((i) => i.errorId === r.errorId)?.category ?? r.errorId}\n${JSON.stringify(r.content, null, 2)}\n`));
       console.log("--- WARM-UP\n" + JSON.stringify(draft.warmup, null, 2));
       console.log("--- SCENARIO\n" + JSON.stringify(draft.scenario, null, 2));
       if (draft.drops.length) console.log("--- DROPS\n" + draft.drops.map((d) => `  attempt ${d.attempt} #${d.index} ${d.type ?? ""}: ${d.reason}`).join("\n"));
