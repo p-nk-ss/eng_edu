@@ -44,7 +44,7 @@ describe("LessonIntro", () => {
     expect(screen.getByText("Use more + adjective to compare two things.")).toBeInTheDocument();
     expect(screen.getByText("This book is more interesting than that one.")).toBeInTheDocument();
     expect(screen.getByText("Lesson 3 on this topic")).toBeInTheDocument();
-    expect(screen.getByText("Work & careers")).toBeInTheDocument();
+    expect(screen.getByText("Theme: Work & careers")).toBeInTheDocument();
     expect(screen.getByText("apple")).toBeInTheDocument();
     expect(screen.getByText("cherry")).toBeInTheDocument();
     expect(screen.getByText("2 exercises")).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe("LessonIntro", () => {
     render(<LessonIntro lesson={vocabOnlyLesson} onStart={vi.fn()} />);
     expect(screen.queryByText("Comparative with more")).not.toBeInTheDocument();
     expect(screen.queryByText(/lesson.*on this topic/i)).not.toBeInTheDocument();
-    expect(screen.getByText("Food & drink")).toBeInTheDocument();
+    expect(screen.getByText("Theme: Food & drink")).toBeInTheDocument();
     expect(screen.getByText("bread")).toBeInTheDocument();
     expect(screen.getByText("1 exercise")).toBeInTheDocument();
   });

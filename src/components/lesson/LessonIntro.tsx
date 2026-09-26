@@ -34,7 +34,7 @@ export function LessonIntro({ lesson, onStart }: { lesson: PlayerLesson; onStart
         </div>
       )}
 
-      {themeLabel && <p className="text-sm text-muted-foreground">{themeLabel}</p>}
+      {themeLabel && <p className="text-sm text-muted-foreground">Theme: {themeLabel}</p>}
 
       {intro.vocab.length > 0 && (
         <div className="flex flex-col gap-1">
