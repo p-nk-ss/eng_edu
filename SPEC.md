@@ -107,6 +107,7 @@ model Lesson {
   nextPlan    String?   // Claude-generated draft plan for the NEXT lesson
   exercises   Exercise[]
   turns       ConversationTurn[]
+  conversations ConversationSession[] // M5a: one row per (lessonId, mode) - see ConversationSession below
   errors      ErrorRecord[]
 }
 
@@ -142,14 +143,35 @@ model ErrorRecord {
 }
 
 model ConversationTurn {
-  id          String   @id @default(cuid())
+  id          String              @id @default(cuid())
   lessonId    String
-  lesson      Lesson   @relation(fields: [lessonId], references: [id])
-  role        String   // "user" | "tutor"
+  lesson      Lesson              @relation(fields: [lessonId], references: [id])
+  sessionId   String?             // M5a: the ConversationSession this turn belongs to (null for legacy rows, none exist)
+  session     ConversationSession? @relation(fields: [sessionId], references: [id])
+  turnIndex   Int      @default(0) // M5a: 0 = partner opening; learner/partner alternate within a session
+  role        String   // "partner" | "learner" (M5a; was "user" | "tutor")
   text        String
-  corrections Json?    // NULL during the live conversation; filled POST-HOC by /api/conversation/analyze
-                       // for user turns: [{original, corrected, explanation, category, severity}]
+  corrections Json?    // NULL during the live conversation; filled POST-HOC by POST /api/conversation/finish
+                       // for learner turns: [{original, corrected, explanation, category, severity, grammarTopicId}]
   createdAt   DateTime @default(now())
+}
+
+// M5a - one row per (lessonId, mode); SCENARIO is reserved for M6, not used yet.
+enum ConversationMode { WARMUP SCENARIO }
+enum ConversationStatus { ACTIVE ANALYZED SKIPPED UNAVAILABLE }
+
+model ConversationSession {
+  id        String             @id @default(cuid())
+  lessonId  String
+  lesson    Lesson             @relation(fields: [lessonId], references: [id])
+  mode      ConversationMode
+  status    ConversationStatus @default(ACTIVE) // ACTIVE | ANALYZED | SKIPPED | UNAVAILABLE
+  review    Json?              // once ANALYZED: { topIssues: string[]; counts: {minor,moderate,major}; errorsAdded: number }
+  createdAt DateTime           @default(now())
+  endedAt   DateTime?          // set when the session is ANALYZED or SKIPPED
+  turns     ConversationTurn[]
+
+  @@unique([lessonId, mode]) // makes session creation idempotent; one WARMUP session per lesson
 }
 
 // ---- Curriculum (seeded from open datasets, see "Curriculum & Seed Data") ----
@@ -258,14 +280,44 @@ A generated lesson plan contains these sections (order fixed):
    error in place (see [Spaced repetition](#spaced-repetition-rules)) and never counts towards
    `writtenScore` or topic mastery (M4a), and never keeps a lesson resumable once the written block is
    otherwise complete.
-2. **Warm-up conversation** (5–10 min): free chat on the lesson's selected theme (see Curriculum). Tutor speaks (streaming TTS), user answers by voice (STT). Tutor turns come from the **local LLM** (`conversation` role) — natural partner replies only, **no corrections mid-flow**. When the section ends, the transcript is analysed by Claude and a **Conversation Review** is shown (see below).
+2. **Warm-up conversation** (5–10 min; **M5a: text only** — voice (STT/TTS) is M5b): free chat on
+   the lesson's selected theme (see Curriculum). Tutor turns come from the **local LLM**
+   (`conversation` role) — natural partner replies only, **no corrections mid-flow**. Length is
+   turn-based, not time-based: target **8** learner turns, hard cap **12** — after the reply to the
+   8th learner turn the partner wraps up and "Finish & review" becomes primary; finishing any time
+   is allowed, but with fewer than **2** learner turns the section is marked `SKIPPED` (no analysis,
+   no errors). The section is **skippable** and **never blocks the lesson**: if the local LLM
+   (LM Studio) is unreachable the section is marked `UNAVAILABLE` and the lesson continues — this
+   **replaces** the old "local services gate lesson start" rule (see Operational Notes). When the
+   section ends (`POST /api/conversation/finish`), the transcript is analysed by Claude and a
+   **Conversation Review** is shown (see below).
 3. **Written exercises** (10 min): 5–8 new exercises, a **mix of types** (see [Exercise Types](#exercise-types)). They practice the lesson's **deterministically selected** grammar focus + target vocab (Curriculum step 1) — Claude writes only the exercise *content*, not the focus. Objective types are checked locally; only translation/open-writing hit the LLM.
-4. **Speaking scenario** (5–10 min): role-play with a goal ("You're in a job interview for a QA position — convince the interviewer", "Call a hotel and change your booking"). Tutor (local LLM) stays in character, **no corrections mid-scenario**. On section end, the same Claude transcript analysis + Conversation Review runs.
-5. **Wrap-up**: user clicks "Finish lesson" → summary + next lesson plan generated and saved.
+4. **Speaking scenario** (5–10 min, **M6 — not yet built**): role-play with a goal ("You're in a job interview for a QA position — convince the interviewer", "Call a hotel and change your booking"). Tutor (local LLM) stays in character, **no corrections mid-scenario**. On section end, the same Claude transcript analysis + Conversation Review runs.
+5. **Wrap-up** (**M6 — not yet built**): user clicks "Finish lesson" → summary + next lesson plan generated and saved.
 
-**Conversation Review (both warm-up and scenario).** The real-time loop and the teaching feedback are split:
-- **Real-time loop (local LLM, `conversation` role):** each user turn → one streaming tutor reply (2–4 sentences, spoken register). The local LLM is a conversation partner **only**: it asks follow-up questions and steers toward the lesson's grammar topic + target vocab (injected into its system prompt), but performs **no corrections, grammar explanations, or teaching** — even if the user asks (it says the review comes at the end and keeps the conversation going). Turns persist as `ConversationTurn` rows with `corrections` left NULL.
-- **Post-conversation analysis (Claude, `conversation_analysis` role):** on section end the full transcript (turns with ids) **plus the lesson's grammar-topic list (with ids)** is sent in **one** call → strict-JSON findings array `{turnId, grammarTopicId?, original, corrected, explanation, category, severity}`, where `severity ∈ minor | moderate | major`. Findings are written back to `ConversationTurn.corrections` (all severities, for the review UI). **Only `major` findings** are converted to `ErrorRecord`s, deduplicated by `(grammarTopicId ?? category)` within the session, so spaced-repetition isn't flooded by minor slips. The UI shows a **Conversation Review** screen: transcript with inline highlights (colour-coded by severity) + a summary of the top issues.
+**Implementation status (M5a):** the lesson player currently runs 1→2→3 (review → warm-up →
+written) then a results screen; the scenario (4) and wrap-up (5) ship in M6.
+
+**Conversation Review (both warm-up and scenario).** State lives in a `ConversationSession` row
+(one per `(lessonId, mode)`, `status: ACTIVE | ANALYZED | SKIPPED | UNAVAILABLE`); its
+`ConversationTurn`s carry `sessionId` + `turnIndex` (0 = the partner's opening turn, learner/partner
+alternate after that). The real-time loop and the teaching feedback are split:
+- **Real-time loop (local LLM, `conversation` role):** each user turn → one streaming tutor reply (2–4 sentences, spoken register). The local LLM is a conversation partner **only**: it asks follow-up questions and steers toward the lesson's grammar topic + target vocab (injected into its system prompt), but performs **no corrections, grammar explanations, or teaching** — even if the user asks (it says the review comes at the end and keeps the conversation going). Turns persist as `ConversationTurn` rows (`sessionId`, `turnIndex`) with `corrections` left NULL.
+- **Post-conversation analysis (Claude, `conversation_analysis` role):** triggered by
+  `POST /api/conversation/finish {action: "review"}`, and only when at least **2** learner turns
+  were exchanged (`MIN_TURNS_FOR_REVIEW`) — otherwise the session is marked `SKIPPED` with no LLM
+  call and no errors. The full transcript (turns with ids) **plus the lesson's grammar-topic list
+  (with ids)** is sent in **one** call → strict-JSON findings array
+  `{turnId, grammarTopicId?, original, corrected, explanation, category, severity}`, where
+  `severity ∈ minor | moderate | major`. Findings are written back to `ConversationTurn.corrections`
+  (all severities, for the review UI). **Only `major` findings** are converted to `ErrorRecord`s
+  (`source: CONVERSATION`), deduplicated by `(lessonId, grammarTopicId ?? category)` — an existing
+  open record with the same key gets its example appended instead of a new row — so
+  spaced-repetition isn't flooded by minor slips. The session is then marked `ANALYZED` with the
+  review payload and `endedAt` set; re-finishing an already `ANALYZED`/`SKIPPED` session just
+  returns the stored state (idempotent). A failed analysis call throws (`502` from the route) and
+  writes nothing, so it can be retried. The UI shows a **Conversation Review** screen: transcript
+  with inline highlights (colour-coded by severity) + a summary of the top issues.
 
 ## Exercise Types
 
@@ -347,11 +399,33 @@ Every typed / accept-set field is compared after: trim → collapse internal whi
               "gateScores": [{ "exerciseIndex": 0, "scores": { "key_correct": 0.95 } }, …],
               "attempts": 1 } }
   ```
-  `dropReasons` and `gateScores` are diagnostics only (never surfaced to the learner). Voice-service health checks (LM Studio, Kokoro) are **deferred to M5** — not part of this route yet.
+  `dropReasons` and `gateScores` are diagnostics only (never surfaced to the learner). Voice-service health checks (LM Studio, Kokoro) are **deferred to M5b** — not part of this route (M5a's warm-up never blocks lesson start either; see Operational Notes).
 - `POST /api/exercise/check` (M3c) — `{exerciseId, answer}`; the answer shape depends on the exercise's type (`SHAPES` in `src/lib/grading/answerSchemas.ts` — e.g. `{selected: number}` for `mcq`/`dialogue_gap`, `{text: string[]}` for `open_cloze`, `{index, fix}` for `error_correct`, `{text: string}` for `dictation`/`translation`/`open_writing`); a shape mismatch or an answer that does not fit the exercise (out-of-range index, wrong gap count) is a **400**, never a learner mistake. All **objective** types are graded first by **local code** (`gradeLocally`) against the data pre-generated into `Exercise.content`, using the [normalization contract](#local-grader--normalization-contract). Typed gaps (`FILL_BLANK`), the typed fix in `ERROR_CORRECTION`, and `DICTATION` then get one more chance if the normalized input is not in the pre-generated `accept` set: TypeSafe Jev is asked one of two questions (never batched). For `FILL_BLANK`/`ERROR_CORRECTION`, "is this equally correct?" — a score **≥ 0.8** accepts a correct synonym or an alternative correct construction even if it ignores the bracketed word (`FILL_BLANK`'s `root`) or the specific drilled form; a misspelling or the wrong word form scores low and is rejected. For `DICTATION`, a stricter "same sentence?" question — it must be the **same words in the same order as the heard sentence** (`tts`); only punctuation, capitalisation, spelling variant or contraction differences are accepted, never a synonym. `TRANSLATION` is graded by Jev first ("is this an acceptable translation?", accept **≥ 0.8**); below that, one Claude call (`translation_check` role) writes `{isCorrect, corrected, explanation, category, relatesToFocus}` - `relatesToFocus` is **true when ANY mistake in the learner's answer concerns the lesson's `grammar_focus`** (the target structure, its form, or its signal words - e.g. `then`/`than` or a missing "more" in a comparatives lesson), even when other mistakes exist too; **false** only when no mistake does, or `grammar_focus` is null (M4b - files focus-related translation mistakes under the topic rather than a generic "translation" category). `OPEN_WRITING` always calls Claude (`writing_feedback` role); **correct = at least `minWords` words and no correction with `severity: "major"`**. The pre-generated answer key (`correctAnswer` / `explain`) is always returned alongside the verdict, for every type, so the learner can compare their answer to it; for `mcq` the result also carries the pre-generated per-option `rationales`, revealed only after grading. **One attempt per exercise**: a second submit does not re-grade — it returns the `Exercise.result` already stored, with `alreadyAnswered: true`; concurrent submits for the same exercise share one in-flight grading (`checkAnswer`'s `inFlight` map). On success (first grading only) it writes `Exercise.userAnswer/isCorrect/feedback/result/answeredAt` and flips `Lesson.status` `PLANNED → IN_PROGRESS`, in one transaction with the vocab and `ErrorRecord` writes below (see [Spaced repetition](#spaced-repetition-rules)). **A review exercise** (`Exercise.errorRecordId` set, M4b) is graded exactly like any other exercise of its type, but instead of creating a new `ErrorRecord` on a wrong answer, the same transaction applies `nextErrorState` to the error it names, **updating it in place** (correct/wrong intervals, `MASTERED` at streak 3, wrong example appended) - a review answer creates **no** `ErrorRecord` and never contributes to `writtenScore` (its exercise id is never in `plan.sections.written.exerciseIds`); if the named error was deleted, the answer is still recorded with no error update. Responses: **400** malformed body/answer (`InvalidAnswerError`), **404** unknown `exerciseId` (`ExerciseNotFoundError`), **502** the Claude leg failed (`GradingUnavailableError` — Jev problems never fail grading, only a failed Claude call does) — **nothing is recorded** on a 502, so the exercise stays open for retry; **500** anything else. Jev is best-effort everywhere it is used: if it is unavailable, `TRANSLATION` falls straight to Claude and a `FILL_BLANK`/`ERROR_CORRECTION`/`DICTATION` mismatch is simply rejected (no second chance), never a 502.
-- `POST /api/conversation/turn` — `{lessonId, userText, mode: "warmup" | "scenario"}`. The server calls the `conversation` role (LocalProvider) and, as tokens arrive, **splits the reply into sentences and synthesises each via Kokoro, streaming audio chunks to the client** (client just plays them); the reply **text** is streamed in parallel for the transcript. This sentence-chunked pipeline is what meets the ≤1.5 s budget. Persists the user turn and the (completed) tutor turn as `ConversationTurn` rows with `corrections: null`. No corrections/teaching. Full section history is sent each call (stateless).
-- `POST /api/conversation/analyze` — `{lessonId, mode}`, called once when a conversation section ends. Sends the full transcript **+ the lesson's grammar-topic list** in one call to the `conversation_analysis` role (Claude) → strict-JSON findings. Writes all findings to the matching `ConversationTurn.corrections`; creates `ErrorRecord`s **only from `major` findings**, deduped by `(grammarTopicId ?? category)` within the session. Returns the review payload (severity-coloured highlights + top-issue summary).
-- `POST /api/lesson/complete` — generates summary + nextPlan, marks COMPLETED. (Conversation corrections are already committed by `/api/conversation/analyze`; this route no longer materialises them.)
+- **Conversation (M5a — text warm-up; these four routes replace the earlier `/api/conversation/turn`
+  + `/api/conversation/analyze` sketch above):**
+  - `GET /api/conversation?lessonId=` — current session state + turns (+ `review` once `ANALYZED`);
+    `{ status: null, turns: [], review: null }` before the warm-up is started. `400` missing `lessonId`.
+  - `POST /api/conversation/start` `{lessonId}` — creates the `WARMUP` session and its opening turn
+    (`turnIndex 0`, text = the plan's `sections.warmup.intro`) — idempotent, no LLM call. `404` unknown
+    lesson, or a lesson plan with no warm-up framing.
+  - `POST /api/conversation/turn` `{lessonId, text}` — one learner turn; the server persists it, then
+    streams the `conversation` role's reply (LocalProvider/LM Studio) back as a `text/plain` stream of
+    deltas (no TTS/sentence-chunking yet — that lands with voice in M5b), and persists the completed
+    partner turn when the stream ends. `400` empty/too-long text (`MAX_TURN_CHARS = 600`); `404`
+    unknown lesson; `409` the session is closed (already finished) or already **12** learner turns
+    (`MAX_TURNS`), or a turn is already streaming for this lesson (single-flight); `503`
+    `{error:"partner_unavailable"}` when LM Studio fails before its first delta (the learner turn is
+    then removed, so a retry does not duplicate it; a failure *after* partial output instead ends the
+    stream with an error marker, keeping the partial reply). Full turn history is sent each call
+    (stateless on the model side; persisted history lives in `ConversationTurn`).
+  - `POST /api/conversation/finish` `{lessonId, action: "review" | "skip"}` — `"skip"`, or `"review"`
+    with fewer than **2** learner turns, marks the session `SKIPPED` with no LLM call; otherwise
+    `"review"` runs the Claude analysis above and marks it `ANALYZED`. `404` unknown lesson; `502`
+    `{error}` if the Claude call fails (nothing written, retry allowed). Idempotent once
+    `ANALYZED`/`SKIPPED`.
+  - LM Studio being down never blocks lesson start or the written block — only `start`/`turn` on this
+    section can 503; a session stuck `ACTIVE` simply resumes on reload.
+- `POST /api/lesson/complete` — generates summary + nextPlan, marks COMPLETED. (Conversation corrections are already committed by `/api/conversation/finish`; this route no longer materialises them.)
 - `GET /api/progress` — stats for dashboard.
 
 ## Prompting Requirements
@@ -409,11 +483,19 @@ The client voice layer is split behind swappable interfaces so services can be r
 
 ## Operational Notes
 
-- **Local services gate lesson start.** LM Studio (model loaded, server enabled) and the Kokoro TTS service must both be up. `POST /api/lesson/start` health-checks both; **if either is down the lesson does not start** — the UI shows which service is missing and how to start it (see `docs/LOCAL_SETUP.md`). The real-time partner (`conversation` role) is **local-only** — there is no cloud fallback (the Claude providers can't stream). The health check does **not** cover browser STT (Web Speech), which is a separate online dependency (see `docs/LOCAL_SETUP.md` §2a).
+- **Warm-up conversation never blocks the lesson (M5a).** This **replaces** the earlier "local
+  services gate lesson start" rule. `POST /api/lesson/start` does **not** health-check LM Studio or
+  Kokoro. If the local LLM is unreachable when the warm-up starts or a turn is sent, the section is
+  marked `UNAVAILABLE` (with a hint on how to start LM Studio, see `docs/LOCAL_SETUP.md`) and the
+  lesson simply continues to the written exercises — "Skip conversation" is always available too.
+  The real-time partner (`conversation` role) is **local-only** — there is no cloud fallback (the
+  Claude providers can't stream). Service health **indicators** (a persistent LM Studio/Kokoro status
+  UI) and the voice stack (STT/TTS, including the browser-STT online caveat in
+  `docs/LOCAL_SETUP.md` §2a) are **M5b**, not part of M5a.
 - **Mid-lesson TTS failure:** if Kokoro drops *after* a healthy start, playback falls back to browser `speechSynthesis` **silently**, with a small UI indicator (the lesson is not aborted).
 - **Qwen3 thinking:** the `conversation` role must disable Qwen3 reasoning (`enable_thinking: false` / `/no_think`).
 - **Prompts:** local-LLM system prompts live in `/lib/prompts/` alongside the Claude prompts.
-- **Schema note:** written-exercise flow and curriculum logic are unchanged in spirit; the Prisma schema gained `Lesson.currentSection`, `ErrorRecord.grammarTopicId`, a `GrammarTopic.errors[]` back-relation, an expanded `ExerciseType` enum, and `ConversationTurn.corrections` is now filled **post-hoc** by `/api/conversation/analyze`.
+- **Schema note:** written-exercise flow and curriculum logic are unchanged in spirit; the Prisma schema gained `Lesson.currentSection`, `ErrorRecord.grammarTopicId`, a `GrammarTopic.errors[]` back-relation, an expanded `ExerciseType` enum, and (M5a) `ConversationSession` + `ConversationTurn.sessionId`/`turnIndex`, with `ConversationTurn.corrections` filled **post-hoc** by `POST /api/conversation/finish`.
 
 ## Non-goals (MVP)
 
@@ -428,7 +510,11 @@ The client voice layer is split behind swappable interfaces so services can be r
 2. **M2 — Curriculum seed**: download datasets to `/data/`, write idempotent seed script, verify GrammarTopic/VocabItem counts and level distribution, dashboard syllabus progress widget
 3. **M3 — Written exercises**: deterministic curriculum selection (incl. theme), lesson generation, the MVP exercise-type set + per-type local graders + gamified exercise cards, checking, ErrorRecord logging
 4. **M4 — Spaced repetition**: review block, streak/interval logic, topic/vocab status advancement, errors page
-5. **M5 — Conversation**: LocalProvider + role routing; real-time warm-up loop (streaming STT + Kokoro TTS, no mid-flow corrections); `/api/conversation/turn` + `/api/conversation/analyze`; post-hoc Claude analysis + Conversation Review screen
+5. **M5 — Conversation**, split into M5a/M5b: **M5a** (done) - text warm-up conversation,
+   `ConversationSession`/`ConversationTurn`, `GET /api/conversation` + `POST /api/conversation/start|turn|finish`,
+   post-hoc Claude analysis + Conversation Review screen, never blocks the lesson; **M5b** - voice
+   (push-to-talk STT + editable transcript, streaming Kokoro TTS with browser fallback, service
+   health indicators, latency benchmark)
 6. **M6 — Scenarios + wrap-up**: role-play mode (same real-time loop + analysis), session summary, next-lesson planning, history page
 
 Each milestone ends with a manual verification checkpoint before proceeding. **UI-bearing milestones (M1 shell, M3 exercises, M5 conversation/review) run their surfaces through the design skills** — `frontend-design` (aesthetic direction), `ui-ux-pro-max` (tokens/patterns/pre-delivery checklist), `emil-design-eng` (interaction & animation polish) — per `docs/DESIGN.md`.

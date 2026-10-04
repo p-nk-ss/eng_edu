@@ -41,6 +41,7 @@ npm run lesson:generate    # generate ONE lesson live (Claude + Jev), print it; 
 npm run lesson:generate -- --days-ahead N   # pretend "now" is N days ahead (due errors -> review block)
 npm run answer:check       # grade one answer live (Jev + Claude) against a real/synthetic exercise; no DB writes
 npm run lessons:backfill   # M4a one-off: score lessons completed before M4a and advance their topics
+npm run conversation:try   # M5a: live terminal warm-up conversation (LM Studio) + one Claude analysis call; no DB writes
 ```
 
 ## Database — portable, inside the project (no system install, no Docker)
@@ -133,7 +134,23 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
     mastered and cleared on demotion. See
     `docs/superpowers/specs/2026-10-04-m4c-errors-page-design.md`.
   - **M4 complete.**
-- M5 Conversation · M6 Scenarios + wrap-up.
+- **M5 Conversation** — split into M5a-M5b:
+  - **M5a** ✅ - text warm-up conversation after the review block: additive migration adding
+    `ConversationSession` (`lessonId`, `mode WARMUP|SCENARIO`, `status ACTIVE|ANALYZED|SKIPPED|UNAVAILABLE`,
+    `review Json?`, `@@unique([lessonId, mode])`) and `ConversationTurn.sessionId`/`turnIndex`; the
+    `conversation` role (LocalProvider/LM Studio) streams partner replies only - never corrects
+    mid-flow; `conversation_analysis` role (Claude) runs once on finish, only with >= 2 learner turns,
+    and only `major` findings become `ErrorRecord`s (source `CONVERSATION`, deduped per lesson +
+    topic/category); routes `GET /api/conversation`, `POST /api/conversation/start|turn|finish`
+    (replacing the `/api/conversation/analyze` sketch in `SPEC.md`); lesson player gains a warm-up
+    phase (review -> warm-up -> written -> results; scenario/wrap-up stay M6) that is skippable and
+    never blocks the lesson - LM Studio down marks the section `UNAVAILABLE` and the lesson continues
+    (replaces the old "local services gate lesson start" rule; health indicators move to M5b);
+    `npm run conversation:try`. See
+    `docs/superpowers/specs/2026-10-04-m5a-text-conversation-design.md`.
+  - M5b (voice): push-to-talk STT with editable transcript, Kokoro sentence-chunked TTS with browser
+    fallback, service health indicators, latency benchmark - next.
+- M6 Scenarios + wrap-up.
 
 ## Dev guidelines
 
@@ -142,6 +159,6 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
   `next build` only type-checks app files (not tests). Type bugs hide otherwise.
 - Every commit message ends with:
   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
-- Work happens on a feature branch per milestone, never on `main` - currently `feature/m4c-errors`.
+- Work happens on a feature branch per milestone, never on `main` - currently `feature/m5a-conversation`.
   `main` holds finished milestones.
 - `ANTHROPIC_API_KEY` must stay **unset** (or Agent SDK bills pay-per-token instead of the Max credit).

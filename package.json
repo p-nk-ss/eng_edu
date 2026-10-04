@@ -23,7 +23,8 @@
     "grammar:enrich": "tsx scripts/enrich-grammar.ts",
     "lesson:generate": "tsx scripts/lesson-preview.ts",
     "answer:check": "tsx scripts/answer-preview.ts",
-    "lessons:backfill": "tsx scripts/backfill-lessons.ts"
+    "lessons:backfill": "tsx scripts/backfill-lessons.ts",
+    "conversation:try": "tsx scripts/conversation-try.ts"
   },
   "dependencies": {
     "next": "15.5.20",

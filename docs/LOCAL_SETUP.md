@@ -199,6 +199,11 @@ curl http://localhost:1234/v1/chat/completions `
 ```
 Expect a stream of `data:` chunks ending in `[DONE]`.
 
+A higher-level check that exercises the actual prompts: `npm run conversation:try` (project root) -
+holds a short terminal warm-up conversation against LM Studio for a synthetic lesson (no DB writes),
+then runs one Claude analysis call over the transcript and prints the findings. Without LM Studio
+running it prints a clear "unreachable" message and exits with code 1.
+
 **Kokoro TTS:**
 ```powershell
 curl http://localhost:8880/v1/audio/speech `
