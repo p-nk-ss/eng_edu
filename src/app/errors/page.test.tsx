@@ -34,6 +34,19 @@ const itemB: ErrorView = {
   attempts: [],
 };
 
+const itemC: ErrorView = {
+  id: "C",
+  title: "Word - deadline",
+  group: "vocab",
+  examples: [],
+  status: "MASTERED",
+  correctStreak: 3,
+  streakTarget: 3,
+  due: { label: "Mastered", isDue: false },
+  createdAt: new Date(2026, 8, 10),
+  attempts: [],
+};
+
 const counts = {
   status: { open: 2, mastered: 0, all: 2 },
   group: { all: 2, grammar: 1, translation: 1, vocab: 0, listening: 0, writing: 0, general: 0 },
@@ -106,5 +119,19 @@ describe("/errors", () => {
     render(await ErrorsPage({ searchParams: Promise.resolve({}) }));
 
     expect(screen.getByText("No mistakes here yet.")).toBeInTheDocument();
+  });
+
+  it("shows 'Mastered' exactly once on a mastered card (status text, not also the due label)", async () => {
+    vi.mocked(listErrors).mockResolvedValue({
+      items: [itemC],
+      counts: {
+        status: { open: 0, mastered: 1, all: 1 },
+        group: { all: 1, grammar: 0, translation: 0, vocab: 1, listening: 0, writing: 0, general: 0 },
+      },
+    });
+
+    render(await ErrorsPage({ searchParams: Promise.resolve({ status: "mastered" }) }));
+
+    expect(screen.getAllByText("Mastered")).toHaveLength(1);
   });
 });

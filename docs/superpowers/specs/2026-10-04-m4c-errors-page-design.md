@@ -46,15 +46,17 @@ Writers (only on the transition, never overwritten while the item stays mastered
 
 ### 2. Due label — `src/lib/errors/due.ts` (pure)
 
-`dueLabel(nextReviewAt: Date, status, now: Date): string` — local calendar days:
-`MASTERED` → "Mastered"; before today → "Overdue since 27 Sep"; today → "Due today"; tomorrow →
-"Due tomorrow"; else "In N days". Date format `d MMM` in English, no library (`toLocaleDateString("en-GB", { day: "numeric", month: "short" })`).
+`dueLabel(nextReviewAt: Date, status, now: Date): { label: string; isDue: boolean }` - local calendar
+days: `MASTERED` -> `{ "Mastered", false }`; before today -> `{ "Overdue since 27 Sep", true }`;
+today -> `{ "Due today", true }`; tomorrow -> `{ "Due tomorrow", false }`; else `{ "In N days",
+false }`. Dates are formatted by `formatDay` (also exported from this module), a fixed "27 Sep"
+table, not `toLocaleDateString` (ICU renders en-GB September as "Sept").
 
 ### 3. Queries — `src/lib/errors/queries.ts` (injectable db, sequential)
 
 - `listErrors(filter: { status: "open" | "mastered" | "all"; group: ErrorGroup | "all" }, now, db?)` →
   `ErrorView[]`: `{ id, title, group, examples: string[], status, correctStreak, streakTarget: 3,
-  dueLabel, isDue, createdAt, attempts: { at: Date; correct: boolean }[] }`.
+  due: { label, isDue }, createdAt, attempts: { at: Date; correct: boolean }[] }`.
   `title` = grammar topic title (`title ?? name`) when `grammarTopicId`, else the category with its
   prefix humanised ("translation: meaning" → "Translation - meaning", "vocab: deadline" →
   "Word - deadline"). `examples` = description lines without "- " (up to 5). `attempts` = answered
@@ -63,8 +65,8 @@ Writers (only on the transition, never overwritten while the item stays mastered
   derived), counts per group/status are returned too: `{ items, counts: { status: Record<..., number>, group: Record<..., number> } }`.
 - `getErrorStats(now, db?)` → `{ dueToday: number; openByGroup: { group, count }[] }` (open = not
   `MASTERED`; due today = open with `nextReviewAt < start of tomorrow`, local; groups sorted by count
-  desc then label; zero groups omitted). Returns `null` when the DB is unreachable (dashboard still
-  renders, like `getStreak`).
+  desc, ties broken by `ERROR_GROUPS` order (not label); zero groups omitted). Returns `null` when the
+  DB is unreachable (dashboard still renders, like `getStreak`).
 - `getRecentlyMastered(db?, limit = 5)` → `{ kind: "grammar" | "word" | "mistake"; label: string; at: Date }[]`
   merged from the three tables (`masteredAt` not null, currently mastered), newest first, ties by
   label; `null` on DB failure.

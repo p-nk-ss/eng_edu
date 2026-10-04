@@ -32,7 +32,7 @@ export function ErrorCard({ error }: { error: ErrorView }) {
         <span className="text-muted-foreground">
           {error.correctStreak} of {error.streakTarget} correct in a row
         </span>
-        <span className="text-muted-foreground">{error.due.label}</span>
+        {error.status !== "MASTERED" && <span className="text-muted-foreground">{error.due.label}</span>}
         <span className="text-muted-foreground">First seen {formatDay(error.createdAt)}</span>
       </div>
 
