@@ -152,10 +152,14 @@ describe("lessonEnvelopeSchema", () => {
     expect(lessonEnvelopeSchema.safeParse({ ...ok, warmup: { ...ok.warmup, questions: ["Only one question here?"] } }).success).toBe(false);
     expect(lessonEnvelopeSchema.safeParse({ ...ok, exercises: [] }).success).toBe(false);
   });
-  it("defaults review to [] when absent, and rejects more than MAX_REVIEW items", () => {
+  it("defaults review to [] when absent, and keeps only the first MAX_REVIEW items when Claude returns more", () => {
     expect(lessonEnvelopeSchema.parse(ok).review).toEqual([]);
-    const tooMany = { ...ok, review: Array.from({ length: MAX_REVIEW + 1 }, () => ({})) };
-    expect(lessonEnvelopeSchema.safeParse(tooMany).success).toBe(false);
+    const tooMany = { ...ok, review: Array.from({ length: MAX_REVIEW + 1 }, (_, i) => ({ i })) };
+    const parsed = lessonEnvelopeSchema.safeParse(tooMany);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.review).toEqual(tooMany.review.slice(0, MAX_REVIEW));
+    }
     const justRight = { ...ok, review: Array.from({ length: MAX_REVIEW }, () => ({})) };
     expect(lessonEnvelopeSchema.safeParse(justRight).success).toBe(true);
   });

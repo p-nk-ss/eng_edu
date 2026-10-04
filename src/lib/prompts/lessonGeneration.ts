@@ -31,7 +31,8 @@ export const lessonEnvelopeSchema = z.object({
   /** Validated one by one afterwards (parseExercise) so a single bad exercise is dropped, not the lesson. */
   exercises: z.array(z.unknown()).min(L.exercises.min).max(L.exercises.max),
   /** One raw exercise per requested review item (Task 1's ReviewItem); validated like `exercises` but never triggers regeneration. */
-  review: z.array(z.unknown()).max(MAX_REVIEW).default([]),
+  /** More than MAX_REVIEW items never fails the envelope - the extras are just not needed; keep the first ones (in requested order). */
+  review: z.array(z.unknown()).default([]).transform((arr) => arr.slice(0, MAX_REVIEW)),
   warmup: z.object({
     intro: z.string().min(L.warmupIntro.min).max(L.warmupIntro.max),
     questions: z.array(z.string().min(L.question.min).max(L.question.max)).min(L.questions.min).max(L.questions.max),
