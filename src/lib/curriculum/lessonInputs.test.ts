@@ -52,8 +52,9 @@ describe("selectLessonInputs", () => {
       where: { theme: { not: null }, status: { in: ["IN_PROGRESS", "COMPLETED"] } },
       orderBy: [{ date: "desc" }, { id: "desc" }],
     });
+    const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     expect(calls.errorRecord).toMatchObject({
-      where: { nextReviewAt: { lte: now }, status: { not: "MASTERED" } },
+      where: { nextReviewAt: { lt: startOfTomorrow }, status: { not: "MASTERED" } },
     });
     expect(calls.vocabItem).toMatchObject({
       where: { OR: [{ status: "LEARNING" }, { status: "NEW", cefrLevel: { in: ["B1", "B2"] } }] },

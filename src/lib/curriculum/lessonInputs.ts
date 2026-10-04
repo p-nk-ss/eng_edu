@@ -65,8 +65,10 @@ export async function selectLessonInputs(db: LessonInputsDb = prisma, now = new 
   });
   const vocab = pickVocab(vocabPool, theme.key, level);
 
+  // "Due today" means up to and including the end of now's local day - not just the exact instant.
+  const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const dueErrors = await db.errorRecord.findMany({
-    where: { nextReviewAt: { lte: now }, status: { not: "MASTERED" } },
+    where: { nextReviewAt: { lt: startOfTomorrow }, status: { not: "MASTERED" } },
     orderBy: { nextReviewAt: "asc" },
   });
 
