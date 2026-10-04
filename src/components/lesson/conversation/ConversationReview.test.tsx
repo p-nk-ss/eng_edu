@@ -37,6 +37,8 @@ describe("ConversationReview", () => {
     expect(screen.getAllByText("moderate").length).toBeGreaterThan(0);
     expect(screen.getAllByText("minor").length).toBeGreaterThan(0);
     expect(screen.getByText("went")).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Your conversation" })).toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: "corrected to" })).toHaveLength(3);
     expect(screen.getByText("Explain goed.")).toBeInTheDocument();
     expect(screen.getByText("a very busy week")).toBeInTheDocument();
     // a fragment that is not in the turn text is still listed, just not highlighted

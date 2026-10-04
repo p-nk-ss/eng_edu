@@ -3,7 +3,7 @@ import type { LessonPlan } from "../lesson/createLesson";
 import { stream as llmStream } from "@/lib/llm";
 import type { CompleteArgs } from "../llm/types";
 import { conversationPartnerPrompt } from "../prompts/conversationPartner";
-import { canSend, learnerTurnCount, MAX_TURN_CHARS, shouldWrapUp, type ConversationStatusName } from "./rules";
+import { canSend, CONNECTION_LOST_MARKER, learnerTurnCount, MAX_TURN_CHARS, shouldWrapUp, type ConversationStatusName } from "./rules";
 import {
   defaultDb,
   LessonNotFoundError,
@@ -13,9 +13,6 @@ import {
   TurnRejectedError,
   type ConversationDb,
 } from "./session";
-
-/** Appended to the client stream (never persisted) when the partner drops mid-reply. */
-export const CONNECTION_LOST_MARKER = "\n[connection lost]";
 
 export interface TurnDeps {
   db?: ConversationDb;

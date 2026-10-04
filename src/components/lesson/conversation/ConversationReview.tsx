@@ -95,7 +95,7 @@ export function ConversationReview({ state, onContinue }: { state: WarmupState; 
         </div>
       )}
 
-      <ol className="flex flex-col gap-3">
+      <ol aria-label="Your conversation" className="flex flex-col gap-3">
         {state.turns.map((t) => {
           if (t.role === "partner") {
             return (
@@ -119,7 +119,7 @@ export function ConversationReview({ state, onContinue }: { state: WarmupState; 
                       <span className="flex flex-wrap items-center gap-x-2">
                         <SeverityLabel severity={f.severity} />
                         <s className="text-muted-foreground">{f.original}</s>
-                        <ArrowRight size={14} className="shrink-0 text-muted-foreground" aria-label="corrected to" />
+                        <ArrowRight size={14} className="shrink-0 text-muted-foreground" role="img" aria-label="corrected to" />
                         <span className="font-semibold">{f.corrected}</span>
                       </span>
                       <span className="text-muted-foreground">{f.explanation}</span>

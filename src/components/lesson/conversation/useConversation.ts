@@ -2,11 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WarmupState, WarmupTurn } from "@/lib/conversation/session";
-import { learnerTurnCount } from "@/lib/conversation/rules";
-
-/** Appended by the turn route when the partner dropped mid-reply (mirrors CONNECTION_LOST_MARKER in
- * src/lib/conversation/turn.ts, which is server-only and cannot be imported here). */
-const CONNECTION_LOST = "\n[connection lost]";
+import { CONNECTION_LOST_MARKER as CONNECTION_LOST, learnerTurnCount } from "@/lib/conversation/rules";
 
 /** Drops the marker, or any partial prefix of it, from the end of the streamed text. */
 const stripMarker = (s: string): string => {
@@ -37,6 +33,7 @@ const TURN_ERRORS: Record<string, string> = {
   closed: "This conversation is already finished.",
   limit: "You've reached the turn limit.",
   busy: "The partner is still replying - wait a moment and send again.",
+  invalid: "Your message could not be sent - check its length.",
 };
 
 const isState = (v: unknown): v is WarmupState =>
@@ -63,6 +60,7 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [skipping, setSkipping] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
   const busy = useRef(false);
   const localId = useRef(0);
   const onDoneRef = useRef(onDone);
@@ -163,10 +161,14 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
     busy.current = true;
     setPhase("finishing");
     setError(null);
+    setFinishError(null);
     try {
       const res = await post("/api/conversation/finish", { lessonId, action: "review" });
       const body: unknown = await res.json().catch(() => null);
       if (!res.ok || !isState(body)) {
+        // only a 502 is the analysis failing; anything else surfaces the server's message
+        const serverError = typeof (body as { error?: unknown } | null)?.error === "string" ? (body as { error: string }).error : null;
+        setFinishError(res.status === 502 ? null : serverError ?? `Request failed (${res.status})`);
         setPhase("analysisFailed");
         return;
       }
@@ -213,6 +215,7 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
     notice,
     error,
     skipping,
+    finishError,
     start,
     send,
     finish,

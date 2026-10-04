@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { WarmupState, WarmupTurn } from "@/lib/conversation/session";
 import { ConversationPanel } from "./ConversationPanel";
 
@@ -74,6 +74,51 @@ describe("ConversationPanel", () => {
     await waitFor(() => expect(textarea()).toBeEnabled());
     expect(screen.getByText("1 of 8")).toBeInTheDocument();
     expect(textarea()).toHaveValue("");
+  });
+
+  it("keeps the transcript scrolled to the newest message", async () => {
+    const s = manualStream();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(s.res));
+    const setScrollTop = vi.spyOn(Element.prototype, "scrollTop", "set");
+    try {
+      render(<ConversationPanel lessonId="L1" initial={active()} onDone={() => {}} />);
+      const list = screen.getByRole("list", { name: "Conversation" });
+      setScrollTop.mockClear();
+      type("New message");
+      enter();
+      expect(setScrollTop.mock.contexts).toContain(list);
+      setScrollTop.mockClear();
+      s.push("Streaming reply");
+      await screen.findByText("Streaming reply");
+      expect(setScrollTop.mock.contexts).toContain(list);
+      s.close();
+      await waitFor(() => expect(textarea()).toBeEnabled());
+    } finally {
+      setScrollTop.mockRestore();
+    }
+  });
+
+  it("409 busy removes the learner bubble, restores the text and explains", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({ error: "busy" }, 409)));
+    render(<ConversationPanel lessonId="L1" initial={active()} onDone={() => {}} />);
+    type("Second try");
+    enter();
+    expect(await screen.findByText("The partner is still replying - wait a moment and send again.")).toBeInTheDocument();
+    expect(textarea()).toHaveValue("Second try");
+    expect(within(screen.getByRole("list", { name: "Conversation" })).queryByText("Second try")).not.toBeInTheDocument();
+    expect(screen.getByText("0 of 8")).toBeInTheDocument();
+    await waitFor(() => expect(textarea()).toBeEnabled());
+  });
+
+  it("strips the connection-lost marker even when it arrives split across chunks", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(textStream("Sure, let", "'s go\n[conne", "ction lost]")));
+    render(<ConversationPanel lessonId="L1" initial={active()} onDone={() => {}} />);
+    type("Hello");
+    enter();
+    expect(await screen.findByText("Sure, let's go")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/connection was lost/i);
+    expect(screen.queryByText(/\[conne/)).not.toBeInTheDocument();
+    await waitFor(() => expect(textarea()).toBeEnabled());
   });
 
   it("Shift+Enter does not send", () => {
@@ -176,6 +221,7 @@ describe("ConversationPanel", () => {
     render(<ConversationPanel lessonId="L1" initial={active(3)} onDone={onDone} />);
     fireEvent.click(screen.getByRole("button", { name: "Finish & review" }));
     expect(await screen.findByText(/Couldn't analyse/)).toBeInTheDocument();
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Try again" })));
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(await screen.findByText(/Couldn't analyse/)).toBeInTheDocument();
@@ -183,6 +229,14 @@ describe("ConversationPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue without review" }));
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
     expect(body(fetchMock.mock.calls[2])).toEqual({ lessonId: "L1", action: "skip" });
+  });
+
+  it("a non-502 finish failure shows the server error, not the analysis copy", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({ error: "Lesson L1: not found" }, 404)));
+    render(<ConversationPanel lessonId="L1" initial={active(2)} onDone={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Finish & review" }));
+    expect(await screen.findByText("Lesson L1: not found")).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't analyse/)).not.toBeInTheDocument();
   });
 
   it("renders the review directly for an analysed session", () => {

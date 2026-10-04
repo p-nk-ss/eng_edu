@@ -29,7 +29,8 @@ function Bubble({ role, children }: { role: "partner" | "learner"; children: Rea
 export function ConversationPanel({ lessonId, initial, onDone }: { lessonId: string; initial: WarmupState; onDone: () => void }) {
   const c = useConversation(lessonId, initial, onDone);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLOListElement>(null);
+  const retryRef = useRef<HTMLButtonElement>(null);
   const wasStreaming = useRef(false);
 
   // back to the textarea once the partner has answered
@@ -38,9 +39,15 @@ export function ConversationPanel({ lessonId, initial, onDone }: { lessonId: str
     wasStreaming.current = c.streaming;
   }, [c.streaming]);
 
+  // the transcript list is the scroll container: keep it pinned to the newest message
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ block: "nearest" });
+    const list = listRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
   }, [c.turns.length, c.pending]);
+
+  useEffect(() => {
+    if (c.phase === "analysisFailed") retryRef.current?.focus();
+  }, [c.phase]);
 
   if (c.phase === "review" && c.reviewState) {
     return <ConversationReview state={c.reviewState} onContinue={onDone} />;
@@ -59,11 +66,13 @@ export function ConversationPanel({ lessonId, initial, onDone }: { lessonId: str
   if (c.phase === "analysisFailed") {
     return (
       <section className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5 shadow-sm">
-        <p role="alert" className="text-danger">Couldn&apos;t analyse your conversation - your messages are saved.</p>
+        <p role="alert" className="text-danger">
+          {c.finishError ?? "Couldn't analyse your conversation - your messages are saved."}
+        </p>
         {c.error && <p role="alert" className="text-danger">{c.error}</p>}
         <div className="flex flex-wrap justify-end gap-3">
           <button type="button" onClick={() => void c.skip()} disabled={c.skipping} className={SECONDARY_BTN}>Continue without review</button>
-          <button type="button" onClick={() => void c.finish()} disabled={c.skipping} className={PRIMARY_BTN}>Try again</button>
+          <button ref={retryRef} type="button" onClick={() => void c.finish()} disabled={c.skipping} className={PRIMARY_BTN}>Try again</button>
         </div>
       </section>
     );
@@ -102,7 +111,7 @@ export function ConversationPanel({ lessonId, initial, onDone }: { lessonId: str
         </div>
       )}
 
-      <ol aria-label="Conversation" aria-live="polite" aria-busy={c.streaming} className="flex max-h-[28rem] flex-col gap-3 overflow-y-auto">
+      <ol ref={listRef} aria-label="Conversation" aria-live="polite" aria-busy={c.streaming} className="flex max-h-[28rem] flex-col gap-3 overflow-y-auto">
         {c.turns.map((t) => (
           <Bubble key={t.id} role={t.role}>{t.text}</Bubble>
         ))}
@@ -119,7 +128,6 @@ export function ConversationPanel({ lessonId, initial, onDone }: { lessonId: str
           </Bubble>
         )}
       </ol>
-      <div ref={endRef} />
 
       {c.notice && <p role="status" className="text-sm text-warning">{c.notice}</p>}
 

@@ -15,3 +15,6 @@ export function canSend(status: ConversationStatusName | null, learnerTurns: num
 }
 
 export const finishOutcome = (learnerTurns: number): "analyze" | "skip" => (learnerTurns >= MIN_TURNS_FOR_REVIEW ? "analyze" : "skip");
+
+/** Appended to the client turn stream (never persisted) when the partner drops mid-reply. */
+export const CONNECTION_LOST_MARKER = "\n[connection lost]";
