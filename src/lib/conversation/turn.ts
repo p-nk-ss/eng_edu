@@ -53,17 +53,18 @@ export async function runTurn(lessonId: string, text: string, deps: TurnDeps = {
     const verdict = canSend(status, learnerTurnCount(turns));
     if (verdict !== "ok" || !session) throw new TurnRejectedError(verdict === "ok" ? "closed" : verdict);
 
-    const nextIndex = (turns.length ? turns[turns.length - 1].turnIndex : -1) + 1;
-    const learner = await db.conversationTurn.create({
-      data: { lessonId, sessionId: session.id, role: "learner", text: learnerText, turnIndex: nextIndex },
-      select: { id: true },
-    });
-
+    // Prompt context first: a DB error here must not leave an orphaned learner row.
     const history = [...turns.map((t) => ({ role: t.role, text: t.text })), { role: "learner" as const, text: learnerText }];
     const args = conversationPartnerPrompt({
       ...(await promptContext(lesson.theme, lesson.plan, db)),
       wrapUp: shouldWrapUp(learnerTurnCount(history)),
       history,
+    });
+
+    const nextIndex = (turns.length ? turns[turns.length - 1].turnIndex : -1) + 1;
+    const learner = await db.conversationTurn.create({
+      data: { lessonId, sessionId: session.id, role: "learner", text: learnerText, turnIndex: nextIndex },
+      select: { id: true },
     });
 
     // Pull the first delta before answering, so an unreachable partner is a clean error.
@@ -75,7 +76,7 @@ export async function runTurn(lessonId: string, text: string, deps: TurnDeps = {
       if (first.done) throw new Error("Partner returned an empty reply");
     } catch (e) {
       await db.conversationTurn.delete({ where: { id: learner.id } });
-      await db.conversationSession.update({ where: { id: session.id }, data: { status: "UNAVAILABLE" } });
+      await setOpenStatus(db, session.id, "UNAVAILABLE");
       throw new PartnerUnavailableError(e);
     }
 
@@ -87,7 +88,7 @@ export async function runTurn(lessonId: string, text: string, deps: TurnDeps = {
     const persistReply = async () => {
       if (!reply) return;
       await db.conversationTurn.create({ data: { lessonId, sessionId: session.id, role: "partner", text: reply, turnIndex: nextIndex + 1 } });
-      if (status !== "ACTIVE") await db.conversationSession.update({ where: { id: session.id }, data: { status: "ACTIVE" } });
+      if (status !== "ACTIVE") await setOpenStatus(db, session.id, "ACTIVE");
     };
 
     const result = new ReadableStream<Uint8Array>({
@@ -144,6 +145,14 @@ export async function runTurn(lessonId: string, text: string, deps: TurnDeps = {
   } finally {
     if (!handedOff) inFlight.delete(lessonId);
   }
+}
+
+/**
+ * Conditional status write: only an open (ACTIVE/UNAVAILABLE) session changes, so a session that was
+ * SKIPPED or ANALYZED while the turn ran is never reopened.
+ */
+async function setOpenStatus(db: ConversationDb, id: string, status: "ACTIVE" | "UNAVAILABLE"): Promise<void> {
+  await db.conversationSession.updateMany({ where: { id, status: { in: ["ACTIVE", "UNAVAILABLE"] } }, data: { status } });
 }
 
 async function promptContext(theme: string | null, rawPlan: unknown, db: ConversationDb) {

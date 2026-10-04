@@ -65,6 +65,16 @@ function pick<T extends object>(row: T, select?: Record<string, boolean>): Parti
   return out;
 }
 
+type StatusFilter = FakeSession["status"] | { in?: FakeSession["status"][]; not?: FakeSession["status"] };
+
+function matchesStatus(status: FakeSession["status"], filter?: StatusFilter): boolean {
+  if (filter === undefined) return true;
+  if (typeof filter === "string") return status === filter;
+  if (filter.in && !filter.in.includes(status)) return false;
+  if (filter.not !== undefined && status === filter.not) return false;
+  return true;
+}
+
 function uniqueViolation(): Error {
   return Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
 }
@@ -139,6 +149,12 @@ export function makeFakeDb(init: Partial<FakeState> = {}): { db: AnalyzeFakeDb; 
         Object.assign(row, data);
         state.log.push(`session.update:${row.status}`);
         return { ...row };
+      },
+      updateMany: async ({ where, data }: { where: { id?: string; status?: StatusFilter }; data: Partial<FakeSession> }) => {
+        const rows = state.sessions.filter((s) => (where.id === undefined || s.id === where.id) && matchesStatus(s.status, where.status));
+        for (const row of rows) Object.assign(row, data);
+        state.log.push(`session.updateMany:${data.status ?? "-"}:${rows.length}`);
+        return { count: rows.length };
       },
     },
     conversationTurn: {

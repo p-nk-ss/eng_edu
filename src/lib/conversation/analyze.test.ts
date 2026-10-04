@@ -152,7 +152,7 @@ describe("finishWarmup - unknown ids", () => {
       findings: [
         { turnId: "p0", original: "x", corrected: "y", explanation: "e", category: "general", severity: "major", grammarTopicId: null },
         { turnId: "nope", original: "x", corrected: "y", explanation: "e", category: "general", severity: "major", grammarTopicId: null },
-        { turnId: "l1", original: "a", corrected: "b", explanation: "e", category: "Articles", severity: "moderate", grammarTopicId: "unknown-topic" },
+        { turnId: "l1", original: "a", corrected: "b", explanation: "e", category: "Articles", severity: "major", grammarTopicId: "unknown-topic" },
         { turnId: "l2", original: "c", corrected: "d", explanation: "e", category: "", severity: "minor", grammarTopicId: "unknown-topic" },
       ],
       topIssues: [],
@@ -160,12 +160,50 @@ describe("finishWarmup - unknown ids", () => {
     const analyse = vi.fn().mockResolvedValue(analysis);
     const res = await finishWarmup("L1", "review", { db: fake.db, analyse, now: NOW });
 
-    expect(res.review?.counts).toEqual({ minor: 1, moderate: 1, major: 0 });
+    expect(res.review?.counts).toEqual({ minor: 1, moderate: 0, major: 1 });
     const l1 = res.turns.find((t) => t.id === "l1")!;
     const l2 = res.turns.find((t) => t.id === "l2")!;
-    expect(l1.corrections).toEqual([{ turnId: "l1", original: "a", corrected: "b", explanation: "e", category: "Articles", severity: "moderate", grammarTopicId: null }]);
+    // the review keeps the model's label; the ErrorRecord of a non-topic, non-vocab finding is "general"
+    expect(l1.corrections).toEqual([{ turnId: "l1", original: "a", corrected: "b", explanation: "e", category: "Articles", severity: "major", grammarTopicId: null }]);
     expect(l2.corrections).toEqual([{ turnId: "l2", original: "c", corrected: "d", explanation: "e", category: "general", severity: "minor", grammarTopicId: null }]);
-    expect(fake.state.errorRecords).toHaveLength(0);
+    expect(fake.state.errorRecords).toHaveLength(1);
+    expect(fake.state.errorRecords[0]).toMatchObject({ grammarTopicId: null, category: "general", description: "- a -> b" });
+  });
+});
+
+describe("finishWarmup - ErrorRecord categories", () => {
+  it('"Articles" and "article usage" with null topics collapse into ONE general record with two examples', async () => {
+    const fake = setupActiveSession();
+    const analysis: ConversationAnalysis = {
+      findings: [
+        { turnId: "l1", original: "a apple", corrected: "an apple", explanation: "e1", category: "Articles", severity: "major", grammarTopicId: null },
+        { turnId: "l3", original: "the work", corrected: "work", explanation: "e2", category: "article usage", severity: "major", grammarTopicId: null },
+      ],
+      topIssues: [],
+    };
+    const res = await finishWarmup("L1", "review", { db: fake.db, analyse: vi.fn().mockResolvedValue(analysis), now: NOW });
+
+    expect(fake.state.errorRecords).toHaveLength(1);
+    expect(fake.state.errorRecords[0]).toMatchObject({ grammarTopicId: null, category: "general", description: "- a apple -> an apple\n- the work -> work" });
+    expect(res.review?.errorsAdded).toBe(1);
+    expect((res.turns.find((t) => t.id === "l1")!.corrections as { category: string }[])[0].category).toBe("Articles");
+    expect((res.turns.find((t) => t.id === "l3")!.corrections as { category: string }[])[0].category).toBe("article usage");
+  });
+
+  it("normalises a vocab category to a lower-case 'vocab: ' prefix and the trimmed word", async () => {
+    const fake = setupActiveSession();
+    const analysis: ConversationAnalysis = {
+      findings: [
+        { turnId: "l1", original: "x", corrected: "y", explanation: "e", category: "  Vocab:   deadline ", severity: "major", grammarTopicId: null },
+        { turnId: "l3", original: "z", corrected: "w", explanation: "e", category: "VOCAB:deadline", severity: "major", grammarTopicId: "unknown" },
+      ],
+      topIssues: [],
+    };
+    const res = await finishWarmup("L1", "review", { db: fake.db, analyse: vi.fn().mockResolvedValue(analysis), now: NOW });
+
+    expect(fake.state.errorRecords).toHaveLength(1);
+    expect(fake.state.errorRecords[0]).toMatchObject({ grammarTopicId: null, category: "vocab: deadline", description: "- x -> y\n- z -> w" });
+    expect((res.turns.find((t) => t.id === "l1")!.corrections as { category: string }[])[0].category).toBe("  Vocab:   deadline ");
   });
 });
 
@@ -189,6 +227,38 @@ describe("finishWarmup - failures and idempotency", () => {
     expect(res.status).toBe("ANALYZED");
     expect(res.review).toEqual(storedReview);
     expect(analyse).not.toHaveBeenCalled();
+  });
+
+  it("a second review that finds the session already ANALYZED inside the transaction writes nothing and keeps the first review", async () => {
+    const fake = setupActiveSession();
+    const first: ConversationAnalysis = {
+      findings: [{ turnId: "l1", original: "I are", corrected: "I am", explanation: "e", category: "x", severity: "major", grammarTopicId: "g1" }],
+      topIssues: ["first"],
+    };
+    const second: ConversationAnalysis = {
+      findings: [
+        { turnId: "l1", original: "I are", corrected: "I am", explanation: "e", category: "x", severity: "major", grammarTopicId: "g1" },
+        { turnId: "l3", original: "deadline", corrected: "due date", explanation: "e", category: "vocab: deadline", severity: "major", grammarTopicId: null },
+      ],
+      topIssues: ["second"],
+    };
+    let releaseFirst: (() => void) | undefined;
+    let releaseSecond: (() => void) | undefined;
+    const a = finishWarmup("L1", "review", { db: fake.db, analyse: () => new Promise((r) => (releaseFirst = () => r(first))), now: NOW });
+    const b = finishWarmup("L1", "review", { db: fake.db, analyse: () => new Promise((r) => (releaseSecond = () => r(second))), now: NOW });
+    await vi.waitFor(() => expect(releaseFirst && releaseSecond).toBeTruthy());
+    releaseFirst!();
+    const resA = await a;
+    releaseSecond!();
+    const resB = await b;
+
+    expect(resA.review?.topIssues).toEqual(["first"]);
+    expect(resB.status).toBe("ANALYZED");
+    expect(resB.review).toEqual(resA.review);
+    expect(fake.state.sessions[0].review).toEqual(resA.review);
+    expect(fake.state.errorRecords).toHaveLength(1);
+    expect(fake.state.errorRecords[0].description).toBe("- I are -> I am");
+    expect(fake.state.turns.find((t) => t.id === "l3")!.corrections).toEqual([]);
   });
 
   it("already SKIPPED stays terminal -> returns the stored state, analyse not called", async () => {

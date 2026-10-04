@@ -36,6 +36,17 @@ export class AnalysisUnavailableError extends Error {
   }
 }
 
+/**
+ * ErrorRecord category of a finding without a valid grammar topic: `vocab: <word>` when the model's
+ * category starts with "vocab:" (any case), otherwise exactly `general`. The correction shown in the
+ * review keeps the model's own label.
+ */
+export function errorCategoryOf(category: string): string {
+  const m = /^vocab:(.*)$/i.exec(category.trim());
+  const word = m?.[1].trim();
+  return word ? `vocab: ${word}` : "general";
+}
+
 export interface FinishWarmupDeps {
   db?: AnalyzeDb;
   analyse?: (args: CompleteArgs) => Promise<ConversationAnalysis>;
@@ -47,9 +58,11 @@ export interface FinishWarmupDeps {
  * - `skip`, or `review` with fewer than MIN_TURNS_FOR_REVIEW learner turns -> SKIPPED, no LLM call.
  * - Already ANALYZED or SKIPPED -> returns the stored state (idempotent, terminal), no LLM call.
  * - Otherwise: one LLM call outside any transaction; on failure throws AnalysisUnavailableError and
- *   writes nothing. On success, one transaction writes each learner turn's `corrections` and upserts
- *   an ErrorRecord per `major` finding (find-then-update/create, same as recordAnswer.ts), then marks
- *   the session ANALYZED with the review and endedAt.
+ *   writes nothing. On success, one transaction first claims the session (conditional update to
+ *   ANALYZED; if another finish already analysed it, nothing is written and the stored state is
+ *   returned), then writes each learner turn's `corrections`, upserts an ErrorRecord per `major`
+ *   finding (find-then-update/create, same as recordAnswer.ts; category = topic title, `vocab: <word>`
+ *   or `general`), and stores the review and endedAt.
  */
 export async function finishWarmup(lessonId: string, action: "review" | "skip", deps: FinishWarmupDeps = {}): Promise<WarmupState> {
   const db = deps.db ?? defaultAnalyzeDb();
@@ -111,12 +124,21 @@ export async function finishWarmup(lessonId: string, action: "review" | "skip", 
     byTurn.set(f.turnId, arr);
   }
 
-  const majors = normalized.filter((f) => f.severity === "major");
+  const majors = normalized
+    .filter((f) => f.severity === "major")
+    .map((f) => ({ ...f, recordCategory: f.grammarTopicId !== null ? f.category : errorCategoryOf(f.category) }));
 
   const reviewWithoutCount: Omit<WarmupReview, "errorsAdded"> = { topIssues: analysis.topIssues, counts };
 
   const review = await db.$transaction(async (tx) => {
     const errorDb = tx as unknown as AnalyzeDb;
+    // Claim the session first: a concurrent finish that already analysed it wins, and this one writes nothing.
+    const claimed = await errorDb.conversationSession.updateMany({
+      where: { id: session.id, status: { not: "ANALYZED" } },
+      data: { status: "ANALYZED" },
+    });
+    if (claimed.count === 0) return null;
+
     for (const t of learnerTurns) {
       await errorDb.conversationTurn.update({
         where: { id: t.id },
@@ -128,7 +150,7 @@ export async function finishWarmup(lessonId: string, action: "review" | "skip", 
     for (const f of majors) {
       const example = clip(`${f.original} -> ${f.corrected}`);
       const existing = await errorDb.errorRecord.findFirst({
-        where: { lessonId, grammarTopicId: f.grammarTopicId, category: f.category },
+        where: { lessonId, grammarTopicId: f.grammarTopicId, category: f.recordCategory },
         select: { id: true, description: true },
       });
       if (existing) {
@@ -138,7 +160,7 @@ export async function finishWarmup(lessonId: string, action: "review" | "skip", 
           data: {
             lessonId,
             grammarTopicId: f.grammarTopicId,
-            category: f.category,
+            category: f.recordCategory,
             description: appendExample("", example),
             source: "CONVERSATION",
             status: "NEW",
@@ -156,6 +178,7 @@ export async function finishWarmup(lessonId: string, action: "review" | "skip", 
     });
     return finalReview;
   });
+  if (review === null) return getWarmup(lessonId, db);
 
   const turns: WarmupTurn[] = state.turns.map((t) => (t.role === "learner" ? { ...t, corrections: byTurn.get(t.id) ?? [] } : t));
   return { status: "ANALYZED", review, turns };

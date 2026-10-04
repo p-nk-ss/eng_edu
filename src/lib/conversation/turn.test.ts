@@ -170,7 +170,40 @@ describe("runTurn - streaming", () => {
     expect(state.turns).toHaveLength(1);
     expect(state.turns[0].role).toBe("partner");
     expect(state.sessions[0].status).toBe("UNAVAILABLE");
-    expect(state.log).toEqual(["turn.create:learner", "turn.delete", "session.update:UNAVAILABLE"]);
+    expect(state.log).toEqual(["turn.create:learner", "turn.delete", "session.updateMany:UNAVAILABLE:1"]);
+  });
+
+  it("early failure never reopens a session that was skipped meanwhile", async () => {
+    const { db, state } = await setup();
+    const stream = () => {
+      state.sessions[0].status = "SKIPPED"; // skip lands while the provider is being contacted
+      return gen([], 0)();
+    };
+    await expect(runTurn("L1", "hello", { db, stream })).rejects.toBeInstanceOf(PartnerUnavailableError);
+    expect(state.sessions[0].status).toBe("SKIPPED");
+  });
+
+  it("a skip that lands while a turn streams is kept after the stream ends (UNAVAILABLE session)", async () => {
+    const { db, state } = await setup();
+    state.sessions[0].status = "UNAVAILABLE";
+    const s = await runTurn("L1", "hello", { db, stream: gen(["Hi", " there"]) });
+    state.sessions[0].status = "SKIPPED";
+    expect(await readAll(s)).toBe("Hi there");
+    expect(state.sessions[0].status).toBe("SKIPPED");
+  });
+
+  it("a prompt-context failure leaves no learner row and releases the guard", async () => {
+    const { db, state } = await setup();
+    const realFindFirst = db.profile.findFirst;
+    (db.profile as { findFirst: unknown }).findFirst = async () => {
+      throw new Error("db down");
+    };
+    const stream = vi.fn(() => gen(["x"])());
+    await expect(runTurn("L1", "hello", { db, stream })).rejects.toThrow("db down");
+    expect(stream).not.toHaveBeenCalled();
+    expect(state.turns.filter((t) => t.role === "learner")).toHaveLength(0);
+    (db.profile as { findFirst: unknown }).findFirst = realFindFirst;
+    expect(await readAll(await runTurn("L1", "again", { db, stream: gen(["ok"]) }))).toBe("ok");
   });
 
   it("early failure when the provider throws synchronously is also PartnerUnavailableError", async () => {
