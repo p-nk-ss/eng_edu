@@ -179,6 +179,24 @@ describe("generateLesson - review", () => {
     expect(draft.drops.some((d) => d.section === "review" && /gate/.test(d.reason))).toBe(true);
   });
 
+  it("gates the review exercises with no grammar focus, even when the lesson itself has one (a review item may be off today's focus)", async () => {
+    const ask = vi.fn<GenerationDeps["ask"]>().mockResolvedValue(envelope(all, [E.FILL_BLANK, E.TRANSLATION]));
+    const gate = vi.fn<GenerationDeps["gate"]>(async (exs) => keepAll(exs));
+    await generateLesson(withReview, deps(ask, gate));
+    expect(gate).toHaveBeenCalledTimes(2);
+    expect(gate.mock.calls[0][1]).toEqual({ title: "Past Perfect (had done)", description: "had + past participle." });
+    expect(gate.mock.calls[1][1]).toBeNull();
+  });
+
+  it("strips a hint from a review exercise so the review never gives the answer away", async () => {
+    const translationWithHint = { ...E.TRANSLATION, hint: "it mentions a deadline" };
+    const ask = vi.fn<GenerationDeps["ask"]>().mockResolvedValue(envelope(all, [E.FILL_BLANK, translationWithHint]));
+    const draft = await generateLesson(withReview, deps(ask));
+    const translationReview = draft.review.find((r) => r.type === "TRANSLATION");
+    expect(translationReview).toBeDefined();
+    expect(translationReview?.content).not.toHaveProperty("hint");
+  });
+
   it("logs the review item's own index on a gate drop, not its position among valid review items", async () => {
     // item 0 is invalid (dropped before the gate ever runs); item 1 is valid and reaches the gate
     // as the ONLY entry (position 0 there) - the drop must still be logged against index 1.

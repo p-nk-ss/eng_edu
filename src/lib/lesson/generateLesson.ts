@@ -137,7 +137,10 @@ export async function generateLesson(inputs: GenerationInputs, deps: GenerationD
           drops.push({ attempt, index, type: parsed.type, section: "review", reason: "type was not requested for this review item" });
           return;
         }
-        const content = { ...parsed.content, vocab: [] };
+        // A review exercise must never give the answer away: strip any "hint" (translation /
+        // open_writing carry one) before it is validated, gated, or persisted.
+        const { hint: _hint, ...withoutHint } = parsed.content as ExerciseContent & { hint?: string };
+        const content = { ...withoutHint, vocab: [] } as ExerciseContent;
         const problems = checkExercise(content, ctx);
         if (problems.length > 0) {
           drops.push({ attempt, index, type: parsed.type, section: "review", reason: problems.join("; ") });
@@ -148,7 +151,10 @@ export async function generateLesson(inputs: GenerationInputs, deps: GenerationD
 
       let review = validReview;
       if (validReview.length > 0) {
-        const reviewGate = await deps.gate(validReview.map((v) => v.content), grammar);
+        // Gate reviews with null grammar: a review item may legitimately be off today's focus
+        // (it is reviewing an OLD mistake), so on_focus must never be asked for it - only
+        // key_correct/other_correct still apply.
+        const reviewGate = await deps.gate(validReview.map((v) => v.content), null);
         review = [];
         validReview.forEach((v, gateIndex) => {
           const verdict = reviewGate.verdicts[gateIndex];
