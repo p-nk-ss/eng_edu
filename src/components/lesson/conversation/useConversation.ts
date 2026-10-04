@@ -1,0 +1,221 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { WarmupState, WarmupTurn } from "@/lib/conversation/session";
+import { learnerTurnCount } from "@/lib/conversation/rules";
+
+/** Appended by the turn route when the partner dropped mid-reply (mirrors CONNECTION_LOST_MARKER in
+ * src/lib/conversation/turn.ts, which is server-only and cannot be imported here). */
+const CONNECTION_LOST = "\n[connection lost]";
+
+/** Drops the marker, or any partial prefix of it, from the end of the streamed text. */
+const stripMarker = (s: string): string => {
+  for (let k = CONNECTION_LOST.length; k > 0; k--) {
+    if (s.endsWith(CONNECTION_LOST.slice(0, k))) return s.slice(0, -k);
+  }
+  return s;
+};
+
+export type ConversationPhase =
+  | "starting" // POST /start in flight (status null on mount)
+  | "startFailed"
+  | "chat"
+  | "finishing" // finish(review) in flight: "Analysing your conversation..."
+  | "analysisFailed"
+  | "review"
+  | "done";
+
+const post = (url: string, body: unknown) =>
+  fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+const readError = async (res: Response): Promise<string | undefined> => {
+  const body = (await res.json().catch(() => ({}))) as { error?: unknown };
+  return typeof body.error === "string" ? body.error : undefined;
+};
+
+const TURN_ERRORS: Record<string, string> = {
+  closed: "This conversation is already finished.",
+  limit: "You've reached the turn limit.",
+  busy: "The partner is still replying - wait a moment and send again.",
+};
+
+const isState = (v: unknown): v is WarmupState =>
+  typeof v === "object" && v !== null && "status" in v && Array.isArray((v as WarmupState).turns);
+
+/**
+ * Client state machine of the warm-up conversation: start -> chat (streamed turns) -> finish ->
+ * review / skip. The local transcript is authoritative for display once a turn completes.
+ */
+export function useConversation(lessonId: string, initial: WarmupState, onDone: () => void) {
+  const initialPhase = (): ConversationPhase => {
+    if (initial.status === null) return "starting";
+    if (initial.status === "ACTIVE") return "chat";
+    if (initial.status === "ANALYZED") return "review";
+    return "done";
+  };
+  const [phase, setPhase] = useState<ConversationPhase>(initialPhase);
+  const [turns, setTurns] = useState<WarmupTurn[]>(initial.turns);
+  const [reviewState, setReviewState] = useState<WarmupState | null>(initial.status === "ANALYZED" ? initial : null);
+  const [draft, setDraft] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const [pending, setPending] = useState<string | null>(null);
+  const [offline, setOffline] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [skipping, setSkipping] = useState(false);
+  const busy = useRef(false);
+  const localId = useRef(0);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
+  const start = useCallback(async () => {
+    setPhase("starting");
+    setError(null);
+    try {
+      const res = await post("/api/conversation/start", { lessonId });
+      const body: unknown = await res.json().catch(() => null);
+      if (!res.ok || !isState(body)) {
+        setError("Couldn't start the conversation.");
+        setPhase("startFailed");
+        return;
+      }
+      setTurns(body.turns);
+      setPhase(body.status === "ANALYZED" ? "review" : body.status === "ACTIVE" ? "chat" : "done");
+      if (body.status === "ANALYZED") setReviewState(body);
+    } catch {
+      setError("Couldn't start the conversation.");
+      setPhase("startFailed");
+    }
+  }, [lessonId]);
+
+  const started = useRef(false);
+  useEffect(() => {
+    if (initial.status === null && !started.current) {
+      started.current = true;
+      void start();
+    }
+  }, [initial.status, start]);
+
+  useEffect(() => {
+    if (phase === "done") onDoneRef.current();
+  }, [phase]);
+
+  const send = useCallback(async () => {
+    const text = draft.trim();
+    if (!text || busy.current) return;
+    busy.current = true;
+    const id = `local-${++localId.current}`;
+    setTurns((prev) => [...prev, { id, role: "learner", text, turnIndex: prev.length, corrections: null }]);
+    setDraft("");
+    setStreaming(true);
+    setPending("");
+    setNotice(null);
+    setError(null);
+    const fail = (message: string | null, isOffline = false) => {
+      setTurns((prev) => prev.filter((t) => t.id !== id));
+      setDraft(text);
+      setOffline(isOffline);
+      setError(message);
+    };
+    let received = "";
+    try {
+      const res = await post("/api/conversation/turn", { lessonId, text });
+      if (!res.ok || !res.body) {
+        const code = await readError(res);
+        if (res.status === 503) fail(null, true);
+        else fail((code && TURN_ERRORS[code]) ?? code ?? `Request failed (${res.status})`);
+        return;
+      }
+      setOffline(false);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let lost = false;
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          received += decoder.decode(value, { stream: true });
+          setPending(stripMarker(received));
+        }
+        received += decoder.decode();
+      } catch {
+        lost = true;
+      }
+      if (received.endsWith(CONNECTION_LOST)) {
+        lost = true;
+        received = received.slice(0, -CONNECTION_LOST.length);
+      }
+      const reply = received.trimEnd();
+      setTurns((prev) => (reply ? [...prev, { id: `${id}-reply`, role: "partner", text: reply, turnIndex: prev.length, corrections: null }] : prev));
+      if (lost) setNotice("The connection was lost mid-reply. You can keep talking or finish.");
+    } catch {
+      // the request itself failed (network down / dev server unreachable): treat as offline
+      fail(null, true);
+    } finally {
+      setPending(null);
+      setStreaming(false);
+      busy.current = false;
+    }
+  }, [draft, lessonId]);
+
+  const finish = useCallback(async () => {
+    if (busy.current) return;
+    busy.current = true;
+    setPhase("finishing");
+    setError(null);
+    try {
+      const res = await post("/api/conversation/finish", { lessonId, action: "review" });
+      const body: unknown = await res.json().catch(() => null);
+      if (!res.ok || !isState(body)) {
+        setPhase("analysisFailed");
+        return;
+      }
+      if (body.status === "ANALYZED") {
+        setReviewState(body);
+        setPhase("review");
+      } else {
+        setPhase("done");
+      }
+    } catch {
+      setPhase("analysisFailed");
+    } finally {
+      busy.current = false;
+    }
+  }, [lessonId]);
+
+  const skip = useCallback(async () => {
+    if (busy.current) return;
+    busy.current = true;
+    setSkipping(true);
+    setError(null);
+    try {
+      const res = await post("/api/conversation/finish", { lessonId, action: "skip" });
+      if (!res.ok) throw new Error(String(res.status));
+      setPhase("done");
+    } catch {
+      setError("Couldn't skip right now - try again.");
+    } finally {
+      setSkipping(false);
+      busy.current = false;
+    }
+  }, [lessonId]);
+
+  return {
+    phase,
+    turns,
+    learnerTurns: learnerTurnCount(turns),
+    reviewState,
+    draft,
+    setDraft,
+    streaming,
+    pending,
+    offline,
+    notice,
+    error,
+    skipping,
+    start,
+    send,
+    finish,
+    skip,
+  };
+}
