@@ -19,7 +19,7 @@ describe("RecentlyMastered", () => {
     expect(screen.getByText("Word")).toBeInTheDocument();
     expect(screen.getByText("Translation - meaning")).toBeInTheDocument();
     expect(screen.getByText("Mistake")).toBeInTheDocument();
-    expect(screen.getAllByText("4 Oct").length).toBeGreaterThan(0);
+    expect(screen.getByText("4 Oct")).toBeInTheDocument();
     expect(screen.getByText("3 Oct")).toBeInTheDocument();
     expect(screen.getByText("2 Oct")).toBeInTheDocument();
   });

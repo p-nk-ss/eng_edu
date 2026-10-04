@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { ErrorStats } from "./ErrorStats";
 
 describe("ErrorStats", () => {
-  it("renders the due-today count, bars per group, and a link to /errors", () => {
+  it("renders the due-today count, bars per group (each with its own count), and a link to /errors", () => {
     render(
       <ErrorStats
         stats={{
@@ -16,8 +16,16 @@ describe("ErrorStats", () => {
       />,
     );
     expect(screen.getByText("2 due today")).toBeInTheDocument();
-    expect(screen.getByText("Grammar")).toBeInTheDocument();
-    expect(screen.getByText("Vocabulary")).toBeInTheDocument();
+
+    const rows = screen.getAllByRole("listitem");
+    const grammarRow = rows.find((r) => r.textContent?.includes("Grammar"));
+    const vocabRow = rows.find((r) => r.textContent?.includes("Vocabulary"));
+    expect(grammarRow).toBeDefined();
+    expect(vocabRow).toBeDefined();
+    // each count must be scoped to its own row, so swapped counts would fail this
+    expect(within(grammarRow!).getByText("2")).toBeInTheDocument();
+    expect(within(vocabRow!).getByText("1")).toBeInTheDocument();
+
     const link = screen.getByRole("link", { name: /see all mistakes/i });
     expect(link).toHaveAttribute("href", "/errors");
   });
