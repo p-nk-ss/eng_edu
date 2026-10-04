@@ -32,6 +32,11 @@ export const conversationAnalysisSchema = z.object({
   topIssues: z.array(z.string().min(1).max(L.text)).max(L.topIssues).default([]),
 });
 
+export interface ConversationAnalysis {
+  findings: ConversationFinding[];
+  topIssues: string[];
+}
+
 export interface AnalysisInput {
   level: string;
   turns: { id: string; role: "partner" | "learner"; text: string }[];

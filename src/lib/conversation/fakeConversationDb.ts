@@ -2,7 +2,10 @@
  * Test-only in-memory stand-in for the Prisma methods the conversation service uses.
  * Not imported by app code.
  */
+import type { PrismaClient } from "@prisma/client";
 import type { ConversationDb } from "./session";
+
+export type AnalyzeFakeDb = ConversationDb & Pick<PrismaClient, "errorRecord" | "$transaction">;
 
 export interface FakeSession {
   id: string;
@@ -29,6 +32,20 @@ export interface FakeLesson {
   plan: unknown;
 }
 
+export interface FakeErrorRecord {
+  id: string;
+  lessonId: string;
+  grammarTopicId: string | null;
+  category: string;
+  description: string;
+  source: string;
+  status: string;
+  correctStreak: number;
+  nextReviewAt: Date;
+  createdAt: Date;
+  masteredAt: Date | null;
+}
+
 export interface FakeState {
   lessons: FakeLesson[];
   sessions: FakeSession[];
@@ -36,6 +53,7 @@ export interface FakeState {
   profile: { level: string; interests: string } | null;
   grammarTopics: { id: string; title: string | null; name: string; description: string | null }[];
   vocab: { id: string; headword: string }[];
+  errorRecords: FakeErrorRecord[];
   /** Records the order of write calls ("turn.create:learner", "turn.delete", "session.update:STATUS", ...). */
   log: string[];
 }
@@ -51,7 +69,7 @@ function uniqueViolation(): Error {
   return Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
 }
 
-export function makeFakeDb(init: Partial<FakeState> = {}): { db: ConversationDb; state: FakeState } {
+export function makeFakeDb(init: Partial<FakeState> = {}): { db: AnalyzeFakeDb; state: FakeState } {
   const state: FakeState = {
     lessons: [],
     sessions: [],
@@ -59,6 +77,7 @@ export function makeFakeDb(init: Partial<FakeState> = {}): { db: ConversationDb;
     profile: { level: "B1", interests: "hiking, films" },
     grammarTopics: [],
     vocab: [],
+    errorRecords: [],
     log: [],
     ...init,
   };
@@ -129,6 +148,13 @@ export function makeFakeDb(init: Partial<FakeState> = {}): { db: ConversationDb;
           .sort((a, b) => a.turnIndex - b.turnIndex)
           .map((t) => pick(t, select)),
       create: async ({ data }: { data: Omit<Partial<FakeTurn>, "id"> }) => ({ ...createTurn(data) }),
+      update: async ({ where, data }: { where: { id: string }; data: Partial<FakeTurn> }) => {
+        const row = state.turns.find((t) => t.id === where.id);
+        if (!row) throw new Error("Record to update not found");
+        Object.assign(row, data);
+        state.log.push("turn.update");
+        return { ...row };
+      },
       delete: async ({ where }: { where: { id: string } }) => {
         const i = state.turns.findIndex((t) => t.id === where.id);
         if (i < 0) throw new Error("Record to delete does not exist");
@@ -146,7 +172,41 @@ export function makeFakeDb(init: Partial<FakeState> = {}): { db: ConversationDb;
     vocabItem: {
       findMany: async ({ where }: { where: { id: { in: string[] } } }) => state.vocab.filter((v) => where.id.in.includes(v.id)),
     },
+    errorRecord: {
+      findFirst: async ({ where, select }: { where: { lessonId: string; grammarTopicId: string | null; category: string }; select?: Record<string, boolean> }) => {
+        const row = state.errorRecords.find(
+          (e) => e.lessonId === where.lessonId && e.grammarTopicId === where.grammarTopicId && e.category === where.category,
+        );
+        return row ? pick(row, select) : null;
+      },
+      create: async ({ data }: { data: Omit<Partial<FakeErrorRecord>, "id"> }) => {
+        const row: FakeErrorRecord = {
+          id: nextId("e"),
+          lessonId: data.lessonId!,
+          grammarTopicId: data.grammarTopicId ?? null,
+          category: data.category!,
+          description: data.description ?? "",
+          source: data.source!,
+          status: data.status ?? "NEW",
+          correctStreak: data.correctStreak ?? 0,
+          nextReviewAt: data.nextReviewAt!,
+          createdAt: new Date(),
+          masteredAt: data.masteredAt ?? null,
+        };
+        state.errorRecords.push(row);
+        state.log.push("errorRecord.create");
+        return { ...row };
+      },
+      update: async ({ where, data }: { where: { id: string }; data: Partial<FakeErrorRecord> }) => {
+        const row = state.errorRecords.find((e) => e.id === where.id);
+        if (!row) throw new Error("Record to update not found");
+        Object.assign(row, data);
+        state.log.push("errorRecord.update");
+        return { ...row };
+      },
+    },
+    $transaction: async <T>(fn: (tx: unknown) => Promise<T>): Promise<T> => fn(db),
   };
 
-  return { db: db as unknown as ConversationDb, state };
+  return { db: db as unknown as AnalyzeFakeDb, state };
 }
