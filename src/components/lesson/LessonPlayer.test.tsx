@@ -79,7 +79,7 @@ describe("LessonPlayer", () => {
     await screen.findByText("Correct");
     fireEvent.click(screen.getByRole("button", { name: /see results/i }));
     expect(screen.getByText("1 of 2 correct")).toBeInTheDocument();
-    expect(document.activeElement).toBe(screen.getByRole("heading", { name: /written block done/i }));
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: /lesson exercises done/i }));
   });
 
   it("checks on Enter (window or the card heading), not just click, once an answer is chosen", async () => {

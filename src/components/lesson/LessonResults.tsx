@@ -29,7 +29,7 @@ export function LessonResults({ items }: { items: PlayerItem[] }) {
       <div className="flex items-center gap-4">
         <Ring value={correct} total={items.length} />
         <div>
-          <h2 id="results-title" ref={headingRef} tabIndex={-1} className="font-display text-2xl font-extrabold outline-none">Written block done</h2>
+          <h2 id="results-title" ref={headingRef} tabIndex={-1} className="font-display text-2xl font-extrabold outline-none">Lesson exercises done</h2>
           <p className="text-lg tabular-nums">{correct} of {items.length} correct</p>
         </div>
       </div>
