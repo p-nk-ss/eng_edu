@@ -1,8 +1,11 @@
 import { SideNav } from "@/components/nav";
 import { StartLessonButton } from "@/components/StartLessonButton";
 import { SyllabusProgress } from "@/components/syllabus-progress";
+import { ErrorStats } from "@/components/ErrorStats";
+import { RecentlyMastered } from "@/components/RecentlyMastered";
 import { getSyllabusProgress } from "@/lib/curriculum/progress";
 import { getStreak } from "@/lib/stats/streak";
+import { getErrorStats, getRecentlyMastered } from "@/lib/errors/queries";
 import { Flame } from "lucide-react";
 
 // Reads the DB at request time - never prerender at build (DB may be absent).
@@ -20,6 +23,8 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 export default async function DashboardPage() {
   const progress = await getSyllabusProgress();
   const streak = await getStreak();
+  const errorStats = await getErrorStats(new Date());
+  const mastered = await getRecentlyMastered();
   return (
     <div className="md:flex">
       <SideNav />
@@ -39,8 +44,11 @@ export default async function DashboardPage() {
           <Card title="Syllabus progress">
             <SyllabusProgress data={progress} />
           </Card>
+          <Card title="Errors">
+            <ErrorStats stats={errorStats} />
+          </Card>
           <Card title="Recently mastered">
-            <p className="text-muted-foreground">Nothing mastered yet.</p>
+            <RecentlyMastered items={mastered} />
           </Card>
         </div>
       </main>

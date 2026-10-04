@@ -15,6 +15,13 @@ vi.mock("@/lib/curriculum/progress", () => ({
   ]),
 }));
 vi.mock("@/lib/stats/streak", () => ({ getStreak: vi.fn().mockResolvedValue({ days: 4, atRisk: true }) }));
+vi.mock("@/lib/errors/queries", () => ({
+  getErrorStats: vi.fn().mockResolvedValue({
+    dueToday: 2,
+    openByGroup: [{ group: "grammar", label: "Grammar", count: 2 }],
+  }),
+  getRecentlyMastered: vi.fn().mockResolvedValue([{ kind: "word", label: "deadline", at: new Date(2026, 9, 4) }]),
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/" }));
 
 import DashboardPage from "./page";
@@ -23,15 +30,18 @@ describe("DashboardPage", () => {
   it("renders the nav, start button, and syllabus progress", async () => {
     render(await DashboardPage());
     expect(screen.getByRole("navigation")).toBeInTheDocument();
-    for (const label of ["Dashboard", "Lesson", "Errors", "History"]) {
+    for (const label of ["Dashboard", "Lesson", "History"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+    expect(screen.getAllByText("Errors").length).toBeGreaterThanOrEqual(2); // nav link + card title
     expect(screen.getByRole("button", { name: /start today's lesson/i })).toBeInTheDocument();
     expect(screen.getByText(/streak/i)).toBeInTheDocument();
     expect(screen.getByText(/syllabus progress/i)).toBeInTheDocument();
     expect(screen.getByText(/grammar 3\/84 \(1 in progress\)/i)).toBeInTheDocument();
     expect(screen.getByText(/4 days/i)).toBeInTheDocument();
     expect(screen.getByText(/answer one exercise today to keep it/i)).toBeInTheDocument();
+    expect(screen.getByText("2 due today")).toBeInTheDocument();
+    expect(screen.getByText("deadline")).toBeInTheDocument();
   });
 
   it("shows a neutral (not success) colour for a zero-day streak", async () => {

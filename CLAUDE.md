@@ -126,7 +126,13 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
     one) and never counts towards `writtenScore`; review block shown first in the lesson player, with
     a section label and an intro review count. See
     `docs/superpowers/specs/2026-09-26-m4b-review-block-design.md`.
-  - M4c errors page + dashboard stats: next.
+  - **M4c** ✅ - `/errors` read-only mistake log (filters in the URL, status/category counts, per-error
+    progress/due/examples/review history); dashboard "Errors" card (due today, bars by category, link
+    to `/errors`) and "Recently mastered" card (last 5 grammar topics/words/mistakes with dates);
+    additive `masteredAt` on `GrammarTopic`/`VocabItem`/`ErrorRecord`, set on the transition to
+    mastered and cleared on demotion. See
+    `docs/superpowers/specs/2026-10-04-m4c-errors-page-design.md`.
+  - **M4 complete.**
 - M5 Conversation · M6 Scenarios + wrap-up.
 
 ## Dev guidelines
@@ -136,6 +142,6 @@ over cloud Neon (single-user, offline) and over Docker (needless WSL2 overhead h
   `next build` only type-checks app files (not tests). Type bugs hide otherwise.
 - Every commit message ends with:
   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
-- Work happens on a feature branch per milestone, never on `main` - currently `feature/m4b-review`.
+- Work happens on a feature branch per milestone, never on `main` - currently `feature/m4c-errors`.
   `main` holds finished milestones.
 - `ANTHROPIC_API_KEY` must stay **unset** (or Agent SDK bills pay-per-token instead of the Max credit).

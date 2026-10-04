@@ -138,6 +138,7 @@ model ErrorRecord {
   correctStreak Int     @default(0)  // consecutive correct reinforcement answers
   nextReviewAt DateTime // spaced repetition scheduling
   createdAt    DateTime @default(now())
+  masteredAt   DateTime? // M4c: set when a review answer moves status to MASTERED; cleared back to NULL if it returns to REVIEWING
 }
 
 model ConversationTurn {
@@ -169,6 +170,7 @@ model GrammarTopic {
   importance  Int      @default(2) // 1 core .. 3 peripheral; orders topics inside a level
   lessonsCompleted Int @default(0) // cache (M4a): completed lessons with this focus, derived from Lesson history
   goodLessons      Int @default(0) // cache (M4a): of those, writtenScore >= 0.8
+  masteredAt  DateTime? // M4c: set when status becomes MASTERED (M4a recompute); never overwritten while it stays MASTERED
   errors      ErrorRecord[] // back-relation for mastery matching
 }
 
@@ -182,6 +184,7 @@ model VocabItem {
   status      VocabStatus @default(NEW) // NEW | SEEN | LEARNING | KNOWN
   correctStreak Int    @default(0)
   lastSeenAt  DateTime?
+  masteredAt  DateTime? // M4c: set when status becomes KNOWN; cleared back to NULL on demotion to a non-KNOWN status
 
   @@unique([headword, pos])
 }
@@ -362,10 +365,10 @@ All prompts (Claude **and** local-LLM) live in `/lib/prompts/` as typed template
 
 ## Pages / UI
 
-- `/` — dashboard: streak (a day counts with **≥ 1 answered exercise, local time**; the streak ends today, or yesterday is marked "at risk" if today has no answer yet), today's lesson button, error stats by category (chart), recently mastered items, **syllabus progress per CEFR level** (e.g. "B2 grammar: 14/52 topics mastered", vocab known/total; grammar totals count only `teachable` topics) - each level line also shows "(n in progress)" after the grammar count and "(n learning)" after the vocab count when either is > 0.
+- `/` - dashboard: streak (a day counts with **≥ 1 answered exercise, local time**; the streak ends today, or yesterday is marked "at risk" if today has no answer yet), today's lesson button, **syllabus progress per CEFR level** (e.g. "B2 grammar: 14/52 topics mastered", vocab known/total; grammar totals count only `teachable` topics) - each level line also shows "(n in progress)" after the grammar count and "(n learning)" after the vocab count when either is > 0, an **Errors** card ("N due today" / "Nothing due today", a bar per open category - group label, proportional fill, count - or "No open mistakes", a "See all mistakes" link to `/errors`), and a **Recently mastered** card (up to 5 most recently mastered grammar topics / words / mistakes, each with its kind and date, or "Nothing mastered yet."). The Errors/Recently mastered data (`getErrorStats`, `getRecentlyMastered`, `src/lib/errors/queries.ts`) loads sequentially after the existing loaders and renders "-" if the DB is unreachable (no crash).
 - `/lesson/[id]` — the lesson player. Opens on a **lesson intro screen** (learner level, a below-level note when the grammar focus is below the learner's level, the topic's description and example, the theme, target words for the lesson, a topic-progress line - e.g. "Lesson 2 on this topic - 0 of 3 good lessons (80%+) - last time 71%", or "One good lesson (80%+) masters this topic" for a below-level core topic (M4a), and, when the lesson has any (M4b), a line with the review count ("N review exercises") - and a Start button) - skipped and going straight to the first exercise once any exercise in the lesson has been answered (e.g. on reload). **M3d scope: written block only** (M4b adds the review block ahead of it; still no section stepper for warm-up/scenario) — one exercise card at a time, **the review block first** (M4b: `PlayerItem.section: "review" | "written"`, review items ordered before written, each written in plan order), a small label above the card ("Review - a mistake from an earlier lesson" for a review item, "New material" for a written one), a progress bar, Check → result panel → Next, and a results screen at the end listing both sections. Keys are never sent to the browser before an answer is recorded: the client only ever sees the key-free `ExerciseView` (see `src/lib/lesson/lessonView.ts`). Reloading the page resumes at the first unanswered exercise. `DICTATION` uses the browser's `speechSynthesis` until Kokoro lands (M5). 404s for an unknown lesson id. The results screen lists a short prompt excerpt per exercise (`viewExcerpt`, `src/lib/lesson/lessonView.ts`) — never the `DICTATION` sentence, which stays secret. **Enter** checks the current card's answer on every card (in the translation/writing textareas, **Ctrl/Cmd+Enter** submits, so plain Enter still inserts a newline); the verdict is announced through the result panel's status region; `mcq` per-option rationales are revealed only after grading, alongside the verdict. Later milestones add: stepper through sections; voice controls (push-to-talk button, waveform indicator, streaming auto-TTS of tutor replies with replay button); **Conversation Review** screen after each conversation section (transcript with inline correction highlights + top-issues summary); status indicators for local-LLM / TTS availability.
 - `/lesson` — redirects to the resumable lesson (`findResumableLessonId`); otherwise offers a "Start today's lesson" button.
-- `/errors` — error log: filterable by category/status, each error shows history of reinforcement attempts
+- `/errors` - **read-only** mistake log (no "practise now" action; practice happens in lessons). Server-rendered, filters in the URL (`?status=open|mastered|all&category=<group>|all`, counts shown on each filter link, unknown values fall back to `open`/`all`). Each card shows: title (grammar topic title, or the category humanised, e.g. "Translation - meaning"), category group, status (icon + text: New / Reviewing / Mastered), "N of 3 correct in a row", due label (`formatDay`-based: "Overdue since 27 Sep" / "Due today" / "Due tomorrow" / "In N days" / "Mastered"), "First seen <date>", up to 5 example "given -> expected" lines, and a review history (date + correct/wrong icon + text per attempt, or "No reviews yet"). Empty list -> "No mistakes here yet."
 - `/history` — past lessons with summaries
 
 UI language: English for lesson content, interface chrome can be English. Mobile-friendly (lessons may happen from phone).
