@@ -63,17 +63,26 @@ export async function recordAnswer(db: RecordAnswerDb, input: RecordInput): Prom
       const row = await tx.vocabItem.findUnique({ where: { id: v.id }, select: { status: true, correctStreak: true } });
       if (!row) continue;
       const next = nextVocabState({ status: row.status as VocabStatusName, correctStreak: row.correctStreak }, v.correct);
-      await tx.vocabItem.update({ where: { id: v.id }, data: { ...next, lastSeenAt: input.now } });
+      const masteredAt = next.status === "KNOWN" ? (row.status === "KNOWN" ? undefined : input.now) : null;
+      await tx.vocabItem.update({
+        where: { id: v.id },
+        data: { ...next, lastSeenAt: input.now, ...(masteredAt !== undefined ? { masteredAt } : {}) },
+      });
     }
 
     if (input.review) {
-      const reviewed = await tx.errorRecord.findUnique({ where: { id: input.review.errorId }, select: { correctStreak: true, description: true } });
+      const reviewed = await tx.errorRecord.findUnique({
+        where: { id: input.review.errorId },
+        select: { correctStreak: true, description: true, status: true },
+      });
       if (reviewed) {
         const next = nextErrorState(reviewed, input.review.correct, input.now);
+        const masteredAt = next.status === "MASTERED" ? (reviewed.status === "MASTERED" ? undefined : input.now) : null;
         await tx.errorRecord.update({
           where: { id: input.review.errorId },
           data: {
             ...next,
+            ...(masteredAt !== undefined ? { masteredAt } : {}),
             ...(!input.review.correct && input.review.example ? { description: appendExample(reviewed.description, input.review.example) } : {}),
           },
         });

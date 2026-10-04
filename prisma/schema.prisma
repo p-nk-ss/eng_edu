@@ -108,6 +108,7 @@ model ErrorRecord {
   correctStreak  Int           @default(0)
   nextReviewAt   DateTime
   createdAt      DateTime      @default(now())
+  masteredAt     DateTime? // M4c: when it became MASTERED/KNOWN; null otherwise
 }
 
 model ConversationTurn {
@@ -137,6 +138,7 @@ model GrammarTopic {
   lessonsCompleted Int           @default(0) // cache (M4a): completed lessons with this focus, derived from Lesson history
   goodLessons      Int           @default(0) // cache (M4a): of those, writtenScore >= 0.8
   errors           ErrorRecord[]
+  masteredAt       DateTime? // M4c: when it became MASTERED/KNOWN; null otherwise
 }
 
 model VocabItem {
@@ -149,6 +151,7 @@ model VocabItem {
   status        VocabStatus @default(NEW)
   correctStreak Int         @default(0)
   lastSeenAt    DateTime?
+  masteredAt    DateTime? // M4c: when it became MASTERED/KNOWN; null otherwise
 
   @@unique([headword, pos])
 }

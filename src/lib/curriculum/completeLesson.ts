@@ -42,13 +42,16 @@ export async function completeWrittenBlockIfDone(
   if (updated.count === 0) return NOT_DONE;
 
   const topicId = plan?.meta?.grammarTopicId ?? null;
-  if (topicId) await recomputeTopic(tx, topicId);
+  if (topicId) await recomputeTopic(tx, topicId, completedAt);
   return { completed: true, score };
 }
 
 /** Re-derives the topic's status and cached counters from the history of completed lessons. */
-export async function recomputeTopic(tx: CompletionTx, topicId: string): Promise<void> {
-  const topic = await tx.grammarTopic.findUnique({ where: { id: topicId }, select: { status: true, cefrLevel: true, importance: true } });
+export async function recomputeTopic(tx: CompletionTx, topicId: string, now: Date): Promise<void> {
+  const topic = await tx.grammarTopic.findUnique({
+    where: { id: topicId },
+    select: { status: true, cefrLevel: true, importance: true, masteredAt: true },
+  });
   if (!topic) return;
   const profile = await tx.profile.findFirst({ orderBy: { updatedAt: "desc" }, select: { level: true } });
   const lessons = await tx.lesson.findMany({
@@ -59,5 +62,6 @@ export async function recomputeTopic(tx: CompletionTx, topicId: string): Promise
   const scores = lessons.flatMap((l) => (l.writtenScore === null ? [] : [l.writtenScore]));
   const belowLevelCore = isBelowLevelCore(topic, profile?.level ?? null);
   const next = nextTopicState(topic.status as TopicStatusName, scores, { belowLevelCore });
-  await tx.grammarTopic.update({ where: { id: topicId }, data: next });
+  const data = { ...next, ...(next.status === "MASTERED" && topic.status !== "MASTERED" ? { masteredAt: now } : {}) };
+  await tx.grammarTopic.update({ where: { id: topicId }, data });
 }

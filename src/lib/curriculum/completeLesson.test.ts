@@ -31,7 +31,10 @@ function fakeTx(o: {
     },
     exercise: { findMany: rec("exercise.findMany", o.exercises ?? [ex(true, true), ex(true, false)]) },
     grammarTopic: {
-      findUnique: rec("grammarTopic.findUnique", o.topic === undefined ? { status: "INTRODUCED", cefrLevel: "A2", importance: 1 } : o.topic),
+      findUnique: rec(
+        "grammarTopic.findUnique",
+        o.topic === undefined ? { status: "INTRODUCED", cefrLevel: "A2", importance: 1, masteredAt: null } : o.topic,
+      ),
       update: rec("grammarTopic.update", {}),
     },
     profile: { findFirst: rec("profile.findFirst", o.profile === undefined ? { level: "B1" } : o.profile) },
@@ -64,6 +67,15 @@ describe("completeWrittenBlockIfDone", () => {
     expect(f.log).toContain("grammarTopic.update");
   });
 
+  it("passes its completedAt through to recomputeTopic's masteredAt stamp", async () => {
+    const f = fakeTx({
+      topic: { status: "INTRODUCED", cefrLevel: "A2", importance: 1, masteredAt: null },
+      history: [{ writtenScore: 0.86 }],
+    });
+    await completeWrittenBlockIfDone(f.tx, "L1", now);
+    expect(f.calls["grammarTopic.update"][0]).toEqual({ where: { id: "g1" }, data: { status: "MASTERED", lessonsCompleted: 1, goodLessons: 1, masteredAt: now } });
+  });
+
   it("ignores missing and unparsable exercises", async () => {
     const f = fakeTx({ lesson: { plan: plan(["e1", "ghost", "bad"]), writtenCompletedAt: null }, exercises: [ex(true, true), ex(false, null, { type: "mcq" })] });
     expect(await completeWrittenBlockIfDone(f.tx, "L1", now)).toEqual({ completed: true, score: 1 });
@@ -94,7 +106,7 @@ describe("completeWrittenBlockIfDone", () => {
 describe("recomputeTopic", () => {
   it("derives status and counters from completed lessons with this focus", async () => {
     const f = fakeTx({ topic: { status: "INTRODUCED", cefrLevel: "B1", importance: 2 }, history: [{ writtenScore: 0.71 }] });
-    await recomputeTopic(f.tx, "g1");
+    await recomputeTopic(f.tx, "g1", now);
     expect(f.calls["lesson.findMany"][0]).toEqual({
       where: { writtenCompletedAt: { not: null }, plan: { path: ["meta", "grammarTopicId"], equals: "g1" } },
       orderBy: [{ date: "asc" }, { id: "asc" }],
@@ -105,19 +117,47 @@ describe("recomputeTopic", () => {
 
   it("masters a below-level core topic after one good lesson", async () => {
     const f = fakeTx({ topic: { status: "INTRODUCED", cefrLevel: "A2", importance: 1 }, history: [{ writtenScore: 0.86 }] });
-    await recomputeTopic(f.tx, "g1");
+    await recomputeTopic(f.tx, "g1", now);
     expect(f.calls["grammarTopic.update"][0]).toMatchObject({ data: { status: "MASTERED", goodLessons: 1 } });
   });
 
   it("needs three good lessons when the profile is missing", async () => {
     const f = fakeTx({ topic: { status: "INTRODUCED", cefrLevel: "A2", importance: 1 }, profile: null, history: [{ writtenScore: 0.9 }] });
-    await recomputeTopic(f.tx, "g1");
+    await recomputeTopic(f.tx, "g1", now);
     expect(f.calls["grammarTopic.update"][0]).toMatchObject({ data: { status: "PRACTICING" } });
   });
 
   it("skips a missing topic", async () => {
     const f = fakeTx({ topic: null });
-    await recomputeTopic(f.tx, "g1");
+    await recomputeTopic(f.tx, "g1", now);
     expect(f.calls["grammarTopic.update"]).toBeUndefined();
+  });
+
+  it("sets masteredAt when the topic becomes MASTERED", async () => {
+    const f = fakeTx({
+      topic: { status: "INTRODUCED", cefrLevel: "A2", importance: 1, masteredAt: null },
+      history: [{ writtenScore: 0.86 }],
+    });
+    await recomputeTopic(f.tx, "g1", now);
+    expect(f.calls["grammarTopic.update"][0]).toMatchObject({ data: { status: "MASTERED", masteredAt: now } });
+  });
+
+  it("keeps masteredAt when already MASTERED", async () => {
+    const earlier = new Date("2026-01-01T00:00:00Z");
+    const f = fakeTx({
+      topic: { status: "MASTERED", cefrLevel: "A2", importance: 1, masteredAt: earlier },
+      history: [{ writtenScore: 0.9 }],
+    });
+    await recomputeTopic(f.tx, "g1", now);
+    expect((f.calls["grammarTopic.update"][0] as { data: object }).data).not.toHaveProperty("masteredAt");
+  });
+
+  it("no masteredAt while PRACTICING", async () => {
+    const f = fakeTx({
+      topic: { status: "INTRODUCED", cefrLevel: "B1", importance: 2, masteredAt: null },
+      history: [{ writtenScore: 0.5 }],
+    });
+    await recomputeTopic(f.tx, "g1", now);
+    expect((f.calls["grammarTopic.update"][0] as { data: object }).data).not.toHaveProperty("masteredAt");
   });
 });

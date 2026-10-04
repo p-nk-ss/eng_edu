@@ -60,7 +60,7 @@ describe("recordAnswer", () => {
       data: { userAnswer: JSON.stringify({ selected: 2 }), isCorrect: false, feedback: "Past perfect for an earlier past action.", answeredAt: now },
     });
     expect(f.calls["lesson.updateMany"][0]).toEqual({ where: { id: "L1", status: "PLANNED" }, data: { status: "IN_PROGRESS" } });
-    expect(f.calls["vocabItem.update"][0]).toEqual({ where: { id: "v1" }, data: { status: "LEARNING", correctStreak: 0, lastSeenAt: now } });
+    expect(f.calls["vocabItem.update"][0]).toEqual({ where: { id: "v1" }, data: { status: "LEARNING", correctStreak: 0, lastSeenAt: now, masteredAt: null } });
     expect(f.calls["errorRecord.create"][0]).toEqual({
       data: {
         lessonId: "L1", grammarTopicId: "g1", category: "Past Perfect (had done)", description: "- finishing -> had finished",
@@ -103,15 +103,35 @@ describe("recordAnswer", () => {
   });
 });
 
+describe("recordAnswer / vocab mastery", () => {
+  it("KNOWN transition sets masteredAt", async () => {
+    const f = fakeDb({ vocabRow: { status: "LEARNING", correctStreak: 2 } });
+    await recordAnswer(f.db, input({ vocab: [{ id: "v1", correct: true }] }));
+    expect(f.calls["vocabItem.update"][0]).toEqual({ where: { id: "v1" }, data: { status: "KNOWN", correctStreak: 3, lastSeenAt: now, masteredAt: now } });
+  });
+
+  it("staying KNOWN keeps masteredAt", async () => {
+    const f = fakeDb({ vocabRow: { status: "KNOWN", correctStreak: 3 } });
+    await recordAnswer(f.db, input({ vocab: [{ id: "v1", correct: true }] }));
+    expect((f.calls["vocabItem.update"][0] as { data: object }).data).not.toHaveProperty("masteredAt");
+  });
+
+  it("demotion clears masteredAt", async () => {
+    const f = fakeDb({ vocabRow: { status: "KNOWN", correctStreak: 4 } });
+    await recordAnswer(f.db, input({ vocab: [{ id: "v1", correct: false }] }));
+    expect(f.calls["vocabItem.update"][0]).toEqual({ where: { id: "v1" }, data: { status: "LEARNING", correctStreak: 0, lastSeenAt: now, masteredAt: null } });
+  });
+});
+
 describe("recordAnswer / review", () => {
   it("correct review answer schedules its error", async () => {
     const f = fakeDb({ reviewedError: { correctStreak: 0, description: "- as -> than" } });
     const out = await recordAnswer(f.db, input({ errors: [], review: { errorId: "r1", correct: true, example: "" } }));
     expect(out).toMatchObject({ recorded: true });
-    expect(f.calls["errorRecord.findUnique"][0]).toEqual({ where: { id: "r1" }, select: { correctStreak: true, description: true } });
+    expect(f.calls["errorRecord.findUnique"][0]).toEqual({ where: { id: "r1" }, select: { correctStreak: true, description: true, status: true } });
     expect(f.calls["errorRecord.update"][0]).toEqual({
       where: { id: "r1" },
-      data: { status: "REVIEWING", correctStreak: 1, nextReviewAt: new Date(now.getTime() + 3 * DAY_MS) },
+      data: { status: "REVIEWING", correctStreak: 1, nextReviewAt: new Date(now.getTime() + 3 * DAY_MS), masteredAt: null },
     });
     expect(f.calls["errorRecord.create"]).toBeUndefined();
   });
@@ -121,9 +141,27 @@ describe("recordAnswer / review", () => {
     await recordAnswer(f.db, input({ errors: [], review: { errorId: "r1", correct: false, example: "as -> than" } }));
     expect(f.calls["errorRecord.update"][0]).toEqual({
       where: { id: "r1" },
-      data: { status: "REVIEWING", correctStreak: 0, nextReviewAt: new Date(now.getTime() + 1 * DAY_MS), description: "- as -> than\n- as -> than" },
+      data: { status: "REVIEWING", correctStreak: 0, nextReviewAt: new Date(now.getTime() + 1 * DAY_MS), description: "- as -> than\n- as -> than", masteredAt: null },
     });
     expect(f.calls["errorRecord.create"]).toBeUndefined();
+  });
+
+  it("correct review answer that reaches MASTERED sets masteredAt", async () => {
+    const f = fakeDb({ reviewedError: { correctStreak: 2, description: "", status: "REVIEWING" } });
+    await recordAnswer(f.db, input({ errors: [], review: { errorId: "r1", correct: true, example: "" } }));
+    expect(f.calls["errorRecord.update"][0]).toMatchObject({ data: { status: "MASTERED", masteredAt: now } });
+  });
+
+  it("wrong answer on a REVIEWING error clears masteredAt", async () => {
+    const f = fakeDb({ reviewedError: { correctStreak: 2, description: "", status: "REVIEWING" } });
+    await recordAnswer(f.db, input({ errors: [], review: { errorId: "r1", correct: false, example: "" } }));
+    expect(f.calls["errorRecord.update"][0]).toMatchObject({ data: { masteredAt: null } });
+  });
+
+  it("correct answer on an already MASTERED error keeps masteredAt untouched", async () => {
+    const f = fakeDb({ reviewedError: { correctStreak: 3, description: "", status: "MASTERED" } });
+    await recordAnswer(f.db, input({ errors: [], review: { errorId: "r1", correct: true, example: "" } }));
+    expect((f.calls["errorRecord.update"][0] as { data: object }).data).not.toHaveProperty("masteredAt");
   });
 
   it("missing reviewed error: no update, the answer is still recorded", async () => {
