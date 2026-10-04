@@ -29,15 +29,23 @@ afterEach(() => vi.mocked(finishWarmup).mockReset());
 
 describe("POST /api/conversation/finish", () => {
   it("400 on a bad body or an invalid action", async () => {
-    expect((await POST(req("not json"))).status).toBe(400);
-    expect((await POST(req({ lessonId: "l1" }))).status).toBe(400);
-    expect((await POST(req({ lessonId: "l1", action: "done" }))).status).toBe(400);
+    const expectedError = { error: 'Body must be { lessonId: string, action: "review" | "skip" }' };
+    const res1 = await POST(req("not json"));
+    expect(res1.status).toBe(400);
+    expect(await res1.json()).toEqual(expectedError);
+    const res2 = await POST(req({ lessonId: "l1" }));
+    expect(res2.status).toBe(400);
+    expect(await res2.json()).toEqual(expectedError);
+    const res3 = await POST(req({ lessonId: "l1", action: "done" }));
+    expect(res3.status).toBe(400);
+    expect(await res3.json()).toEqual(expectedError);
   });
 
   it("404 when the lesson is missing", async () => {
     vi.mocked(finishWarmup).mockRejectedValue(new LessonNotFoundError("l9"));
     const res = await POST(req({ lessonId: "l9", action: "skip" }));
     expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Lesson l9: not found" });
   });
 
   it("502 when analysis is unavailable, logging without secrets", async () => {
@@ -45,6 +53,7 @@ describe("POST /api/conversation/finish", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const res = await POST(req({ lessonId: "l1", action: "review" }));
     expect(res.status).toBe(502);
+    expect(await res.json()).toEqual({ error: "Conversation analysis unavailable" });
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });

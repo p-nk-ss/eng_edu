@@ -29,14 +29,19 @@ afterEach(() => vi.mocked(runTurn).mockReset());
 
 describe("POST /api/conversation/turn", () => {
   it("400 on a bad body", async () => {
-    expect((await POST(req("not json"))).status).toBe(400);
-    expect((await POST(req({ lessonId: "l1" }))).status).toBe(400);
+    const res1 = await POST(req("not json"));
+    expect(res1.status).toBe(400);
+    expect(await res1.json()).toEqual({ error: "Body must be { lessonId: string, text: string }" });
+    const res2 = await POST(req({ lessonId: "l1" }));
+    expect(res2.status).toBe(400);
+    expect(await res2.json()).toEqual({ error: "Body must be { lessonId: string, text: string }" });
   });
 
   it("400 when the turn is invalid", async () => {
     vi.mocked(runTurn).mockRejectedValue(new TurnRejectedError("invalid"));
     const res = await POST(req({ lessonId: "l1", text: "" }));
     expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "invalid" });
   });
 
   it("409 when the turn is closed, limited, or busy", async () => {
@@ -52,6 +57,7 @@ describe("POST /api/conversation/turn", () => {
     vi.mocked(runTurn).mockRejectedValue(new LessonNotFoundError("l9"));
     const res = await POST(req({ lessonId: "l9", text: "hi" }));
     expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Lesson l9: not found" });
   });
 
   it("503 when the partner is unavailable, logging without secrets", async () => {

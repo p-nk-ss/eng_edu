@@ -14,6 +14,7 @@ describe("GET /api/conversation", () => {
   it("400 when lessonId is missing", async () => {
     const res = await GET(req("http://localhost/api/conversation"));
     expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "lessonId is required" });
   });
 
   it("200 with the warm-up state", async () => {

@@ -20,14 +20,19 @@ afterEach(() => vi.mocked(startWarmup).mockReset());
 
 describe("POST /api/conversation/start", () => {
   it("400 on a bad body", async () => {
-    expect((await POST(req("not json"))).status).toBe(400);
-    expect((await POST(req({}))).status).toBe(400);
+    const res1 = await POST(req("not json"));
+    expect(res1.status).toBe(400);
+    expect(await res1.json()).toEqual({ error: "Body must be { lessonId: string }" });
+    const res2 = await POST(req({}));
+    expect(res2.status).toBe(400);
+    expect(await res2.json()).toEqual({ error: "Body must be { lessonId: string }" });
   });
 
   it("404 when the lesson is missing", async () => {
     vi.mocked(startWarmup).mockRejectedValue(new LessonNotFoundError("l9"));
     const res = await POST(req({ lessonId: "l9" }));
     expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Lesson l9: not found" });
   });
 
   it("200 with the warm-up state", async () => {
