@@ -111,6 +111,8 @@ describe("lessonGenerationPrompt", () => {
     expect(system).toContain("review");
     expect(system).toContain("never repeat the example sentences");
     expect(system).toContain("the one exception");
+    expect(system).toContain('Review exercises have no "hint"');
+    expect(system).toContain('no part of a review exercise (including an open-cloze "root") may state or contain the correction');
     // FILL_BLANK ("open_cloze") and TRANSLATION are review-only types here (neither is in mix) -
     // their shapes must still be sent, and de-duplicated exactly once each.
     const clozeCount = (system.match(/"type":"open_cloze"/g) ?? []).length;

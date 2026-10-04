@@ -91,7 +91,8 @@ function systemPrompt(input: GenerationInputs): string {
             (input.grammar
               ? " A review item may practise its own grammar: it is the one exception to \"introduce no other grammar focus\"."
               : "") +
-            " Review exercises have \"vocab\": [].",
+            " Review exercises have \"vocab\": []." +
+            " Review exercises have no \"hint\", and no part of a review exercise (including an open-cloze \"root\") may state or contain the correction.",
         ]
       : []),
     `Every exercise has "explain": a short English explanation (${L.explain.min}-${L.explain.max} characters) shown after grading.`,
