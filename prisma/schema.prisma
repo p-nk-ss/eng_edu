@@ -54,6 +54,18 @@ enum VocabStatus {
   KNOWN
 }
 
+enum ConversationMode {
+  WARMUP
+  SCENARIO
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ANALYZED
+  SKIPPED
+  UNAVAILABLE
+}
+
 model Profile {
   id              String   @id @default(cuid())
   level           String
@@ -65,10 +77,10 @@ model Profile {
 }
 
 model Lesson {
-  id                 String             @id @default(cuid())
-  date               DateTime           @default(now())
-  status             LessonStatus       @default(PLANNED)
-  currentSection     Int                @default(0)
+  id                 String                @id @default(cuid())
+  date               DateTime              @default(now())
+  status             LessonStatus          @default(PLANNED)
+  currentSection     Int                   @default(0)
   theme              String? // theme key of this lesson; drives least-recently-used theme rotation
   plan               Json
   summary            String?
@@ -77,6 +89,7 @@ model Lesson {
   writtenCompletedAt DateTime? // set once, when the last written exercise is answered
   exercises          Exercise[]
   turns              ConversationTurn[]
+  conversations      ConversationSession[]
   errors             ErrorRecord[]
 }
 
@@ -112,13 +125,30 @@ model ErrorRecord {
 }
 
 model ConversationTurn {
-  id          String   @id @default(cuid())
+  id          String               @id @default(cuid())
   lessonId    String
-  lesson      Lesson   @relation(fields: [lessonId], references: [id])
+  lesson      Lesson               @relation(fields: [lessonId], references: [id])
+  sessionId   String?
+  session     ConversationSession? @relation(fields: [sessionId], references: [id])
+  turnIndex   Int                  @default(0)
   role        String
   text        String
   corrections Json?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime             @default(now())
+}
+
+model ConversationSession {
+  id        String             @id @default(cuid())
+  lessonId  String
+  lesson    Lesson             @relation(fields: [lessonId], references: [id])
+  mode      ConversationMode
+  status    ConversationStatus @default(ACTIVE)
+  review    Json?
+  createdAt DateTime           @default(now())
+  endedAt   DateTime?
+  turns     ConversationTurn[]
+
+  @@unique([lessonId, mode])
 }
 
 model GrammarTopic {
