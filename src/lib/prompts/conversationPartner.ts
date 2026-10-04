@@ -48,6 +48,9 @@ function buildSystem(input: PartnerInput): string {
     lines.push("This is the last reply: thank the learner warmly, briefly wrap up the conversation. Do not ask a new question.");
   }
 
+  // Qwen3 soft switch: skip reasoning (the provider also strips any <think> block that still appears).
+  lines.push("/no_think");
+
   return lines.join("\n");
 }
 

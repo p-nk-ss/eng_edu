@@ -65,6 +65,14 @@ describe("conversationPartnerPrompt", () => {
     expect(system).not.toMatch(/undefined/i);
   });
 
+  it("ends the system text with the Qwen3 /no_think soft switch on its own line", () => {
+    for (const wrapUp of [false, true]) {
+      const system = conversationPartnerPrompt({ ...input, wrapUp }).system ?? "";
+      const lines = system.split("\n");
+      expect(lines[lines.length - 1]).toBe("/no_think");
+    }
+  });
+
   it("produces no null/undefined text when grammar has no description", () => {
     const system = conversationPartnerPrompt({ ...input, grammar: { title: "past simple", description: null } }).system ?? "";
     expect(system).not.toMatch(/null/i);
