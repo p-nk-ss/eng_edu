@@ -155,13 +155,13 @@ export function ConversationPanel({ lessonId, initial, onDone }: { lessonId: str
             rows={2}
             maxLength={MAX_TURN_CHARS}
             value={c.draft}
-            disabled={c.streaming || locked}
+            disabled={c.streaming || c.skipping || locked}
             onChange={(e) => c.setDraft(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Type your reply - Enter to send, Shift+Enter for a new line"
             className="min-h-11 flex-1 resize-y rounded-xl border border-border bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
           />
-          <button type="button" aria-label="Send" onClick={() => void c.send()} disabled={c.streaming || locked || !c.draft.trim()}
+          <button type="button" aria-label="Send" onClick={() => void c.send()} disabled={c.streaming || c.skipping || locked || !c.draft.trim()}
             className={`${PRIMARY_BTN} min-w-11 px-3`}>
             <Send size={18} aria-hidden />
           </button>
@@ -169,7 +169,7 @@ export function ConversationPanel({ lessonId, initial, onDone }: { lessonId: str
       ))}
 
       <div className="flex flex-wrap justify-end gap-3">
-        <button type="button" onClick={() => void c.skip()} disabled={c.streaming || c.skipping || c.phase === "starting"}
+        <button type="button" onClick={() => void c.skip()} disabled={c.skipping || c.phase === "starting"}
           className="min-h-11 rounded-xl px-4 py-3 font-display font-bold text-muted-foreground enabled:hover:text-foreground disabled:opacity-40">
           Skip conversation
         </button>

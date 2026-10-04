@@ -21,8 +21,8 @@ export type ConversationPhase =
   | "review"
   | "done";
 
-const post = (url: string, body: unknown) =>
-  fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+const post = (url: string, body: unknown, signal?: AbortSignal) =>
+  fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
 
 const readError = async (res: Response): Promise<string | undefined> => {
   const body = (await res.json().catch(() => ({}))) as { error?: unknown };
@@ -62,6 +62,9 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
   const [skipping, setSkipping] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
   const busy = useRef(false);
+  const skipBusy = useRef(false);
+  /** Aborts the in-flight turn (request and streamed body) when the learner skips. */
+  const turnAbort = useRef<AbortController | null>(null);
   const localId = useRef(0);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
@@ -100,7 +103,7 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
 
   const send = useCallback(async () => {
     const text = draft.trim();
-    if (!text || busy.current) return;
+    if (!text || busy.current || skipBusy.current) return;
     busy.current = true;
     const id = `local-${++localId.current}`;
     setTurns((prev) => [...prev, { id, role: "learner", text, turnIndex: prev.length, corrections: null }]);
@@ -116,8 +119,15 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
       setError(message);
     };
     let received = "";
+    const abort = new AbortController();
+    turnAbort.current = abort;
+    const keepPartial = () => {
+      const reply = stripMarker(received).trimEnd();
+      if (reply) setTurns((prev) => [...prev, { id: `${id}-reply`, role: "partner", text: reply, turnIndex: prev.length, corrections: null }]);
+    };
     try {
-      const res = await post("/api/conversation/turn", { lessonId, text });
+      const res = await post("/api/conversation/turn", { lessonId, text }, abort.signal);
+      if (abort.signal.aborted) return;
       if (!res.ok || !res.body) {
         const code = await readError(res);
         if (res.status === 503) fail(null, true);
@@ -126,6 +136,7 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
       }
       setOffline(false);
       const reader = res.body.getReader();
+      abort.signal.addEventListener("abort", () => void reader.cancel().catch(() => {}), { once: true });
       const decoder = new TextDecoder();
       let lost = false;
       try {
@@ -139,6 +150,8 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
       } catch {
         lost = true;
       }
+      // skipped mid-reply: keep what arrived, no connection notice
+      if (abort.signal.aborted) return keepPartial();
       if (received.endsWith(CONNECTION_LOST)) {
         lost = true;
         received = received.slice(0, -CONNECTION_LOST.length);
@@ -147,9 +160,12 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
       setTurns((prev) => (reply ? [...prev, { id: `${id}-reply`, role: "partner", text: reply, turnIndex: prev.length, corrections: null }] : prev));
       if (lost) setNotice("The connection was lost mid-reply. You can keep talking or finish.");
     } catch {
-      // the request itself failed (network down / dev server unreachable): treat as offline
-      fail(null, true);
+      // aborted by Skip: not an error; otherwise the request itself failed (network down / dev server
+      // unreachable): treat as offline
+      if (abort.signal.aborted) keepPartial();
+      else fail(null, true);
     } finally {
+      if (turnAbort.current === abort) turnAbort.current = null;
       setPending(null);
       setStreaming(false);
       busy.current = false;
@@ -157,7 +173,7 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
   }, [draft, lessonId]);
 
   const finish = useCallback(async () => {
-    if (busy.current) return;
+    if (busy.current || skipBusy.current) return;
     busy.current = true;
     setPhase("finishing");
     setError(null);
@@ -185,11 +201,15 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
     }
   }, [lessonId]);
 
+  /** Allowed while a turn is pending or streaming: the turn is aborted first. */
   const skip = useCallback(async () => {
-    if (busy.current) return;
-    busy.current = true;
+    if (skipBusy.current) return;
+    if (busy.current && !turnAbort.current) return; // a finish is in flight
+    skipBusy.current = true;
+    turnAbort.current?.abort();
     setSkipping(true);
     setError(null);
+    setOffline(false);
     try {
       const res = await post("/api/conversation/finish", { lessonId, action: "skip" });
       if (!res.ok) throw new Error(String(res.status));
@@ -198,7 +218,7 @@ export function useConversation(lessonId: string, initial: WarmupState, onDone: 
       setError("Couldn't skip right now - try again.");
     } finally {
       setSkipping(false);
-      busy.current = false;
+      skipBusy.current = false;
     }
   }, [lessonId]);
 

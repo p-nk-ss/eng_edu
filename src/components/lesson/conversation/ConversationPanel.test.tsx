@@ -191,6 +191,61 @@ describe("ConversationPanel", () => {
     expect(body(fetchMock.mock.calls[0])).toEqual({ lessonId: "L1", action: "skip" });
   });
 
+  it("Skip stays enabled while a turn is pending: it aborts the turn, posts skip, calls onDone, shows no error", async () => {
+    let turnSignal: AbortSignal | undefined;
+    const pendingTurn = (_url: string, init: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        turnSignal = init.signal ?? undefined;
+        turnSignal?.addEventListener("abort", () => reject(new DOMException("The operation was aborted.", "AbortError")));
+      });
+    const fetchMock = vi.fn()
+      .mockImplementationOnce(pendingTurn)
+      .mockResolvedValueOnce(json({ status: "SKIPPED", turns: [], review: null }));
+    vi.stubGlobal("fetch", fetchMock);
+    const onDone = vi.fn();
+    render(<ConversationPanel lessonId="L1" initial={active(2)} onDone={onDone} />);
+    type("Hello there");
+    enter();
+    await waitFor(() => expect(textarea()).toBeDisabled());
+    expect(screen.getByRole("button", { name: "Finish & review" })).toBeDisabled();
+    const skipBtn = screen.getByRole("button", { name: "Skip conversation" });
+    expect(skipBtn).toBeEnabled();
+    expect(turnSignal?.aborted).toBe(false);
+
+    fireEvent.click(skipBtn);
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
+    expect(turnSignal?.aborted).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/conversation/finish");
+    expect(body(fetchMock.mock.calls[1])).toEqual({ lessonId: "L1", action: "skip" });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText("Conversation partner is offline")).not.toBeInTheDocument();
+  });
+
+  it("Skip while the reply streams aborts the turn and finishes with skip", async () => {
+    const s = manualStream();
+    let turnSignal: AbortSignal | undefined;
+    const fetchMock = vi.fn()
+      .mockImplementationOnce((_url: string, init: RequestInit) => {
+        turnSignal = init.signal ?? undefined;
+        return Promise.resolve(s.res);
+      })
+      .mockResolvedValueOnce(json({ status: "SKIPPED", turns: [], review: null }));
+    vi.stubGlobal("fetch", fetchMock);
+    const onDone = vi.fn();
+    render(<ConversationPanel lessonId="L1" initial={active(2)} onDone={onDone} />);
+    type("Hello there");
+    enter();
+    s.push("Half a rep");
+    expect(await screen.findByText("Half a rep")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Finish & review" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Skip conversation" }));
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
+    expect(turnSignal?.aborted).toBe(true);
+    expect(body(fetchMock.mock.calls[1])).toEqual({ lessonId: "L1", action: "skip" });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("Finish analyses, then shows the review; Continue calls onDone", async () => {
     let resolve!: (r: Response) => void;
     const fetchMock = vi.fn().mockReturnValueOnce(new Promise<Response>((r) => { resolve = r; }));
