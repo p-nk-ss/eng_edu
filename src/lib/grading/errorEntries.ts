@@ -4,7 +4,7 @@ import type { ErrorEntry, GradePart, JudgeOutcome, LessonGrammar } from "./types
 
 export const EXAMPLE_MAX = 200;
 /** Collapse whitespace runs (incl. newlines) to one space and trim BEFORE the length cut - ErrorRecord examples are single-line. */
-const clip = (s: string): string => {
+export const clip = (s: string): string => {
   const oneLine = s.replace(/\s+/g, " ").trim();
   return oneLine.length > EXAMPLE_MAX ? oneLine.slice(0, EXAMPLE_MAX - 3) + "..." : oneLine;
 };

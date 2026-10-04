@@ -190,4 +190,16 @@ describe("finishWarmup - failures and idempotency", () => {
     expect(res.review).toEqual(storedReview);
     expect(analyse).not.toHaveBeenCalled();
   });
+
+  it("already SKIPPED stays terminal -> returns the stored state, analyse not called", async () => {
+    const fake = setupActiveSession();
+    fake.state.sessions[0].status = "SKIPPED";
+    fake.state.sessions[0].endedAt = NOW;
+    const analyse = vi.fn();
+    const res = await finishWarmup("L1", "review", { db: fake.db, analyse, now: NOW });
+    expect(res.status).toBe("SKIPPED");
+    expect(analyse).not.toHaveBeenCalled();
+    expect(fake.state.sessions[0].status).toBe("SKIPPED");
+    expect(fake.state.errorRecords).toHaveLength(0);
+  });
 });

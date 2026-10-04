@@ -2,7 +2,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { completeJson } from "@/lib/llm";
 import type { CompleteArgs } from "../llm/types";
 import { appendExample } from "../grading/recordAnswer";
-import { EXAMPLE_MAX } from "../grading/errorEntries";
+import { clip } from "../grading/errorEntries";
 import type { LessonPlan } from "../lesson/createLesson";
 import {
   conversationAnalysisPrompt,
@@ -42,16 +42,10 @@ export interface FinishWarmupDeps {
   now?: Date;
 }
 
-/** Collapse whitespace and clip to EXAMPLE_MAX, like answerExample/clip in errorEntries.ts. */
-function clip(s: string): string {
-  const oneLine = s.replace(/\s+/g, " ").trim();
-  return oneLine.length > EXAMPLE_MAX ? oneLine.slice(0, EXAMPLE_MAX - 3) + "..." : oneLine;
-}
-
 /**
  * Skip or analyse a finished warm-up conversation.
  * - `skip`, or `review` with fewer than MIN_TURNS_FOR_REVIEW learner turns -> SKIPPED, no LLM call.
- * - Already ANALYZED -> returns the stored state (idempotent), no LLM call.
+ * - Already ANALYZED or SKIPPED -> returns the stored state (idempotent, terminal), no LLM call.
  * - Otherwise: one LLM call outside any transaction; on failure throws AnalysisUnavailableError and
  *   writes nothing. On success, one transaction writes each learner turn's `corrections` and upserts
  *   an ErrorRecord per `major` finding (find-then-update/create, same as recordAnswer.ts), then marks
@@ -63,7 +57,7 @@ export async function finishWarmup(lessonId: string, action: "review" | "skip", 
   const now = deps.now ?? new Date();
 
   const state = await getWarmup(lessonId, db);
-  if (state.status === "ANALYZED") return state;
+  if (state.status === "ANALYZED" || state.status === "SKIPPED") return state;
 
   if (action === "skip" || finishOutcome(learnerTurnCount(state.turns)) === "skip") {
     return setWarmupStatus(lessonId, "SKIPPED", db);
