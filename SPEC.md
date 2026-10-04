@@ -34,7 +34,7 @@ Prompt code never picks a provider directly — it names a **role**, and `lib/ll
 
 - **`AgentSDKProvider` (default for teaching roles)** — calls Claude via the **Claude Agent SDK** (`@anthropic-ai/claude-agent-sdk`, `query()`), authenticated with the owner's Claude subscription through `CLAUDE_CODE_OAUTH_TOKEN` (generated once with `claude setup-token`). Single-turn text completion: `model: "sonnet"`, no tools (`allowedTools: []`), no file access, no project settings (`settingSources: []`), permission mode fully restricted (a `canUseTool` callback denies every tool), `maxTurns: 1`. Consumes the Agent SDK credit, not pay-per-token. The `messages[]` array is flattened into the SDK's single `prompt` (role-prefixed for multi-turn; the app is stateless and sends full history each call) and `system` is passed as `systemPrompt`.
 - **`DirectAPIProvider` (fallback)** — direct `api.anthropic.com` via `@anthropic-ai/sdk` with `ANTHROPIC_API_KEY`, model `claude-sonnet-4-6`. `messages[]` maps 1:1 to the Messages API.
-- **`LocalProvider` (conversation)** — **NEW.** OpenAI-compatible chat-completions against a **local LM Studio** server: `LOCAL_LLM_URL` (default `http://localhost:1234/v1`), model from `LOCAL_LLM_MODEL` (target: **Qwen3-14B**). Must support **streaming** (`stream()` yields token deltas for the real-time voice loop). `{system, messages}` map to the OpenAI `messages` array. **Qwen3 thinking must be disabled** for the conversation role (`enable_thinking: false` / `/no_think`) — `<think>` blocks blow the latency budget and pollute the spoken reply.
+- **`LocalProvider` (conversation)** — **NEW.** OpenAI-compatible chat-completions against a **local LM Studio** server: `LOCAL_LLM_URL` (default `http://localhost:1234/v1`), model from `LOCAL_LLM_MODEL` (target: **Qwen3-14B**). Must support **streaming** (`stream()` yields token deltas for the real-time voice loop). `{system, messages}` map to the OpenAI `messages` array. **Qwen3 thinking must be disabled** for the conversation role (`enable_thinking: false` / `/no_think`) — `<think>` blocks blow the latency budget and pollute the spoken reply. M5a does both: the request sends `chat_template_kwargs: {enable_thinking: false}` and the partner system prompt ends with a `/no_think` line (Qwen3 soft switch); as a safety net the provider strips any `<think>...</think>` block from the streamed content (even when the tags are split across deltas) and drops leading whitespace before the first visible character. Timeouts: the request is aborted if no content delta arrives within **60 s** (`FIRST_DELTA_TIMEOUT_MS` - covers LM Studio's JIT model loading) or no chunk arrives for **30 s** after that (`IDLE_TIMEOUT_MS`); an abort surfaces as a thrown error. The HTTP body is released when the consumer stops early, so LM Studio stops generating after a client cancel.
 
 ### Role routing
 
@@ -287,7 +287,8 @@ A generated lesson plan contains these sections (order fixed):
    8th learner turn the partner wraps up and "Finish & review" becomes primary; finishing any time
    is allowed, but with fewer than **2** learner turns the section is marked `SKIPPED` (no analysis,
    no errors). The section is **skippable** and **never blocks the lesson**: if the local LLM
-   (LM Studio) is unreachable the section is marked `UNAVAILABLE` and the lesson continues — this
+   (LM Studio) is unreachable the section is marked `UNAVAILABLE` on the first failed turn and the
+   learner can retry or skip; the lesson continues either way — this
    **replaces** the old "local services gate lesson start" rule (see Operational Notes). When the
    section ends (`POST /api/conversation/finish`), the transcript is analysed by Claude and a
    **Conversation Review** is shown (see below).
@@ -312,8 +313,13 @@ alternate after that). The real-time loop and the teaching feedback are split:
   `severity ∈ minor | moderate | major`. Findings are written back to `ConversationTurn.corrections`
   (all severities, for the review UI). **Only `major` findings** are converted to `ErrorRecord`s
   (`source: CONVERSATION`), deduplicated by `(lessonId, grammarTopicId ?? category)` — an existing
-  open record with the same key gets its example appended instead of a new row — so
-  spaced-repetition isn't flooded by minor slips. The session is then marked `ANALYZED` with the
+  record for this lesson with the same key gets its example appended instead of a new row — so
+  spaced-repetition isn't flooded by minor slips. `ErrorRecord.category` is the topic title for a
+  finding with a valid `grammarTopicId`; otherwise `vocab: <word>` when the model's category starts
+  with `vocab:`, and exactly `general` for anything else (e.g. "Articles" and "article usage" both
+  land in one `general` record) - the review screen still shows the model's own label from
+  `ConversationTurn.corrections`. The analysis transaction first claims the session (conditional
+  update to `ANALYZED`), so a concurrent second finish writes nothing; the session then stores the
   review payload and `endedAt` set; re-finishing an already `ANALYZED`/`SKIPPED` session just
   returns the stored state (idempotent). A failed analysis call throws (`502` from the route) and
   writes nothing, so it can be retried. The UI shows a **Conversation Review** screen: transcript
@@ -485,9 +491,14 @@ The client voice layer is split behind swappable interfaces so services can be r
 
 - **Warm-up conversation never blocks the lesson (M5a).** This **replaces** the earlier "local
   services gate lesson start" rule. `POST /api/lesson/start` does **not** health-check LM Studio or
-  Kokoro. If the local LLM is unreachable when the warm-up starts or a turn is sent, the section is
-  marked `UNAVAILABLE` (with a hint on how to start LM Studio, see `docs/LOCAL_SETUP.md`) and the
-  lesson simply continues to the written exercises — "Skip conversation" is always available too.
+  Kokoro. `POST /api/conversation/start` does not contact LM Studio either (it only writes the opening
+  turn). The session is marked `UNAVAILABLE` on the **first failed turn** (LM Studio unreachable or
+  timing out before its first delta); the panel then says the conversation partner is offline and
+  offers **Try again** (resends the kept message; a successful turn sets the session back to
+  `ACTIVE`) or **Skip conversation**, and the lesson simply continues to the written exercises (see
+  `docs/LOCAL_SETUP.md` for starting LM Studio). "Skip conversation" is always available, also
+  while a reply is pending or streaming (it aborts the turn). Status writes from a turn are
+  conditional - a session already `SKIPPED`/`ANALYZED` is never reopened.
   The real-time partner (`conversation` role) is **local-only** — there is no cloud fallback (the
   Claude providers can't stream). Service health **indicators** (a persistent LM Studio/Kokoro status
   UI) and the voice stack (STT/TTS, including the browser-STT online caveat in
