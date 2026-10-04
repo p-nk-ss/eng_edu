@@ -28,6 +28,7 @@ const grammarLesson: PlayerLesson = {
     topicLessonNumber: 3,
     vocab: ["apple", "cherry"],
   },
+  warmup: { available: false, theme: "Work & careers", state: { status: null, turns: [], review: null } },
 };
 
 const vocabOnlyLesson: PlayerLesson = {
@@ -36,6 +37,7 @@ const vocabOnlyLesson: PlayerLesson = {
   grammarTitle: null,
   items: [{ view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: null, section: "written" }],
   intro: { learnerLevel: "B1", grammar: null, topicLessonNumber: null, vocab: ["bread", "milk"] },
+  warmup: { available: false, theme: "Food & drink", state: { status: null, turns: [], review: null } },
 };
 
 describe("LessonIntro", () => {
@@ -137,6 +139,21 @@ describe("LessonIntro", () => {
   it("shows no review line when there are no review items", () => {
     render(<LessonIntro lesson={grammarLesson} onStart={vi.fn()} />);
     expect(screen.queryByText(/review exercise/)).not.toBeInTheDocument();
+  });
+
+  it("shows 'Conversation: 8 turns on <theme>' when the lesson has a warm-up", () => {
+    render(<LessonIntro lesson={{ ...grammarLesson, warmup: { ...grammarLesson.warmup, available: true } }} onStart={vi.fn()} />);
+    expect(screen.getByText("Conversation: 8 turns on Work & careers")).toBeInTheDocument();
+  });
+
+  it("shows 'Conversation: 8 turns' without a theme", () => {
+    render(<LessonIntro lesson={{ ...grammarLesson, warmup: { ...grammarLesson.warmup, available: true, theme: null } }} onStart={vi.fn()} />);
+    expect(screen.getByText("Conversation: 8 turns")).toBeInTheDocument();
+  });
+
+  it("shows no conversation line when the lesson has no warm-up", () => {
+    render(<LessonIntro lesson={grammarLesson} onStart={vi.fn()} />);
+    expect(screen.queryByText(/^Conversation:/)).not.toBeInTheDocument();
   });
 
   it("calls onStart when Start is clicked", () => {

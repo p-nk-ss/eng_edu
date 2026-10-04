@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { getWarmup, type WarmupState } from "../conversation/session";
 import { isBelowLevelCore, lessonsToMaster } from "../curriculum/advancement";
 import { THEMES } from "../curriculum/themes";
 import { prisma } from "../db";
@@ -7,7 +8,10 @@ import type { LessonPlan } from "./createLesson";
 import { parseExercise } from "./exerciseSchemas";
 import { toExerciseView, type ExerciseView } from "./lessonView";
 
-export type PlayerLessonDb = Pick<PrismaClient, "lesson" | "exercise" | "grammarTopic" | "profile" | "vocabItem">;
+export type PlayerLessonDb = Pick<
+  PrismaClient,
+  "lesson" | "exercise" | "grammarTopic" | "profile" | "vocabItem" | "conversationSession" | "conversationTurn"
+>;
 
 export interface PlayerItem {
   view: ExerciseView;
@@ -39,6 +43,8 @@ export interface PlayerLesson {
   grammarTitle: string | null;
   items: PlayerItem[];
   intro: PlayerLessonIntro;
+  /** `available` = the plan has a warm-up intro (older lessons may not); `state` is the WARMUP session (empty before it starts). */
+  warmup: { available: boolean; theme: string | null; state: WarmupState };
 }
 
 /** Everything the player page needs, with no answer keys (only stored results of answered items). */
@@ -99,10 +105,16 @@ export async function loadLessonForPlayer(id: string, db: PlayerLessonDb = prism
     : null;
 
   const grammarTitle = topic ? (topic.title ?? topic.name) : null;
+  const themeLabel = THEMES.find((t) => t.key === lesson.theme)?.label ?? null;
+
+  const warmupAvailable = Boolean(plan?.sections?.warmup?.intro);
+  // getWarmup only touches conversationSession / conversationTurn, both in PlayerLessonDb.
+  const warmupState: WarmupState = warmupAvailable ? await getWarmup(lesson.id, db) : { status: null, turns: [], review: null };
 
   return {
     lessonId: lesson.id,
-    themeLabel: THEMES.find((t) => t.key === lesson.theme)?.label ?? null,
+    themeLabel,
+    warmup: { available: warmupAvailable, theme: themeLabel, state: warmupState },
     grammarTitle,
     items,
     intro: {

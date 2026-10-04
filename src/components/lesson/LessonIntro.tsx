@@ -1,10 +1,11 @@
 "use client";
 
+import { TARGET_TURNS } from "@/lib/conversation/rules";
 import { isBelowLevel } from "@/lib/lesson/levels";
 import type { PlayerLesson } from "@/lib/lesson/loadLesson";
 
 export function LessonIntro({ lesson, onStart }: { lesson: PlayerLesson; onStart: () => void }) {
-  const { intro, themeLabel, items } = lesson;
+  const { intro, themeLabel, items, warmup } = lesson;
   const grammar = intro.grammar;
   const belowLevel = grammar !== null && intro.learnerLevel !== null && isBelowLevel(grammar.level, intro.learnerLevel);
   const writtenItems = items.filter((i) => i.section === "written");
@@ -64,6 +65,12 @@ export function LessonIntro({ lesson, onStart }: { lesson: PlayerLesson; onStart
       {reviewCount > 0 && (
         <p className="text-sm text-muted-foreground">
           {reviewCount} {reviewCount === 1 ? "review exercise" : "review exercises"}
+        </p>
+      )}
+
+      {warmup.available && (
+        <p className="text-sm text-muted-foreground">
+          Conversation: {TARGET_TURNS} turns{warmup.theme ? ` on ${warmup.theme}` : ""}
         </p>
       )}
 

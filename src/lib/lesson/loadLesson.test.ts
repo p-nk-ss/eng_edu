@@ -27,8 +27,10 @@ function fakeDb(opts: {
   vocab?: unknown[];
   count?: number;
   previous?: unknown;
+  session?: unknown;
+  turns?: unknown[];
 } = {}) {
-  const { lesson = null, exercises = [], topic = grammarTopic, profile = { level: "B1" }, vocab = [], count = 1, previous = null } = opts;
+  const { lesson = null, exercises = [], topic = grammarTopic, profile = { level: "B1" }, vocab = [], count = 1, previous = null, session = null, turns = [] } = opts;
   return {
     lesson: {
       findUnique: vi.fn().mockResolvedValue(lesson),
@@ -39,6 +41,8 @@ function fakeDb(opts: {
     grammarTopic: { findUnique: vi.fn().mockResolvedValue(topic) },
     profile: { findFirst: vi.fn().mockResolvedValue(profile) },
     vocabItem: { findMany: vi.fn().mockResolvedValue(vocab) },
+    conversationSession: { findUnique: vi.fn().mockResolvedValue(session) },
+    conversationTurn: { findMany: vi.fn().mockResolvedValue(turns) },
   } as unknown as PlayerLessonDb;
 }
 const plan = (ids: string[], grammarTopicId: string | null = "g1", vocabIds: string[] = []) => ({
@@ -189,5 +193,51 @@ describe("loadLessonForPlayer", () => {
     const db = fakeDb({ lesson: { id: "L1", theme: null, plan: plan([], "g1"), date: lessonDate } });
     const out = await loadLessonForPlayer("L1", db);
     expect(out?.intro.grammar?.lastScore).toBeNull();
+  });
+
+  it("returns warmup.available false (and no session query) for a plan without a warm-up", async () => {
+    const db = fakeDb({ lesson: { id: "L1", theme: "work", plan: plan([], null), date: lessonDate } });
+    const out = await loadLessonForPlayer("L1", db);
+    expect(out?.warmup).toEqual({ available: false, theme: "Work & careers", state: { status: null, turns: [], review: null } });
+    expect(db.conversationSession.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("returns warmup.available true with the state of the warm-up session", async () => {
+    const review = { topIssues: ["Past tense"], counts: { minor: 1, moderate: 0, major: 1 }, errorsAdded: 1 };
+    const turns = [
+      { id: "p0", role: "partner", text: "Hi! Tell me about your job.", turnIndex: 0, corrections: null },
+      { id: "l1", role: "learner", text: "I goed to work.", turnIndex: 1, corrections: [{ original: "goed" }] },
+    ];
+    const db = fakeDb({
+      lesson: {
+        id: "L1",
+        theme: "work",
+        plan: {
+          sections: { written: { exerciseIds: [] }, warmup: { intro: "Hi! Tell me about your job.", questions: ["What do you do?"] } },
+          meta: { grammarTopicId: null, vocabIds: [] },
+        },
+        date: lessonDate,
+      },
+      session: { id: "s1", status: "ANALYZED", review },
+      turns,
+    });
+    const out = await loadLessonForPlayer("L1", db);
+    expect(out?.warmup).toEqual({ available: true, theme: "Work & careers", state: { status: "ANALYZED", turns, review } });
+    expect(db.conversationSession.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { lessonId_mode: { lessonId: "L1", mode: "WARMUP" } } }),
+    );
+  });
+
+  it("returns an empty warm-up state when the warm-up has not been started", async () => {
+    const db = fakeDb({
+      lesson: {
+        id: "L1",
+        theme: null,
+        plan: { sections: { written: { exerciseIds: [] }, warmup: { intro: "Hi there, let us talk.", questions: [] } }, meta: { grammarTopicId: null, vocabIds: [] } },
+        date: lessonDate,
+      },
+    });
+    const out = await loadLessonForPlayer("L1", db);
+    expect(out?.warmup).toEqual({ available: true, theme: null, state: { status: null, turns: [], review: null } });
   });
 });

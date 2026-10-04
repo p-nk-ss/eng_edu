@@ -3,11 +3,13 @@
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import type { WarmupState } from "@/lib/conversation/session";
 import type { GradeResult } from "@/lib/grading/types";
 import type { PlayerItem, PlayerLesson } from "@/lib/lesson/loadLesson";
 import { TYPE_LABELS } from "@/lib/lesson/lessonView";
 import { ExerciseBody } from "./cards/ExerciseBody";
 import type { AnswerPayload } from "./cards/types";
+import { ConversationPanel } from "./conversation/ConversationPanel";
 import { LessonIntro } from "./LessonIntro";
 import { LessonResults } from "./LessonResults";
 import { ResultPanel } from "./ResultPanel";
@@ -19,6 +21,17 @@ const firstOpen = (items: PlayerItem[]) => {
   return i === -1 ? items.length : i;
 };
 
+type Stage = "exercises-review" | "warmup" | "exercises-written";
+
+/** The warm-up still has to run: the plan has one, it is not finished, and no written item is answered (old lessons resume as before). */
+const warmupPending = (lesson: PlayerLesson) =>
+  lesson.warmup.available &&
+  (lesson.warmup.state.status === null || lesson.warmup.state.status === "ACTIVE") &&
+  !lesson.items.some((it) => it.section === "written" && it.result !== null);
+
+const isWarmupState = (v: unknown): v is WarmupState =>
+  typeof v === "object" && v !== null && "status" in v && Array.isArray((v as { turns?: unknown }).turns);
+
 export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
   const [items, setItems] = useState(lesson.items);
   const [index, setIndex] = useState(() => firstOpen(lesson.items));
@@ -26,13 +39,36 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
   const [phase, setPhase] = useState<Phase>("answering");
   const [answer, setAnswer] = useState<AnswerPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showWarmup, setShowWarmup] = useState(() => warmupPending(lesson));
+  const [warmupState, setWarmupState] = useState(lesson.warmup.state);
   const checking = useRef(false);
+  const warmupClosed = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => headingRef.current?.focus(), [index, started]);
 
   const current = items[index];
   const answered = items.filter((i) => i.result !== null).length;
+  // The warm-up sits between the review items and the written ones: it is entered once the next
+  // open item is not a review item (or there are none).
+  const stage: Stage = current?.section === "review" ? "exercises-review" : showWarmup ? "warmup" : "exercises-written";
+
+  useEffect(() => headingRef.current?.focus(), [index, started, stage]);
+
+  // Called by the panel on continue/skip - possibly twice (StrictMode effect), so idempotent.
+  const onWarmupDone = useCallback(() => {
+    if (warmupClosed.current) return;
+    warmupClosed.current = true;
+    setShowWarmup(false);
+    void (async () => {
+      try {
+        const res = await fetch(`/api/conversation?lessonId=${encodeURIComponent(lesson.lessonId)}`);
+        if (!res.ok) return;
+        const body: unknown = await res.json();
+        if (isWarmupState(body)) setWarmupState(body);
+      } catch {
+        // best effort: the results line keeps the state the page was loaded with
+      }
+    })();
+  }, [lesson.lessonId]);
 
   const check = useCallback(async () => {
     if (!current || !answer || checking.current || phase === "graded") return;
@@ -132,11 +168,20 @@ export function LessonPlayer({ lesson }: { lesson: PlayerLesson }) {
     </header>
   );
 
+  if (stage === "warmup") {
+    return (
+      <div className="flex flex-col gap-6">
+        {header}
+        <ConversationPanel lessonId={lesson.lessonId} initial={lesson.warmup.state} onDone={onWarmupDone} />
+      </div>
+    );
+  }
+
   if (!current) {
     return (
       <div className="flex flex-col gap-6">
         {header}
-        <LessonResults items={items} />
+        <LessonResults items={items} warmup={{ ...lesson.warmup, state: warmupState }} />
       </div>
     );
   }

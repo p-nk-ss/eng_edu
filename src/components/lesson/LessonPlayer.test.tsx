@@ -1,12 +1,26 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { WarmupState } from "@/lib/conversation/session";
 import { TYPE_LABELS, toExerciseView } from "@/lib/lesson/lessonView";
 import { VALID_EXERCISES as E } from "@/lib/lesson/fixtures";
 import type { PlayerLesson } from "@/lib/lesson/loadLesson";
 import type { GradeResult } from "@/lib/grading/types";
 import { LessonPlayer } from "./LessonPlayer";
 
+// The panel has its own tests; here it is a stub whose "Done" fires onDone twice (as StrictMode may).
+vi.mock("./conversation/ConversationPanel", () => ({
+  ConversationPanel: ({ lessonId, initial, onDone }: { lessonId: string; initial: WarmupState; onDone: () => void }) => (
+    <section>
+      <p>{`Conversation panel ${lessonId} ${initial.status ?? "new"}`}</p>
+      <button type="button" onClick={() => { onDone(); onDone(); }}>Done</button>
+    </section>
+  ),
+}));
+
 afterEach(() => vi.unstubAllGlobals());
+
+const EMPTY_WARMUP: WarmupState = { status: null, turns: [], review: null };
+const NO_WARMUP: PlayerLesson["warmup"] = { available: false, theme: "Work & careers", state: EMPTY_WARMUP };
 
 const grade = (exerciseId: string, isCorrect: boolean): GradeResult => ({
   version: 1, exerciseId, isCorrect, parts: [{ correct: isCorrect, given: "x", expected: "had finished" }],
@@ -29,6 +43,7 @@ const lesson = (results: (GradeResult | null)[]): PlayerLesson => ({
     topicLessonNumber: 2,
     vocab: ["apple", "cherry"],
   },
+  warmup: NO_WARMUP,
   items: [
     { view: toExerciseView("e1", E.MULTIPLE_CHOICE), result: results[0], section: "written" },
     { view: toExerciseView("e2", E.DIALOGUE_GAP), result: results[1], section: "written" },
@@ -134,6 +149,7 @@ describe("LessonPlayer", () => {
     const clozeLesson: PlayerLesson = {
       lessonId: "L4", themeLabel: null, grammarTitle: null,
       intro: { learnerLevel: null, grammar: null, topicLessonNumber: null, vocab: [] },
+      warmup: NO_WARMUP,
       items: [{ view: toExerciseView("e4", E.CLOZE_DROPDOWN), result: null, section: "written" }],
     };
     render(<LessonPlayer lesson={clozeLesson} />);
@@ -149,6 +165,7 @@ describe("LessonPlayer", () => {
     const wordBankLesson: PlayerLesson = {
       lessonId: "L2", themeLabel: null, grammarTitle: null,
       intro: { learnerLevel: null, grammar: null, topicLessonNumber: null, vocab: [] },
+      warmup: NO_WARMUP,
       items: [{ view: toExerciseView("e3", E.WORD_BANK), result: null, section: "written" }],
     };
     render(<LessonPlayer lesson={wordBankLesson} />);
@@ -254,5 +271,118 @@ describe("LessonPlayer", () => {
     render(<LessonPlayer lesson={{ ...lesson([]), items: [] }} />);
     expect(screen.getByText(/this lesson has no exercises/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /back to dashboard/i })).toHaveAttribute("href", "/");
+  });
+});
+
+describe("LessonPlayer warm-up conversation", () => {
+  const analyzed: WarmupState = {
+    status: "ANALYZED",
+    turns: [
+      { id: "p0", role: "partner", text: "Hi!", turnIndex: 0, corrections: null },
+      { id: "l1", role: "learner", text: "I goed.", turnIndex: 1, corrections: [{ original: "goed" }, { original: "I" }] },
+      { id: "p1", role: "partner", text: "Nice.", turnIndex: 2, corrections: null },
+      { id: "l2", role: "learner", text: "Yes.", turnIndex: 3, corrections: [] },
+    ],
+    review: null,
+  };
+  const withWarmup = (
+    state: WarmupState,
+    opts: { review?: (GradeResult | null)[]; written?: (GradeResult | null)[]; available?: boolean } = {},
+  ): PlayerLesson => {
+    const { review = [], written = [null], available = true } = opts;
+    return {
+      ...lesson([null, null]),
+      warmup: { available, theme: "Work & careers", state },
+      items: [
+        ...review.map((result, i) => ({ view: toExerciseView(`r${i + 1}`, E.MULTIPLE_CHOICE), result, section: "review" as const })),
+        ...written.map((result, i) => ({ view: toExerciseView(`e${i + 1}`, E.DIALOGUE_GAP), result, section: "written" as const })),
+      ],
+    };
+  };
+  const panel = () => screen.queryByText(/^Conversation panel/);
+
+  it("runs review items, then the conversation, then the written items; onDone is idempotent and refreshes the results line", async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (url.startsWith("/api/conversation")) return Promise.resolve(ok(analyzed));
+      const { exerciseId } = JSON.parse(init!.body as string) as { exerciseId: string };
+      return Promise.resolve(ok({ ...grade(exerciseId, true), alreadyAnswered: false }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<LessonPlayer lesson={withWarmup(EMPTY_WARMUP, { review: [null] })} />);
+    expect(screen.getByText("Conversation: 8 turns on Work & careers")).toBeInTheDocument();
+    start();
+    expect(screen.getByText("Exercise 1 of 2")).toBeInTheDocument();
+    expect(panel()).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /had finished/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Check" }));
+    await screen.findByText("Correct");
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(panel()).toHaveTextContent("Conversation panel L1 new");
+    expect(screen.queryByText(/^Exercise \d of/)).not.toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuemax", "2");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.getByText("Exercise 2 of 2")).toBeInTheDocument();
+    expect(panel()).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: /complete the dialogue/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/conversation?lessonId=L1"));
+    expect(fetchMock.mock.calls.filter(([url]) => url.startsWith("/api/conversation"))).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("radio", { name: /no worries/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Check" }));
+    await screen.findByText("Correct");
+    fireEvent.click(screen.getByRole("button", { name: /see results/i }));
+    expect(screen.getByText("2 of 2 correct")).toBeInTheDocument();
+    expect(screen.getByText("Conversation: 2 turns, 2 corrections")).toBeInTheDocument();
+  });
+
+  it("opens the conversation right after Start when there are no review items", () => {
+    render(<LessonPlayer lesson={withWarmup(EMPTY_WARMUP)} />);
+    start();
+    expect(panel()).toBeInTheDocument();
+    expect(screen.queryByText("Exercise 1 of 1")).not.toBeInTheDocument();
+  });
+
+  it("goes straight to the written items when the lesson has no warm-up", () => {
+    render(<LessonPlayer lesson={withWarmup(EMPTY_WARMUP, { available: false })} />);
+    expect(screen.queryByText(/^Conversation:/)).not.toBeInTheDocument();
+    start();
+    expect(panel()).not.toBeInTheDocument();
+    expect(screen.getByText("Exercise 1 of 1")).toBeInTheDocument();
+  });
+
+  it("resumes an ACTIVE conversation: after Start without review items, directly when the review items are answered", () => {
+    const active: WarmupState = { status: "ACTIVE", turns: [], review: null };
+    const { unmount } = render(<LessonPlayer lesson={withWarmup(active)} />);
+    start();
+    expect(panel()).toHaveTextContent("Conversation panel L1 ACTIVE");
+    unmount();
+    render(<LessonPlayer lesson={withWarmup(active, { review: [grade("r1", true)] })} />);
+    expect(screen.queryByText("Today's lesson")).not.toBeInTheDocument();
+    expect(panel()).toHaveTextContent("Conversation panel L1 ACTIVE");
+  });
+
+  it.each(["ANALYZED", "SKIPPED", "UNAVAILABLE"] as const)("does not show a finished (%s) conversation", (status) => {
+    render(<LessonPlayer lesson={withWarmup({ status, turns: [], review: null }, { review: [grade("r1", true)] })} />);
+    expect(panel()).not.toBeInTheDocument();
+    expect(screen.getByText("Exercise 2 of 2")).toBeInTheDocument();
+  });
+
+  it("does not show the conversation once a written item is answered (ACTIVE, or never started on an old lesson)", () => {
+    const { unmount } = render(<LessonPlayer lesson={withWarmup({ status: "ACTIVE", turns: [], review: null }, { written: [grade("e1", true), null] })} />);
+    expect(panel()).not.toBeInTheDocument();
+    expect(screen.getByText("Exercise 2 of 2")).toBeInTheDocument();
+    unmount();
+    render(<LessonPlayer lesson={withWarmup(EMPTY_WARMUP, { written: [grade("e1", true), null] })} />);
+    expect(panel()).not.toBeInTheDocument();
+    expect(screen.getByText("Exercise 2 of 2")).toBeInTheDocument();
+  });
+
+  it("shows 'Conversation: skipped' on the results of a finished lesson whose warm-up was skipped", () => {
+    render(<LessonPlayer lesson={withWarmup({ status: "SKIPPED", turns: [], review: null }, { written: [grade("e1", true)] })} />);
+    expect(screen.getByText("1 of 1 correct")).toBeInTheDocument();
+    expect(screen.getByText("Conversation: skipped")).toBeInTheDocument();
   });
 });

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, MessageCircle, XCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
-import type { PlayerItem } from "@/lib/lesson/loadLesson";
+import type { PlayerItem, PlayerLesson } from "@/lib/lesson/loadLesson";
 import { TYPE_LABELS, viewExcerpt } from "@/lib/lesson/lessonView";
 import { ResultPanel } from "./ResultPanel";
 
@@ -18,8 +18,22 @@ function Ring({ value, total }: { value: number; total: number }) {
   );
 }
 
-export function LessonResults({ items }: { items: PlayerItem[] }) {
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/** Results-screen line for the warm-up; null when the lesson has no warm-up or it never finished. */
+export function conversationLine(warmup: PlayerLesson["warmup"] | undefined): string | null {
+  if (!warmup?.available) return null;
+  const { status, turns } = warmup.state;
+  if (status === "SKIPPED" || status === "UNAVAILABLE") return "Conversation: skipped";
+  if (status !== "ANALYZED") return null;
+  const learner = turns.filter((t) => t.role === "learner");
+  const corrections = learner.reduce((sum, t) => sum + (Array.isArray(t.corrections) ? t.corrections.length : 0), 0);
+  return `Conversation: ${plural(learner.length, "turn")}, ${plural(corrections, "correction")}`;
+}
+
+export function LessonResults({ items, warmup }: { items: PlayerItem[]; warmup?: PlayerLesson["warmup"] }) {
   const correct = items.filter((i) => i.result?.isCorrect).length;
+  const conversation = conversationLine(warmup);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => headingRef.current?.focus(), []);
@@ -33,6 +47,12 @@ export function LessonResults({ items }: { items: PlayerItem[] }) {
           <p className="text-lg tabular-nums">{correct} of {items.length} correct</p>
         </div>
       </div>
+      {conversation && (
+        <p className="flex items-center gap-2 text-muted-foreground">
+          <MessageCircle size={18} className="shrink-0" aria-hidden />
+          <span>{conversation}</span>
+        </p>
+      )}
       <ol className="flex flex-col gap-2">
         {items.map(({ view, result, section }) => (
           <li key={view.id} className="rounded-card border border-border bg-surface p-3">
