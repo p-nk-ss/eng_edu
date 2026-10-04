@@ -42,10 +42,12 @@ function statusWhere(filter: StatusFilter): { status: "MASTERED" | { not: "MASTE
   return undefined;
 }
 
-/** Last up-to-5 "given -> expected" lines of `description`, stripped of the leading "- ". */
+/** Last up-to-5 non-blank "given -> expected" lines of `description`, stripped of a leading "- ". */
 function examplesOf(description: string): string[] {
   return description
     .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
     .map((line) => line.replace(/^- /, ""))
     .slice(-5);
 }
@@ -68,7 +70,7 @@ export async function listErrors(
       mastered: statusRows.filter((r) => r.status === "MASTERED").length,
       all: statusRows.length,
     },
-    group: { all: 0, grammar: 0, translation: 0, vocab: 0, listening: 0, writing: 0, general: 0 },
+    group: { all: 0, ...Object.fromEntries(ERROR_GROUPS.map((g) => [g, 0])) } as Record<GroupFilter, number>,
   };
 
   const rows = (await db.errorRecord.findMany({

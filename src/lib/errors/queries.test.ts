@@ -105,6 +105,20 @@ describe("listErrors", () => {
     expect(result.counts.group).toEqual({ all: 2, grammar: 1, translation: 1, vocab: 0, listening: 0, writing: 0, general: 0 });
   });
 
+  it("examples skip blank lines, keep lines without a leading dash, and cap at the last 5", async () => {
+    const empty: Row = { ...rowA, id: "E1", description: "" };
+    const trailingBlank: Row = { ...rowA, id: "E2", description: "- a -> b\n\n" };
+    const plainLine: Row = { ...rowA, id: "E3", description: "- a -> b\nplain line" };
+    const sevenLines: Row = { ...rowA, id: "E4", description: Array.from({ length: 7 }, (_, i) => `- ${i + 1}`).join("\n") };
+    const { db } = makeDb([empty, trailingBlank, plainLine, sevenLines], topicsFixture, []);
+    const result = await listErrors({ status: "all", group: "all" }, now, db);
+    const byId = new Map(result.items.map((i) => [i.id, i.examples]));
+    expect(byId.get("E1")).toEqual([]);
+    expect(byId.get("E2")).toEqual(["a -> b"]);
+    expect(byId.get("E3")).toEqual(["a -> b", "plain line"]);
+    expect(byId.get("E4")).toEqual(["3", "4", "5", "6", "7"]);
+  });
+
   it("title falls back to the category when the topic lookup returns nothing", async () => {
     const ghost: Row = { ...rowA, id: "C", grammarTopicId: "ghost", category: "grammar: deleted" };
     const { db } = makeDb([ghost], topicsFixture, []);
